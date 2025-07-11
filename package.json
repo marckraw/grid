@@ -1,12 +1,40 @@
 {
   "name": "grid",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
+  "version": "0.0.0",
+  "private": true,
+  "description": "TypeScript library for LLM orchestration and agentic workflows",
+  "keywords": [
+    "llm",
+    "ai",
+    "agents",
+    "workflows",
+    "typescript"
+  ],
   "author": "",
-  "license": "ISC"
+  "license": "MIT",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "turbo run build && changeset publish",
+    "release:beta": "changeset pre enter beta && changeset version && turbo run build && changeset publish --tag beta",
+    "release:stable": "changeset pre exit && changeset version && turbo run build && changeset publish",
+    "release:status": "changeset status",
+    "release:dry-run": "changeset status --verbose"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27.1",
+    "@biomejs/biome": "^1.4.1",
+    "@types/node": "^20.10.0",
+    "turbo": "^1.11.2",
+    "typescript": "^5.3.3"
+  },
+  "packageManager": "pnpm@8.15.1"
 }

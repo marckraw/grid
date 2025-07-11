@@ -1,0 +1,81 @@
+name: Release Beta
+
+on:
+  push:
+    branches: [develop]
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  release:
+    name: Release Beta
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          # This makes Actions fetch all Git history so that Changesets can generate changelogs with the correct commits
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Enter prerelease mode
+        run: pnpm changeset pre enter beta
+
+      - name: Create Release Pull Request or Publish to npm
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          # This expects you to have a script called release which does a build and npm publish
+          publish: pnpm release
+          version: pnpm version-packages
+          title: "chore: release beta packages"
+          commit: "chore: release beta packages"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish to npm with beta tag
+        if: steps.changesets.outputs.published == 'true'
+        run: |
+          # Get the list of published packages and republish with beta tag
+          echo "Beta packages published!"
+          # The packages are already published by the changesets action
+          # But we need to make sure they have the beta tag
+          for package in $(find packages -name "package.json" -not -path "*/node_modules/*"); do
+            PACKAGE_NAME=$(node -p "require('$package').name")
+            PACKAGE_VERSION=$(node -p "require('$package').version")
+            if [[ $PACKAGE_VERSION == *"beta"* ]]; then
+              echo "Adding beta tag to $PACKAGE_NAME@$PACKAGE_VERSION"
+              npm dist-tag add $PACKAGE_NAME@$PACKAGE_VERSION beta || true
+            fi
+          done
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

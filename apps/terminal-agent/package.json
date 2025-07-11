@@ -1,0 +1,23 @@
+{
+    "name": "terminal-agent",
+    "version": "0.0.0",
+    "description": "Terminal app showcasing Grid library features",
+    "type": "module",
+    "private": true,
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsx src/index.ts",
+        "start": "node dist/index.js",
+        "lint": "biome check src"
+    },
+    "devDependencies": {
+        "@biomejs/biome": "^1.4.1",
+        "tsx": "^4.6.0",
+        "typescript": "^5.3.3"
+    },
+    "dependencies": {
+        "@mrck-labs/grid-core": "workspace:*",
+        "@mrck-labs/grid-agents": "workspace:*",
+        "@mrck-labs/grid-workflows": "workspace:*"
+    }
+}

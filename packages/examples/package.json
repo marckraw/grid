@@ -1,0 +1,49 @@
+{
+  "name": "@mrck-labs/grid-examples",
+  "version": "0.0.0",
+  "description": "Example integrations for Grid",
+  "keywords": [
+    "examples",
+    "integrations",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "zshy": {
+    "exports": {
+      ".": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "zshy",
+    "dev": "zshy --watch",
+    "lint": "biome check src",
+    "test": "vitest"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.4.1",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0",
+    "zshy": "^0.0.4"
+  },
+  "dependencies": {
+    "@mrck-labs/grid-core": "workspace:*",
+    "@mrck-labs/grid-agents": "workspace:*",
+    "@mrck-labs/grid-workflows": "workspace:*",
+    "zod": "^3.22.4"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.cts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.cts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  }
+}
