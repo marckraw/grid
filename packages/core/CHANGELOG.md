@@ -4,6 +4,12 @@
 
 ### Minor Changes
 
+- bb8f3b5: initial
+
+## 0.1.0
+
+### Minor Changes
+
 - 32f452c: initial publish
 - 308ac7d: # Initial release
 
