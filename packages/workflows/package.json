@@ -1,47 +1,50 @@
 {
-  "name": "@mrck-labs/grid-workflows",
-  "version": "0.1.0-beta.3",
-  "description": "Workflow orchestration primitives for Grid",
-  "keywords": [
-    "workflows",
-    "orchestration",
-    "typescript"
-  ],
-  "author": "",
-  "license": "MIT",
-  "type": "module",
-  "zshy": {
+    "name": "@mrck-labs/grid-workflows",
+    "version": "0.0.0",
+    "description": "Workflow orchestration primitives for Grid",
+    "keywords": [
+        "workflows",
+        "orchestration",
+        "typescript"
+    ],
+    "author": "",
+    "license": "MIT",
+    "type": "module",
+    "publishConfig": {
+        "access": "public"
+    },
+    "zshy": {
+        "exports": {
+            ".": "./src/index.ts"
+        }
+    },
+    "scripts": {
+        "build": "zshy",
+        "dev": "zshy --watch",
+        "lint": "biome check src",
+        "test": "vitest"
+    },
+    "devDependencies": {
+        "@biomejs/biome": "^1.4.1",
+        "typescript": "^5.3.3",
+        "vitest": "^1.1.0",
+        "zshy": "^0.0.4"
+    },
+    "dependencies": {
+        "@mrck-labs/grid-core": "workspace:*",
+        "zod": "^3.22.4"
+    },
+    "files": [
+        "dist"
+    ],
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.cts",
     "exports": {
-      ".": "./src/index.ts"
+        ".": {
+            "types": "./dist/index.d.cts",
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs"
+        }
     }
-  },
-  "scripts": {
-    "build": "zshy",
-    "dev": "zshy --watch",
-    "lint": "biome check src",
-    "test": "vitest"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^1.4.1",
-    "typescript": "^5.3.3",
-    "vitest": "^1.1.0",
-    "zshy": "^0.0.4"
-  },
-  "dependencies": {
-    "@mrck-labs/grid-core": "workspace:*",
-    "zod": "^3.22.4"
-  },
-  "files": [
-    "dist"
-  ],
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.cts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.cts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    }
-  }
 }

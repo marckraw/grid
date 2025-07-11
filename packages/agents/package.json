@@ -1,6 +1,6 @@
 {
   "name": "@mrck-labs/grid-agents",
-  "version": "0.1.0-beta.3",
+  "version": "0.0.0",
   "description": "Agent orchestration primitives for Grid",
   "keywords": [
     "agents",
@@ -10,6 +10,9 @@
   "author": "",
   "license": "MIT",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "zshy": {
     "exports": {
       ".": "./src/index.ts"

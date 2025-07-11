@@ -1,6 +1,6 @@
 {
   "name": "@mrck-labs/grid-core",
-  "version": "0.1.0-beta.3",
+  "version": "0.0.0",
   "description": "Core primitives for LLM orchestration and agentic workflows",
   "keywords": [
     "llm",
@@ -11,6 +11,9 @@
   "author": "",
   "license": "MIT",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "zshy": {
     "exports": {
       ".": "./src/index.ts"
