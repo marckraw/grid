@@ -1,4 +1,4 @@
-name: Release Beta
+name: Release
 
 on:
   push:
@@ -9,7 +9,7 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
   release:
-    name: Release Beta
+    name: Release
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -38,5 +38,7 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
-      - name: Release Beta
-        run: pnpm release:beta
+      - name: Create Release Pull Request or Publish to npm
+        uses: changesets/action@v1
+        with:
+          publish: pnpm release

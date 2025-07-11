@@ -8,6 +8,7 @@ export type GridConfig = {
   apiKey?: string;
   baseUrl?: string;
   timeout?: number;
+  retries?: number;
 };
 
 export const createGrid = (config: GridConfig = {}) => {
@@ -24,5 +25,16 @@ export const validateConfig = (config: GridConfig): boolean => {
   if (config.timeout && config.timeout < 0) {
     return false;
   }
+  if (config.retries && config.retries < 0) {
+    return false;
+  }
   return true;
+};
+
+// New feature: Default configuration helper
+export const getDefaultConfig = (): GridConfig => {
+  return {
+    timeout: 30000,
+    retries: 3,
+  };
 };

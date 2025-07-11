@@ -24,8 +24,6 @@
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "turbo run build && changeset publish",
-    "release:beta": "node scripts/ensure-prerelease.js enter && turbo run build && changeset version && changeset publish --tag beta",
-    "release:stable": "node scripts/ensure-prerelease.js exit && turbo run build && changeset version && changeset publish",
     "release:status": "changeset status",
     "release:dry-run": "changeset status --verbose"
   },
