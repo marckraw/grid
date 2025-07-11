@@ -38,3 +38,14 @@ export const getDefaultConfig = (): GridConfig => {
     retries: 3,
   };
 };
+
+// New utility: Merge configurations
+export const mergeConfigs = (
+  base: GridConfig,
+  override: GridConfig
+): GridConfig => {
+  return {
+    ...base,
+    ...override,
+  };
+};
