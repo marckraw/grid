@@ -38,8 +38,5 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
-      - name: Create Release Pull Request or Publish to npm
-        id: changesets
-        uses: changesets/action@v1
-        with:
-          publish: pnpm release:beta
+      - name: Release Beta
+        run: pnpm release:beta

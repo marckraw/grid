@@ -24,12 +24,10 @@
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "turbo run build && changeset publish",
-    "release:beta": "turbo run build && npm run prerelease:enter && changeset version && changeset publish",
-    "release:stable": "turbo run build && npm run prerelease:exit && changeset version && changeset publish",
+    "release:beta": "node scripts/ensure-prerelease.js enter && turbo run build && changeset version && changeset publish --tag beta",
+    "release:stable": "node scripts/ensure-prerelease.js exit && turbo run build && changeset version && changeset publish",
     "release:status": "changeset status",
-    "release:dry-run": "changeset status --verbose",
-    "prerelease:enter": "if [ ! -f .changeset/pre.json ]; then changeset pre enter beta; fi",
-    "prerelease:exit": "if [ -f .changeset/pre.json ]; then changeset pre exit; fi"
+    "release:dry-run": "changeset status --verbose"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.1",
