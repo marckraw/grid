@@ -18,7 +18,6 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
         with:
-          # This makes Actions fetch all Git history so that Changesets can generate changelogs with the correct commits
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -61,32 +60,12 @@ jobs:
           fi
 
       - name: Create Release Pull Request or Publish to npm
-        id: changesets
         uses: changesets/action@v1
         with:
-          # This expects you to have a script called release which does a build and npm publish
           publish: pnpm release
           version: pnpm version-packages
           title: "chore: release beta packages"
           commit: "chore: release beta packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Publish to npm with beta tag
-        if: steps.changesets.outputs.published == 'true'
-        run: |
-          # Get the list of published packages and republish with beta tag
-          echo "Beta packages published!"
-          # The packages are already published by the changesets action
-          # But we need to make sure they have the beta tag
-          for package in $(find packages -name "package.json" -not -path "*/node_modules/*"); do
-            PACKAGE_NAME=$(node -p "require('$package').name")
-            PACKAGE_VERSION=$(node -p "require('$package').version")
-            if [[ $PACKAGE_VERSION == *"beta"* ]]; then
-              echo "Adding beta tag to $PACKAGE_NAME@$PACKAGE_VERSION"
-              npm dist-tag add $PACKAGE_NAME@$PACKAGE_VERSION beta || true
-            fi
-          done
-        env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
