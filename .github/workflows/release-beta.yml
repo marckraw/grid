@@ -6,6 +6,10 @@ on:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   release:
     name: Release Beta
@@ -16,6 +20,7 @@ jobs:
         with:
           # This makes Actions fetch all Git history so that Changesets can generate changelogs with the correct commits
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
