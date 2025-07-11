@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.2.0
+
+### Minor Changes
+
+- 79742ba: Little change to test
+
 ## 0.1.0
 
 ### Minor Changes
