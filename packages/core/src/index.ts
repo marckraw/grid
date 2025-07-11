@@ -7,6 +7,7 @@ export const VERSION = "0.0.0";
 export type GridConfig = {
   apiKey?: string;
   baseUrl?: string;
+  timeout?: number;
 };
 
 export const createGrid = (config: GridConfig = {}) => {
@@ -15,4 +16,13 @@ export const createGrid = (config: GridConfig = {}) => {
     version: VERSION,
   };
 };
-export const TEST_VERSION = '0.1.0';
+
+export const TEST_VERSION = "0.1.0";
+
+// New feature: Helper function for API configuration
+export const validateConfig = (config: GridConfig): boolean => {
+  if (config.timeout && config.timeout < 0) {
+    return false;
+  }
+  return true;
+};
