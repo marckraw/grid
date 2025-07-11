@@ -4,6 +4,19 @@
 
 ### Minor Changes
 
+- bb8f3b5: initial
+
+### Patch Changes
+
+- Updated dependencies [bb8f3b5]
+  - @mrck-labs/grid-agents@0.1.0
+  - @mrck-labs/grid-core@0.1.0
+  - @mrck-labs/grid-workflows@0.1.0
+
+## 0.1.0
+
+### Minor Changes
+
 - 32f452c: initial publish
 - 308ac7d: # Initial release
 
