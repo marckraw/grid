@@ -15,3 +15,4 @@ export const createGrid = (config: GridConfig = {}) => {
     version: VERSION,
   };
 };
+export const TEST_VERSION = '0.1.0';

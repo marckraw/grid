@@ -2,79 +2,44 @@ name: Release Stable
 
 on:
   push:
-    branches: [master]
+    branches:
+      - master
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
-
-permissions:
-  contents: write
-  pull-requests: write
 
 jobs:
   release:
     name: Release Stable
     runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+    strategy:
+      matrix:
+        node-version: [20.x]
+
     steps:
-      - name: Checkout Repo
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          # This makes Actions fetch all Git history so that Changesets can generate changelogs with the correct commits
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup Node.js
+      - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
           version: 8
 
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install dependencies
+      - name: Install Dependencies
         run: pnpm install
-
-      - name: Build packages
-        run: pnpm build
-
-      - name: Exit prerelease mode (if in prerelease)
-        run: |
-          if [ -f .changeset/pre.json ]; then
-            echo "Exiting prerelease mode"
-            pnpm changeset pre exit
-          else
-            echo "Not in prerelease mode"
-          fi
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets
         uses: changesets/action@v1
         with:
-          # This expects you to have a script called release which does a build and npm publish
-          publish: pnpm release
-          version: pnpm version-packages
-          title: "chore: release stable packages"
-          commit: "chore: release stable packages"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Stable packages published
-        if: steps.changesets.outputs.published == 'true'
-        run: |
-          echo "Stable packages published!"
-          echo "Published packages: ${{ steps.changesets.outputs.publishedPackages }}"
+          publish: pnpm release:stable
