@@ -20,6 +20,7 @@
         "@mrck-labs/grid-agents": "workspace:*",
         "@mrck-labs/grid-core": "workspace:*",
         "@mrck-labs/grid-workflows": "workspace:*",
+        "dotenv": "^17.2.0",
         "picocolors": "^1.1.1"
     }
 }
