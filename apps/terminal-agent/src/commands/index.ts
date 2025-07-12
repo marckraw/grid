@@ -4,3 +4,6 @@ export { conversationMode } from "./conversation.js";
 export { exploreToolUsage } from "./tools.js";
 export { exploreCollaboration } from "./collaboration.js";
 export { configureGrid } from "./config.js";
+export { exploreAutonomousFlow } from "./autonomous-flow.js";
+export { viewEnvironment } from "./environment.js";
+export { exploreHooksDemo } from "./hooks-demo.js";
