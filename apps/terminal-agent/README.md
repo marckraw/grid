@@ -17,6 +17,24 @@ An interactive CLI for exploring Grid's agentic primitives and capabilities.
 pnpm install
 ```
 
+## Configuration
+
+The terminal agent uses environment variables for API keys and configuration.
+
+1. Copy the example environment file:
+```bash
+cp .env.example .env
+```
+
+2. Edit `.env` and add your API keys:
+```env
+OPENAI_API_KEY=your-openai-api-key
+ANTHROPIC_API_KEY=your-anthropic-api-key  # optional
+GRID_API_KEY=your-grid-api-key           # optional
+```
+
+3. (Optional) Customize other settings like timeout, retries, and model defaults.
+
 ## Usage
 
 ### Development
