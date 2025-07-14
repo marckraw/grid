@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.4.0
+
+### Minor Changes
+
+- ec5041d: Lot of new primitives extracted
+
 ## 0.3.0
 
 ### Minor Changes
