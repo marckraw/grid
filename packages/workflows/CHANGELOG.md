@@ -1,5 +1,16 @@
 # @mrck-labs/grid-workflows
 
+## 0.3.0
+
+### Minor Changes
+
+- ec5041d: Lot of new primitives extracted
+
+### Patch Changes
+
+- Updated dependencies [ec5041d]
+  - @mrck-labs/grid-core@0.4.0
+
 ## 0.2.0
 
 ### Minor Changes
