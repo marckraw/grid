@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm add:*)",
+      "Bash(pnpm dev:*)",
+      "Bash(pnpm --filter terminal-agent dev)",
+      "Bash(pnpm --filter terminal-agent build)",
+      "Bash(pnpm --filter terminal-agent start)",
+      "Bash(pnpm --filter terminal-agent lint)",
+      "Bash(mkdir:*)",
+      "Bash(tree:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": []
+  }
+}
