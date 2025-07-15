@@ -1,11 +1,15 @@
-import type { ChatMessage, LLMService, LLMServiceOptions, ToolCall } from "../types/index.js";
+import type {
+  ChatMessage,
+  LLMService,
+  LLMServiceOptions,
+  ToolCall,
+} from "../types/index.js";
 import { generateText, tool } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 
 export const baseLLMService = (): LLMService => {
-
   const runLLM = async (options: LLMServiceOptions): Promise<ChatMessage> => {
     const {
       model = "gpt-4",
@@ -26,17 +30,18 @@ export const baseLLMService = (): LLMService => {
               type: "tool-result" as const,
               toolCallId: msg.tool_call_id!,
               toolName: "unknown", // Tool name is not available in our message format
-              result: typeof msg.content === "string" ? msg.content : msg.content,
+              result:
+                typeof msg.content === "string" ? msg.content : msg.content,
             },
           ],
         };
       }
-      
+
       if (msg.tool_calls) {
         return {
           role: msg.role as "assistant",
           content: msg.content || "",
-          toolCalls: msg.tool_calls.map(tc => ({
+          toolCalls: msg.tool_calls.map((tc) => ({
             toolCallId: tc.id,
             toolName: tc.function.name,
             args: JSON.parse(tc.function.arguments),
@@ -46,22 +51,26 @@ export const baseLLMService = (): LLMService => {
 
       return {
         role: msg.role as "system" | "user" | "assistant",
-        content: typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content),
+        content:
+          typeof msg.content === "string"
+            ? msg.content
+            : JSON.stringify(msg.content),
       };
     });
 
     // Format tools for Vercel AI SDK
     const formattedTools = formatTools(tools);
-    const toolsObject = formattedTools.length > 0 
-      ? formattedTools.reduce((acc, t) => {
-          acc[t.name] = t;
-          return acc;
-        }, {} as Record<string, any>)
-      : undefined;
+    const toolsObject =
+      formattedTools.length > 0
+        ? formattedTools.reduce((acc, t) => {
+            acc[t.name] = t;
+            return acc;
+          }, {} as Record<string, any>)
+        : undefined;
 
     try {
       // Determine the provider based on the model name
-      const modelInstance = model.startsWith("claude") 
+      const modelInstance = model.startsWith("claude")
         ? anthropic(model)
         : openai(model);
 
@@ -81,7 +90,7 @@ export const baseLLMService = (): LLMService => {
 
       // Handle tool calls if present
       if (result.toolCalls && result.toolCalls.length > 0) {
-        response.tool_calls = result.toolCalls.map(tc => ({
+        response.tool_calls = result.toolCalls.map((tc) => ({
           id: tc.toolCallId,
           type: "function" as const,
           function: {
@@ -98,18 +107,18 @@ export const baseLLMService = (): LLMService => {
     }
   };
 
-  const runLLMWithJSONResponse = async (options: LLMServiceOptions): Promise<ChatMessage> => {
-    const {
-      model = "gpt-4",
-      messages,
-      temperature = 0.1,
-      maxTokens,
-    } = options;
+  const runLLMWithJSONResponse = async (
+    options: LLMServiceOptions
+  ): Promise<ChatMessage> => {
+    const { model = "gpt-4", messages, temperature = 0.1, maxTokens } = options;
 
     // Convert messages to Vercel AI SDK format
     const formattedMessages = messages.map((msg) => ({
       role: msg.role as "system" | "user" | "assistant",
-      content: typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content),
+      content:
+        typeof msg.content === "string"
+          ? msg.content
+          : JSON.stringify(msg.content),
     }));
 
     try {
@@ -118,12 +127,13 @@ export const baseLLMService = (): LLMService => {
         ...formattedMessages,
         {
           role: "system" as const,
-          content: "You must respond with valid JSON only. No markdown formatting, no explanation, just pure JSON.",
+          content:
+            "You must respond with valid JSON only. No markdown formatting, no explanation, just pure JSON.",
         },
       ];
 
       // Determine the provider based on the model name
-      const modelInstance = model.startsWith("claude") 
+      const modelInstance = model.startsWith("claude")
         ? anthropic(model)
         : openai(model);
 
@@ -148,9 +158,11 @@ export const baseLLMService = (): LLMService => {
     return tools.map((toolDef) => {
       // Convert to Vercel AI tool format
       const name = toolDef.name || toolDef.function?.name || "unknown";
-      const description = toolDef.description || toolDef.function?.description || "";
-      const parameters = toolDef.parameters || toolDef.function?.parameters || z.object({});
-      
+      const description =
+        toolDef.description || toolDef.function?.description || "";
+      const parameters =
+        toolDef.parameters || toolDef.function?.parameters || z.object({});
+
       const formattedTool = tool({
         description,
         parameters,
@@ -159,7 +171,7 @@ export const baseLLMService = (): LLMService => {
           return args;
         },
       });
-      
+
       // Add name property to the tool
       return { ...formattedTool, name };
     });
@@ -172,7 +184,7 @@ export const baseLLMService = (): LLMService => {
       const testModel = process.env.DEFAULT_MODEL?.startsWith("claude")
         ? anthropic("claude-3-haiku-20240307")
         : openai("gpt-4");
-        
+
       await generateText({
         model: testModel,
         messages: [{ role: "user", content: "test" }],
