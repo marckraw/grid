@@ -1,15 +1,28 @@
 import { type AgentConfig } from "./agent-config.schemas.js";
 import { createBaseAgent } from "../agents/BaseAgent.js";
-import { type Agent, type AgentResponse, type AgentActInput } from "../types/agent.types.js";
+import {
+  type Agent,
+  type AgentResponse,
+  type AgentActInput,
+} from "../types/agent.types.js";
 import { type LLMService } from "../types/llm.types.js";
 import { type Tool, formatToolForLLM } from "../types/tool.types.js";
 import { type ToolExecutor } from "../services/tool-executor.service.js";
 
 // Custom handler types for hooks
 export interface CustomHandlers {
-  beforeAct?: (input: AgentActInput, config: AgentConfig) => Promise<AgentActInput>;
-  afterResponse?: (response: AgentResponse, input: AgentActInput) => Promise<AgentResponse>;
-  onError?: (error: Error, attempt: number) => Promise<void | { retry: boolean; modifiedInput?: AgentActInput }>;
+  beforeAct?: (
+    input: AgentActInput,
+    config: AgentConfig
+  ) => Promise<AgentActInput>;
+  afterResponse?: (
+    response: AgentResponse,
+    input: AgentActInput
+  ) => Promise<AgentResponse>;
+  onError?: (
+    error: Error,
+    attempt: number
+  ) => Promise<void | { retry: boolean; modifiedInput?: AgentActInput }>;
   validateResponse?: (
     response: AgentResponse
   ) => Promise<{ isValid: boolean; errors?: string[] }>;
@@ -59,7 +72,7 @@ export const createConfigurableAgent = ({
     ...base,
     id: config.id,
     type: config.type,
-    availableTools: availableTools.map(t => t.name),
+    availableTools: availableTools.map((t) => t.name),
 
     // Enhanced metadata with config info
     getMetadata: () => ({
@@ -82,12 +95,17 @@ export const createConfigurableAgent = ({
         try {
           // Hook: transformInput
           if (customHandlers.transformInput) {
-            processedInput = await customHandlers.transformInput(processedInput);
+            processedInput = await customHandlers.transformInput(
+              processedInput
+            );
           }
 
           // Hook: beforeAct
           if (customHandlers.beforeAct) {
-            processedInput = await customHandlers.beforeAct(processedInput, config);
+            processedInput = await customHandlers.beforeAct(
+              processedInput,
+              config
+            );
           }
 
           // Prepare messages with system prompt
@@ -105,6 +123,7 @@ export const createConfigurableAgent = ({
           try {
             // Execute LLM call with tools
             const llmResponse = await base.llmService.runLLM({
+              model: "claude-3-haiku-20240307",
               messages,
               tools: formattedTools.length > 0 ? formattedTools : undefined,
               // Add any additional LLM options from config
@@ -115,7 +134,10 @@ export const createConfigurableAgent = ({
           } catch (llmError) {
             // Hook: onError for LLM errors
             if (customHandlers.onError) {
-              const errorResult = await customHandlers.onError(llmError as Error, attempt);
+              const errorResult = await customHandlers.onError(
+                llmError as Error,
+                attempt
+              );
               if (errorResult && errorResult.retry && attempt < maxRetries) {
                 if (errorResult.modifiedInput) {
                   processedInput = errorResult.modifiedInput;
@@ -128,15 +150,23 @@ export const createConfigurableAgent = ({
 
           // Hook: afterResponse
           if (customHandlers.afterResponse) {
-            response = await customHandlers.afterResponse(response, processedInput);
+            response = await customHandlers.afterResponse(
+              response,
+              processedInput
+            );
           }
 
           // Hook: validateResponse
-          if (customHandlers.validateResponse || config.behavior?.validateResponse) {
+          if (
+            customHandlers.validateResponse ||
+            config.behavior?.validateResponse
+          ) {
             let validationResult;
-            
+
             if (customHandlers.validateResponse) {
-              validationResult = await customHandlers.validateResponse(response);
+              validationResult = await customHandlers.validateResponse(
+                response
+              );
             } else {
               // Default validation: ensure response has content
               validationResult = {
@@ -147,12 +177,17 @@ export const createConfigurableAgent = ({
 
             if (!validationResult.isValid) {
               const validationError = new Error(
-                `Response validation failed: ${validationResult.errors?.join(", ")}`
+                `Response validation failed: ${validationResult.errors?.join(
+                  ", "
+                )}`
               );
-              
+
               // Hook: onError for validation errors
               if (customHandlers.onError) {
-                const errorResult = await customHandlers.onError(validationError, attempt);
+                const errorResult = await customHandlers.onError(
+                  validationError,
+                  attempt
+                );
                 if (errorResult && errorResult.retry && attempt < maxRetries) {
                   if (errorResult.modifiedInput) {
                     processedInput = errorResult.modifiedInput;
@@ -165,7 +200,11 @@ export const createConfigurableAgent = ({
           }
 
           // Execute tool calls if present and tool executor is provided
-          if (response.tool_calls && response.tool_calls.length > 0 && toolExecutor) {
+          if (
+            response.tool_calls &&
+            response.tool_calls.length > 0 &&
+            toolExecutor
+          ) {
             // Execute tools and get responses
             const toolResponses = await toolExecutor.executeToolCalls(
               response.tool_calls,
@@ -190,7 +229,6 @@ export const createConfigurableAgent = ({
           }
 
           return response;
-
         } catch (error) {
           // Final error handling
           if (attempt >= maxRetries) {
@@ -198,19 +236,19 @@ export const createConfigurableAgent = ({
             if (customHandlers.onError) {
               await customHandlers.onError(error as Error, attempt);
             }
-            
+
             // If we have a fallback prompt, try it
             if (config.prompts.fallback) {
               const fallbackMessages = [
                 { role: "system" as const, content: config.prompts.fallback },
                 ...input.messages,
               ];
-              
+
               try {
                 const fallbackResponse = await base.llmService.runLLM({
                   messages: fallbackMessages,
                 });
-                
+
                 return fallbackResponse;
               } catch (fallbackError) {
                 // Fallback also failed
@@ -219,7 +257,7 @@ export const createConfigurableAgent = ({
                 );
               }
             }
-            
+
             throw error;
           }
         }
