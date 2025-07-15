@@ -32,6 +32,9 @@
     "zshy": "^0.0.4"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^1.2.12",
+    "@ai-sdk/openai": "^1.3.23",
+    "ai": "^4.3.19",
     "openai": "^5.9.0",
     "zod": "^3.25.76"
   },
