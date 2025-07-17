@@ -16,42 +16,7 @@ import { createSpinner } from "../utils/spinners.js";
 import type { MenuOption } from "../types/index.js";
 
 export async function exploreAutonomousFlow(): Promise<void> {
-  p.note(
-    "Explore autonomous agent loops that can work independently to achieve goals.",
-    "Autonomous Agent Flow"
-  );
-
-  // Get task from user
-  const task = await textWithCancel(
-    "What task should the autonomous agent accomplish?",
-    "e.g., Research the top 3 JavaScript frameworks and compare them"
-  );
-
-  if (isCancel(task)) return;
-
-  // Ask for max iterations
-  const maxIterationsOptions: MenuOption[] = [
-    { value: "5", label: "5 iterations", hint: "Quick exploration" },
-    { value: "10", label: "10 iterations", hint: "Default" },
-    { value: "20", label: "20 iterations", hint: "Thorough exploration" },
-  ];
-
-  const maxIterations = await selectWithCancel<string>(
-    "Maximum iterations for the agent?",
-    maxIterationsOptions
-  );
-
-  if (isCancel(maxIterations)) return;
-
-  // Initialize the agent flow service
-  const service = agentFlowService();
-
-  // Create a progress display
-  const progressLog: string[] = [];
-  let currentSpinner: any = null;
-
-  // Set up the send function to handle progress updates
-  service.setSendFunction(async (progressMessage: ProgressMessage) => {
+  const sendUpdateFunction = async (progressMessage: ProgressMessage) => {
     const { type, content, metadata } = progressMessage;
 
     // Stop current spinner if running
@@ -107,7 +72,41 @@ export async function exploreAutonomousFlow(): Promise<void> {
     if (metadata) {
       p.log.message(color.dim(`   Metadata: ${JSON.stringify(metadata)}`));
     }
-  });
+  };
+  p.note(
+    "Explore autonomous agent loops that can work independently to achieve goals.",
+    "Autonomous Agent Flow"
+  );
+
+  // Get task from user
+  const task = await textWithCancel(
+    "What task should the autonomous agent accomplish?",
+    "e.g., Research the top 3 JavaScript frameworks and compare them"
+  );
+
+  if (isCancel(task)) return;
+
+  // Ask for max iterations
+  const maxIterationsOptions: MenuOption[] = [
+    { value: "5", label: "5 iterations", hint: "Quick exploration" },
+    { value: "10", label: "10 iterations", hint: "Default" },
+    { value: "20", label: "20 iterations", hint: "Thorough exploration" },
+  ];
+
+  const maxIterations = await selectWithCancel<string>(
+    "Maximum iterations for the agent?",
+    maxIterationsOptions
+  );
+
+  if (isCancel(maxIterations)) return;
+
+  // Create a progress display
+  const progressLog: string[] = [];
+  let currentSpinner: any = null;
+  // Initialize the agent flow service
+  const service = agentFlowService();
+  // Set up the send function to handle progress updates
+  service.setSendFunction(sendUpdateFunction);
 
   p.log.info(color.cyan("\n🚀 Starting autonomous agent flow...\n"));
   p.log.message(color.dim(`Task: ${task}`));
