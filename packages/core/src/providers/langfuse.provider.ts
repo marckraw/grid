@@ -79,12 +79,40 @@ export const createLangfuseProvider = (
   let flushTimer: NodeJS.Timeout | null = null;
   
   /**
+   * Flush any pending data
+   */
+  const flush = async (): Promise<void> => {
+    if (!secretKey || !publicKey) {
+      if (debug) {
+        console.log("[Langfuse] Skipping flush - no API keys configured");
+      }
+      return;
+    }
+
+    // In a real implementation, this would batch send to Langfuse API
+    // For now, we just log and clear buffers
+    if (debug) {
+      console.log(`[Langfuse] Flushing ${eventBuffer.length} events, ${pendingGenerations.size} generations`);
+    }
+
+    // Clear buffers
+    eventBuffer.length = 0;
+    pendingGenerations.clear();
+    
+    // TODO: Implement actual API calls to Langfuse
+    // This would involve:
+    // 1. Batching traces, events, and generations
+    // 2. Sending to Langfuse ingestion API
+    // 3. Handling retries and errors
+  };
+  
+  /**
    * Start flush timer
    */
   const startFlushTimer = () => {
     if (flushTimer) clearInterval(flushTimer);
     flushTimer = setInterval(() => {
-      flush().catch(err => {
+      flush().catch((err: any) => {
         if (debug) console.error("[Langfuse] Auto-flush error:", err);
       });
     }, flushInterval);
@@ -272,41 +300,7 @@ export const createLangfuseProvider = (
       currentSession = session;
     },
 
-    async flush(): Promise<void> {
-      if (!secretKey || !publicKey) {
-        if (debug) {
-          console.log("[Langfuse] Skipping flush - no API keys configured");
-        }
-        return;
-      }
-
-      // In a real implementation, this would batch send to Langfuse API
-      // For now, we just log and clear buffers
-      if (debug) {
-        console.log(`[Langfuse] Flushing ${eventBuffer.length} events, ${pendingGenerations.size} generations`);
-      }
-
-      // Clear buffers
-      eventBuffer.length = 0;
-      pendingGenerations.clear();
-      
-      // TODO: Implement actual API calls to Langfuse
-      // This would involve:
-      // 1. Batching traces, events, and generations
-      // 2. Sending to Langfuse ingestion API
-      // 3. Handling retries and errors
-    },
-    
-    /**
-     * Clean up resources
-     */
-    async shutdown(): Promise<void> {
-      if (flushTimer) {
-        clearInterval(flushTimer);
-        flushTimer = null;
-      }
-      await flush();
-    }
+    flush,
   };
 };
 

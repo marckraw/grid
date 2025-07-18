@@ -1,12 +1,13 @@
 import { baseLLMService, type BaseLLMServiceConfig } from "../services/base.llm.service.js";
 import { createToolExecutor } from "../services/tool-executor.service.js";
-import { createConversationHistoryService } from "../services/conversation-history.service.js";
-import { createConversationContextService } from "../services/conversation-context.service.js";
+import { createConversationHistory } from "../services/conversation-history.service.js";
+import { createConversationContext } from "../services/conversation-context.service.js";
 import { createConversationFlow } from "../services/conversation-flow.service.js";
 import { createObservabilityService } from "../services/observability.service.js";
 import { createTracedService } from "./observability-decorator.factory.js";
+import { createConfigurableAgent } from "./configurable-agent.factory.js";
 import type { ObservabilityConfig } from "../types/observability.types.js";
-import type { Tool } from "ai";
+import type { Tool } from "../types/tool.types.js";
 
 /**
  * Configuration for creating traced services
@@ -33,8 +34,8 @@ export const createTracedServices = (config: TracedServicesConfig) => {
     observability: observabilityService,
   });
   const toolExecutor = createToolExecutor({ observability: observabilityService });
-  const conversationHistory = createConversationHistoryService();
-  const conversationContext = createConversationContextService();
+  const conversationHistory = createConversationHistory();
+  const conversationContext = createConversationContext();
   
   // Create traced versions with proper span attributes
   const tracedLLMService = createTracedService(
@@ -89,20 +90,43 @@ export const createTracedServices = (config: TracedServicesConfig) => {
     }
   );
 
-  // Create conversation flow with traced dependencies
-  const conversationFlow = createConversationFlow({
-    agent: {
+  // Create a default agent for conversation flow
+  const defaultAgent = createConfigurableAgent({
+    config: {
       id: "traced-agent",
-      name: "Traced Agent",
-      model: config.llm?.defaultModel || "gpt-4",
-      systemPrompt: "You are a helpful assistant.",
-      tools: config.tools || [],
-      toolChoice: "auto",
+      type: "general",
+      version: "1.0.0",
+      metadata: {
+        id: "traced-agent",
+        type: "general",
+        name: "Traced Agent",
+        description: "A default agent with observability",
+        capabilities: ["general"],
+        icon: "🔍",
+      },
+      prompts: {
+        system: "You are a helpful assistant.",
+      },
+      behavior: {
+        maxRetries: 3,
+        responseFormat: "text",
+        validateResponse: false,
+      },
+      tools: {
+        custom: config.tools || [],
+        mcp: [],
+        builtin: [],
+      },
     },
     llmService: tracedLLMService,
     toolExecutor: tracedToolExecutor,
-    conversationHistory: tracedConversationHistory,
-    conversationContext: tracedConversationContext,
+    observability: observabilityService,
+  });
+
+  // Create conversation flow with traced dependencies
+  const conversationFlow = createConversationFlow({
+    agent: defaultAgent,
+    toolExecutor: tracedToolExecutor,
     onProgress: config.observability.debug 
       ? async (msg) => console.log(`[Progress] ${msg.type}: ${msg.content}`)
       : undefined,

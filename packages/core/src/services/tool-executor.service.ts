@@ -72,7 +72,7 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
       if (observability) {
         const toolTrace: ToolTrace = {
           toolName: toolCall.toolName,
-          parameters: toolCall.args,
+          parameters: toolCall.args as Record<string, any>,
           result: { error: `Tool '${toolCall.toolName}' not found` },
           duration: Date.now() - startTime,
           error: `Tool '${toolCall.toolName}' not found`,
@@ -115,7 +115,7 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
       if (observability) {
         const toolTrace: ToolTrace = {
           toolName: toolCall.toolName,
-          parameters: toolCall.args,
+          parameters: toolCall.args as Record<string, any>,
           result,
           duration: Date.now() - startTime,
           metadata: {
@@ -138,7 +138,7 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
       if (observability) {
         const toolTrace: ToolTrace = {
           toolName: toolCall.toolName,
-          parameters: toolCall.args,
+          parameters: toolCall.args as Record<string, any>,
           result: { error: errorMessage },
           duration: Date.now() - startTime,
           error: errorMessage,
@@ -183,7 +183,7 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
     
     // Record batch completion
     if (observability) {
-      const successCount = results.filter(r => !r.result.error).length;
+      const successCount = results.filter(r => !(r.result as any).error).length;
       await observability.recordEvent("tool_batch_complete", {
         toolCount: toolCalls.length,
         successCount,
