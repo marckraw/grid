@@ -156,67 +156,17 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
   };
   
   /**
-   * Send a message and wait for a complete response (including tool execution)
-   * This is useful when you want to ensure all tool calls are resolved
+   * Send a message and wait for a complete response
+   * The agent handles all tool execution internally, so we just send and receive
+   * This respects the agent's autonomy and encapsulation
    */
   const sendMessageWithToolResolution = async (
     userMessage: string,
-    maxToolRounds: number = 3
+    maxToolRounds: number = 3 // Kept for API compatibility, not used
   ): Promise<SendMessageResult> => {
-    let rounds = 0;
-    let lastResult = await sendMessage(userMessage);
-    
-    // Continue processing if there are tool calls
-    while (
-      rounds < maxToolRounds && 
-      lastResult.response.toolCalls && 
-      lastResult.response.toolCalls.length > 0 &&
-      !lastResult.conversationEnded &&
-      lastResult.response.metadata?.toolResponses
-    ) {
-      rounds++;
-      
-      try {
-        // Get agent to process the tool responses without adding a new user message
-        const response = await agent.act({
-          messages: manager.getMessages(),
-          context: {
-            userMessage: "", // Empty user message for continuation
-            state: {
-              ...manager.getState(),
-              turnCount,
-              continuingToolExecution: true,
-            },
-          },
-        });
-        
-        // Process response (updates history and context)
-        await manager.processAgentResponse(response);
-        
-        // Call message callback if provided
-        if (onMessage) {
-          await onMessage(response);
-        }
-        
-        lastResult = {
-          response,
-          conversationEnded: !isActive,
-        };
-      } catch (error) {
-        const err = error instanceof Error ? error : new Error(String(error));
-        
-        if (onError) {
-          await onError(err);
-        }
-        
-        return {
-          response: { role: "assistant", content: null },
-          error: err,
-        };
-      }
-    }
-    
-    return lastResult;
+    // Agent is responsible for all tool execution
+    // We just send the message and trust the agent to handle everything
+    return sendMessage(userMessage);
   };
   
   /**

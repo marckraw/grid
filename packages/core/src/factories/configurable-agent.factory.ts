@@ -216,6 +216,8 @@ export const createConfigurableAgent = ({
               }
             );
 
+            console.log("toolResponses", toolResponses);
+
             // Add tool responses to the response metadata
             response = {
               ...response,
