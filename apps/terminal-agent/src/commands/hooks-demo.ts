@@ -3,9 +3,10 @@ import color from "picocolors";
 import {
   createConfigurableAgent,
   type CustomHandlers,
-  type Tool,
+  createNamedTool,
   createToolExecutor,
 } from "@mrck-labs/grid-core";
+import { z } from "zod";
 import {
   textWithCancel,
   isCancel,
@@ -30,27 +31,16 @@ export async function exploreHooksDemo(): Promise<void> {
   if (isCancel(task)) return;
 
   // Create a simple calculator tool for demonstration
-  const calculatorTool: Tool = {
+  const calculatorTool = createNamedTool({
     name: "calculator",
     description: "Perform basic arithmetic operations",
-    parameters: {
-      type: "object",
-      properties: {
-        operation: {
-          type: "string",
-          enum: ["add", "subtract", "multiply", "divide"],
-          description: "The operation to perform",
-        },
-        numbers: {
-          type: "array",
-          items: { type: "number" },
-          description: "The numbers to operate on",
-        },
-      },
-      required: ["operation", "numbers"],
-    },
-    execute: async (params) => {
-      const { operation, numbers } = params;
+    parameters: z.object({
+      operation: z.enum(["add", "subtract", "multiply", "divide"])
+        .describe("The operation to perform"),
+      numbers: z.array(z.number())
+        .describe("The numbers to operate on"),
+    }),
+    execute: async ({ operation, numbers }) => {
       let result: number;
       
       switch (operation) {
@@ -67,24 +57,15 @@ export async function exploreHooksDemo(): Promise<void> {
           result = numbers.reduce((a: number, b: number) => a / b);
           break;
         default:
-          return {
-            success: false,
-            error: { message: `Unknown operation: ${operation}` },
-          };
+          return { error: `Unknown operation: ${operation}` };
       }
       
-      return {
-        success: true,
-        data: { result, operation, numbers },
-      };
+      return { result, operation, numbers };
     },
-  };
+  });
 
   // Create tool executor and register the calculator tool
-  const toolExecutor = createToolExecutor({
-    validateBeforeExecute: true,
-    formatErrors: true,
-  });
+  const toolExecutor = createToolExecutor();
   
   toolExecutor.registerTool(calculatorTool);
 
@@ -144,7 +125,7 @@ export async function exploreHooksDemo(): Promise<void> {
       hookLog.push("🟢 afterResponse: Post-processing response");
       p.log.info(color.green("🟢 Hook: afterResponse triggered"));
       p.log.message(color.dim(`  Response length: ${response.content.length}`));
-      p.log.message(color.dim(`  Has tool calls: ${!!response.tool_calls?.length}`));
+      p.log.message(color.dim(`  Has tool calls: ${!!response.toolCalls?.length}`));
       
       // Add metadata about processing
       return {
@@ -191,7 +172,7 @@ export async function exploreHooksDemo(): Promise<void> {
       // Add summary to output
       const summary = {
         responseLength: output.content.length,
-        hadToolCalls: !!output.tool_calls?.length,
+        hadToolCalls: !!output.toolCalls?.length,
         metadata: output.metadata,
       };
       
@@ -283,10 +264,10 @@ export async function exploreHooksDemo(): Promise<void> {
     p.log.success(color.green("\n📝 Agent Response:"));
     p.log.message(response.content);
 
-    if (response.tool_calls?.length) {
-      p.log.info(color.blue(`\n🔧 Tool calls made: ${response.tool_calls.length}`));
-      for (const toolCall of response.tool_calls) {
-        p.log.message(color.dim(`  - ${toolCall.function.name}`));
+    if (response.toolCalls?.length) {
+      p.log.info(color.blue(`\n🔧 Tool calls made: ${response.toolCalls.length}`));
+      for (const toolCall of response.toolCalls) {
+        p.log.message(color.dim(`  - ${toolCall.toolName}`));
       }
     }
 
