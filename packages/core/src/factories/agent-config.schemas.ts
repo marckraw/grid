@@ -25,7 +25,7 @@ export const AgentPromptsSchema = z.object({
 export const AgentToolsSchema = z.object({
   builtin: z.array(z.string()).default([]), // Names of built-in tools
   custom: z.array(z.custom<Tool<any, any>>()).default([]), // Custom tool instances
-  mcp: z.array(z.string()).optional(), // MCP server tools
+  mcp: z.array(z.custom<Tool<any, any>>()).default([]), // MCP server tool instances
   agents: z.array(AgentTypeSchema).optional(), // Other agents as tools
 });
 

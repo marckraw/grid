@@ -56,7 +56,8 @@ export const createConfigurableAgent = ({
   // Prepare available tools from config
   const availableTools: Tool<any, any>[] = [
     ...(config.tools?.custom || []),
-    // TODO: Adapt builtin, MCP and agent tools
+    ...(config.tools?.mcp || []),
+    // TODO: Adapt builtin and agent tools
   ];
 
   return {
