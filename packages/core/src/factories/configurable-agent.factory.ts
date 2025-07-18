@@ -204,6 +204,10 @@ export const createConfigurableAgent = ({
             response.toolCalls.length > 0 &&
             toolExecutor
           ) {
+            console.log(
+              "[createConfigurableAgent:act] tool calls",
+              response.toolCalls
+            );
             // Execute tools and get responses (ensure args is always present)
             const toolCallsWithArgs = response.toolCalls.map((tc) => ({
               ...tc,
@@ -214,6 +218,11 @@ export const createConfigurableAgent = ({
               {
                 agentId: config.id,
               }
+            );
+
+            console.log(
+              "[createConfigurableAgent:act] tool responses",
+              toolResponses
             );
 
             // Add tool responses to the response metadata

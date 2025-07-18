@@ -23,8 +23,6 @@ export const baseLLMService = (): LLMService => {
     console.log("[baseLLMService:runLLM] passed options", options);
     console.log("[baseLLMService:runLLM] model", model);
 
-    console.log("[baseLLMService:runLLM] get current time tool", tools[1]);
-
     // Convert messages to Vercel AI SDK format
     const formattedMessages = messages.map((msg) => {
       if (msg.role === "tool") {

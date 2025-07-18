@@ -33,7 +33,7 @@ export async function exploreAgentPrimitives(): Promise<void> {
 
   // Create tool executor and register tools
   const toolExecutor = createToolExecutor();
-  
+
   // Register our tools with the executor
   toolExecutor.registerTool(calculatorTool);
   toolExecutor.registerTool(currentTimeTool);
@@ -108,11 +108,17 @@ export async function exploreAgentPrimitives(): Promise<void> {
     }
   }
 
+  console.log("[agent.ts] response:", response);
+  console.log(
+    "[agent.ts] response.metadata.toolResponses:",
+    response.metadata?.toolResponses
+  );
+
   // Display tool responses if any
   if (response.metadata?.toolResponses) {
     p.log.step("Tool responses:");
     for (const toolResponse of response.metadata.toolResponses) {
-      p.log.info(`  - ${toolResponse.name}: ${toolResponse.content}`);
+      p.log.info(`  - ${toolResponse.toolName}: ${toolResponse.result}`);
     }
   }
 
