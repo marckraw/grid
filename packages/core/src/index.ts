@@ -53,7 +53,6 @@ export const mergeConfigs = (
 // Export agent-flow service and types
 export { agentFlowService } from "./services/agent-flow.service.js";
 export { createConfigurableAgent } from "./factories/configurable-agent.factory.js";
-export { createToolExecutor } from "./services/tool-executor.service.js";
 export type {
   AgentFlowContext,
   ChatMessage,
@@ -66,11 +65,15 @@ export type {
 export type {
   Tool,
   ToolCall,
-  ToolResponse,
   ToolResult,
-  ToolExecutorOptions,
 } from "./types/tool.types.js";
-export { createTool, formatToolForLLM } from "./types/tool.types.js";
+export { 
+  createTool, 
+  createNamedTool,
+  isTool,
+  prepareToolsForSDK
+} from "./types/tool.types.js";
+export { createToolExecutor } from "./services/tool-executor.service.js";
 export type { ToolExecutor } from "./services/tool-executor.service.js";
 
 // Export hook types
