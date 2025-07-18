@@ -3,21 +3,20 @@ import {
   createConfigurableAgent,
   createToolExecutor,
   createConversationFlow,
+  type ConversationFlow,
 } from "@mrck-labs/grid-core";
 import { textWithCancel, isCancel } from "../utils/prompts.js";
 import { createSpinner } from "../utils/spinners.js";
 import { calculatorTool } from "../tools/demo-tools/calculator.tool.js";
 import { currentTimeTool } from "../tools/demo-tools/current-time.tool.js";
+import { createImageTool } from "../tools/demo-tools/create-image.tool.js";
 import pc from "picocolors";
-import { writeFile } from "fs/promises";
-import path from "path";
+import { saveConversation } from "./helpers/conversation.helper.js";
 
 export async function exploreAgentConversation(): Promise<void> {
   p.intro(pc.cyan("🤖 Agent Conversation Mode"));
   p.log.info("Chat with an AI assistant. Type 'exit' to end the conversation.");
-  p.log.info(
-    "The assistant can use tools like calculator and time checking."
-  );
+  p.log.info("The assistant can use tools like calculator and time checking.");
   p.log.info(
     pc.dim("💾 Conversation is automatically saved to conversation.json\n")
   );
@@ -26,6 +25,7 @@ export async function exploreAgentConversation(): Promise<void> {
   const toolExecutor = createToolExecutor();
   toolExecutor.registerTool(calculatorTool);
   toolExecutor.registerTool(currentTimeTool);
+  toolExecutor.registerTool(createImageTool);
 
   // Create configurable agent
   const agent = createConfigurableAgent({
@@ -63,27 +63,10 @@ Be concise but friendly in your responses.`,
       orchestration: {},
     },
     additionalTools: {
-      local: [calculatorTool, currentTimeTool],
+      local: [calculatorTool, currentTimeTool, createImageTool],
     },
     toolExecutor: toolExecutor,
   });
-
-  // Helper function to save conversation to file
-  const saveConversation = async () => {
-    try {
-      const conversationData = conversation.exportConversation();
-      const filePath = path.join(process.cwd(), "conversation.json");
-      await writeFile(filePath, JSON.stringify(conversationData, null, 2), "utf-8");
-      
-      if (process.env.DEBUG) {
-        p.log.info(pc.dim(`💾 Conversation saved to ${filePath}`));
-      }
-    } catch (error) {
-      if (process.env.DEBUG) {
-        p.log.error(`Failed to save conversation: ${error}`);
-      }
-    }
-  };
 
   // Create conversation flow with progress streaming
   const conversation = createConversationFlow({
@@ -193,7 +176,9 @@ Be concise but friendly in your responses.`,
       p.log.info("  /export - Export conversation to JSON");
       p.log.info("  /help - Show this help message");
       p.log.info("  exit/quit - End the conversation");
-      p.log.info(pc.dim("\n💾 Note: Conversation is auto-saved to conversation.json"));
+      p.log.info(
+        pc.dim("\n💾 Note: Conversation is auto-saved to conversation.json")
+      );
       console.log(""); // Empty line
       continue;
     }
@@ -207,7 +192,7 @@ Be concise but friendly in your responses.`,
     spinner.stop();
 
     // Auto-save conversation after each message
-    await saveConversation();
+    await saveConversation(conversation);
 
     // Check if conversation ended
     if (result.conversationEnded) {
@@ -220,9 +205,9 @@ Be concise but friendly in your responses.`,
 
   // End conversation and show summary
   await conversation.endConversation();
-  
+
   // Save final conversation state
-  await saveConversation();
+  await saveConversation(conversation);
 
   const summary = conversation.getSummary();
   const analytics = conversation.getAnalytics();
