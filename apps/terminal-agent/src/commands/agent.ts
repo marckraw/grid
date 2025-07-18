@@ -60,7 +60,7 @@ export async function exploreAgentPrimitives(): Promise<void> {
       },
       tools: {
         builtin: [],
-        custom: [],
+        custom: [calculatorTool, currentTimeTool],
         mcp: [],
         agents: [],
       },
@@ -71,10 +71,6 @@ export async function exploreAgentPrimitives(): Promise<void> {
         emitEvents: [],
       },
       orchestration: {},
-    },
-    // Pass tools if this is a tooled agent
-    additionalTools: {
-      local: [calculatorTool, currentTimeTool],
     },
     // Pass the tool executor to enable tool execution
     toolExecutor: toolExecutor,

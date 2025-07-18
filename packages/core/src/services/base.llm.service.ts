@@ -9,10 +9,20 @@ import { openai } from "@ai-sdk/openai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 
-export const baseLLMService = (): LLMService => {
+export interface BaseLLMServiceConfig {
+  toolExecutionMode?: "vercel-native" | "custom" | "none";
+  defaultModel?: string;
+}
+
+export const baseLLMService = (config: BaseLLMServiceConfig = {}): LLMService => {
+  const { 
+    toolExecutionMode = "custom", // Default to custom execution
+    defaultModel = "gpt-4.1"
+  } = config;
+
   const runLLM = async (options: LLMServiceOptions): Promise<ChatMessage> => {
     const {
-      model = "gpt-4.1",
+      model = defaultModel,
       messages,
       tools = [],
       temperature = 0.1,
@@ -66,7 +76,7 @@ export const baseLLMService = (): LLMService => {
     });
 
     // Format tools for Vercel AI SDK
-    const formattedTools = tools.length > 0 ? formatTools(tools) : undefined;
+    const formattedTools = tools.length > 0 ? formatTools(tools, toolExecutionMode) : undefined;
 
     try {
       // Determine the provider based on the model name
@@ -78,9 +88,21 @@ export const baseLLMService = (): LLMService => {
         model: modelInstance,
         messages: formattedMessages,
         tools: formattedTools,
+        toolChoice: "auto", // Let model decide when to use tools
         temperature,
         maxTokens,
+        maxSteps: toolExecutionMode === "vercel-native" ? 3 : 1, // Enable multi-step for vercel-native
       });
+
+      // Log what we got from Vercel
+      if (toolExecutionMode === "vercel-native") {
+        console.log("[baseLLMService] Vercel result:", {
+          text: result.text,
+          toolCalls: result.toolCalls,
+          toolResults: result.toolResults,
+          finishReason: result.finishReason,
+        });
+      }
 
       // Convert response back to our ChatMessage format
       const response: ChatMessage = {
@@ -93,6 +115,13 @@ export const baseLLMService = (): LLMService => {
         response.toolCalls = result.toolCalls;
       }
 
+      // If vercel-native and we have tool results, add them to metadata
+      if (toolExecutionMode === "vercel-native" && result.toolResults) {
+        response.metadata = {
+          toolResults: result.toolResults,
+        };
+      }
+
       return response;
     } catch (error) {
       console.error("Error calling Vercel AI SDK:", error);
@@ -103,7 +132,7 @@ export const baseLLMService = (): LLMService => {
   const runLLMWithJSONResponse = async (
     options: LLMServiceOptions
   ): Promise<ChatMessage> => {
-    const { model = "gpt-4", messages, temperature = 0.1, maxTokens } = options;
+    const { model = defaultModel, messages, temperature = 0.1, maxTokens } = options;
 
     // Convert messages to Vercel AI SDK format
     const formattedMessages = messages.map((msg) => ({
@@ -147,13 +176,24 @@ export const baseLLMService = (): LLMService => {
     }
   };
 
-  const formatTools = (tools: any[]) => {
+  const formatTools = (tools: any[], executionMode: string = "custom") => {
     // Convert array of tools to object keyed by tool name
     // This is what Vercel AI SDK expects
     return tools.reduce((acc, tool) => {
       if (tool.name) {
         const { name, ...toolWithoutName } = tool;
-        acc[name] = toolWithoutName;
+        
+        if (executionMode === "vercel-native") {
+          // Keep execute function for Vercel to auto-execute
+          acc[name] = toolWithoutName;
+        } else {
+          // Remove execute function for custom execution
+          const { execute, ...toolWithoutExecute } = toolWithoutName;
+          acc[name] = {
+            description: toolWithoutExecute.description,
+            parameters: toolWithoutExecute.parameters,
+          };
+        }
       }
       return acc;
     }, {} as Record<string, any>);
@@ -162,10 +202,10 @@ export const baseLLMService = (): LLMService => {
   const isAvailable = async (): Promise<boolean> => {
     try {
       // Simple test to check if the API is accessible
-      // Try with the default model or OpenAI as fallback
-      const testModel = process.env.DEFAULT_MODEL?.startsWith("claude")
-        ? anthropic("claude-3-haiku-20240307")
-        : openai("gpt-4.1");
+      // Use configured default model
+      const testModel = defaultModel.startsWith("claude")
+        ? anthropic(defaultModel)
+        : openai(defaultModel);
 
       await generateText({
         model: testModel,

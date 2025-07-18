@@ -30,17 +30,9 @@ export interface CustomHandlers {
   transformOutput?: (output: AgentResponse) => Promise<AgentResponse>;
 }
 
-// Additional tools that can be passed
-export interface AdditionalTools {
-  local?: Tool<any, any>[];
-  mcp?: any[]; // MCP tools will be adapted
-  agents?: any[]; // Agent tools will be adapted
-}
-
 export interface CreateConfigurableAgentOptions {
   config: AgentConfig;
   customHandlers?: CustomHandlers;
-  additionalTools?: AdditionalTools;
   llmService?: LLMService;
   toolExecutor?: ToolExecutor;
 }
@@ -51,7 +43,6 @@ export interface CreateConfigurableAgentOptions {
 export const createConfigurableAgent = ({
   config,
   customHandlers = {},
-  additionalTools = {},
   llmService,
   toolExecutor,
 }: CreateConfigurableAgentOptions): Agent => {
@@ -62,10 +53,11 @@ export const createConfigurableAgent = ({
     llmService,
   });
 
-  // Prepare available tools
+  // Prepare available tools from config
   const availableTools: Tool<any, any>[] = [
-    ...(additionalTools.local || []),
-    // TODO: Adapt MCP and agent tools
+    ...(config.tools?.custom || []),
+    ...(config.tools?.mcp || []),
+    // TODO: Adapt builtin and agent tools
   ];
 
   return {
@@ -108,8 +100,8 @@ export const createConfigurableAgent = ({
             );
           }
 
-          // Prepare messages with system prompt
-          const messages = [
+          // Prepare initial messages with system prompt
+          let workingMessages = [
             { role: "system" as const, content: config.prompts.system },
             ...processedInput.messages,
           ];
@@ -117,46 +109,108 @@ export const createConfigurableAgent = ({
           // Tools are already in Vercel AI SDK format
           const formattedTools = availableTools;
 
-          // Call LLM based on response format
-          let response: AgentResponse;
+          // Internal loop for handling tool calls
+          let response: AgentResponse = { role: "assistant", content: null };
+          const maxToolRounds = 3; // Configurable limit for tool rounds
+          let toolRound = 0;
 
-          try {
-            // Execute LLM call with tools
-            const llmResponse = await base.llmService.runLLM({
-              model: "claude-3-haiku-20240307",
-              messages,
-              tools: formattedTools.length > 0 ? formattedTools : undefined,
-              // Add any additional LLM options from config
-              ...(config.customConfig?.llmOptions || {}),
-            });
+          while (toolRound < maxToolRounds) {
+            toolRound++;
 
-            response = llmResponse;
-          } catch (llmError) {
-            // Hook: onError for LLM errors
-            if (customHandlers.onError) {
-              const errorResult = await customHandlers.onError(
-                llmError as Error,
-                attempt
-              );
-              if (errorResult && errorResult.retry && attempt < maxRetries) {
-                if (errorResult.modifiedInput) {
-                  processedInput = errorResult.modifiedInput;
+            try {
+              // Execute LLM call with tools
+              const llmResponse = await base.llmService.runLLM({
+                messages: workingMessages,
+                tools: formattedTools.length > 0 ? formattedTools : undefined,
+                // Add any additional LLM options from config
+                ...(config.customConfig?.llmOptions || {}),
+              });
+
+              response = llmResponse;
+            } catch (llmError) {
+              // Hook: onError for LLM errors
+              if (customHandlers.onError) {
+                const errorResult = await customHandlers.onError(
+                  llmError as Error,
+                  attempt
+                );
+                if (errorResult && errorResult.retry && attempt < maxRetries) {
+                  if (errorResult.modifiedInput) {
+                    processedInput = errorResult.modifiedInput;
+                  }
+                  continue; // Retry outer loop
                 }
-                continue; // Retry
               }
+              throw llmError;
             }
-            throw llmError;
+
+            // Hook: afterResponse
+            if (customHandlers.afterResponse) {
+              response = await customHandlers.afterResponse(
+                response,
+                processedInput
+              );
+            }
+
+            // If no tool calls, we're done
+            if (!response.toolCalls || response.toolCalls.length === 0) {
+              break;
+            }
+
+            // If we have a tool executor, use it (custom mode)
+            // Otherwise, assume the LLM service handled it (vercel-native mode)
+            if (toolExecutor) {
+              // Execute tool calls with our tool executor
+              console.log("toolExecutor: tool calls stuff");
+              console.log(response.toolCalls);
+              // Execute tools and get responses (ensure args is always present)
+              const toolCallsWithArgs = response.toolCalls.map((tc) => ({
+                ...tc,
+                args: tc.args ?? {},
+              }));
+              const toolResponses = await toolExecutor.executeToolCalls(
+                toolCallsWithArgs,
+                {
+                  agentId: config.id,
+                }
+              );
+
+              console.log("toolResponses", toolResponses);
+
+              // Add assistant message with tool calls to working messages
+              workingMessages.push({
+                role: "assistant" as const,
+                content: response.content,
+                toolCalls: response.toolCalls,
+              });
+
+              // Add tool responses to working messages
+              for (const toolResponse of toolResponses) {
+                workingMessages.push({
+                  role: "tool" as const,
+                  content: JSON.stringify(toolResponse.result),
+                  tool_call_id: toolResponse.toolCallId,
+                  tool_name: toolResponse.toolName,
+                });
+              }
+
+              // Add tool responses to the response metadata
+              response = {
+                ...response,
+                metadata: {
+                  ...(response.metadata || {}),
+                  toolResponses,
+                },
+              };
+
+              // Continue loop to get final response from LLM
+            } else {
+              // No tool executor, assume LLM service handled it
+              break;
+            }
           }
 
-          // Hook: afterResponse
-          if (customHandlers.afterResponse) {
-            response = await customHandlers.afterResponse(
-              response,
-              processedInput
-            );
-          }
-
-          // Hook: validateResponse
+          // Hook: validateResponse (only validate final response)
           if (
             customHandlers.validateResponse ||
             config.behavior?.validateResponse
@@ -197,34 +251,6 @@ export const createConfigurableAgent = ({
               }
               throw validationError;
             }
-          }
-
-          // Execute tool calls if present and tool executor is provided
-          if (
-            response.toolCalls &&
-            response.toolCalls.length > 0 &&
-            toolExecutor
-          ) {
-            // Execute tools and get responses (ensure args is always present)
-            const toolCallsWithArgs = response.toolCalls.map((tc) => ({
-              ...tc,
-              args: tc.args ?? {},
-            }));
-            const toolResponses = await toolExecutor.executeToolCalls(
-              toolCallsWithArgs,
-              {
-                agentId: config.id,
-              }
-            );
-
-            // Add tool responses to the response metadata
-            response = {
-              ...response,
-              metadata: {
-                ...(response.metadata || {}),
-                toolResponses,
-              },
-            };
           }
 
           // Hook: transformOutput

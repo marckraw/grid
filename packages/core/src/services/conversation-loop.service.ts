@@ -1,5 +1,7 @@
 import type { Agent, AgentResponse } from "../types/agent.types.js";
 import type { ToolExecutor } from "./tool-executor.service.js";
+import type { ProgressMessage } from "../types/progress.types.js";
+import { createProgressMessage } from "../types/progress.types.js";
 import { 
   createConversationManager, 
   type ConversationManagerOptions 
@@ -15,6 +17,7 @@ export interface ConversationLoopOptions {
   onMessage?: (response: AgentResponse) => Promise<void>;
   onError?: (error: Error) => Promise<void>;
   onComplete?: (summary: any) => Promise<void>;
+  onProgress?: (message: ProgressMessage) => Promise<void>;
   maxTurns?: number; // Optional limit on conversation turns
 }
 
@@ -34,7 +37,7 @@ export interface SendMessageResult {
  * including agent interactions, tool execution, and state management.
  */
 export const createConversationLoop = (options: ConversationLoopOptions) => {
-  const { agent, toolExecutor, onMessage, onError, onComplete } = options;
+  const { agent, toolExecutor, onMessage, onError, onComplete, onProgress } = options;
   
   // Create conversation manager
   const manager = createConversationManager(options.conversationOptions);
@@ -42,6 +45,20 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
   // Track conversation state
   let turnCount = 0;
   let isActive = true;
+  
+  /**
+   * Send a progress update if handler is provided
+   */
+  const sendProgress = async (
+    type: ProgressMessage["type"],
+    content: string,
+    metadata?: Record<string, any>
+  ) => {
+    if (onProgress) {
+      const message = createProgressMessage(type, content, metadata);
+      await onProgress(message);
+    }
+  };
   
   /**
    * Send a message and get response
@@ -62,6 +79,12 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
       // Add user message
       manager.addUserMessage(userMessage);
       
+      // Send thinking progress
+      await sendProgress("thinking", `Processing message (turn ${turnCount})`, {
+        turnCount,
+        userMessage,
+      });
+      
       // Get agent response with full conversation history
       const response = await agent.act({
         messages: manager.getMessages(),
@@ -74,8 +97,24 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
         },
       });
       
+      // Send LLM response progress
+      await sendProgress("llm_response", "Received response from agent", {
+        hasContent: !!response.content,
+        hasToolCalls: !!(response.toolCalls && response.toolCalls.length > 0),
+      });
+      
       // Process response (updates history and context)
       await manager.processAgentResponse(response);
+      
+      // Send tool execution progress if tools were executed
+      if (response.metadata?.toolResponses) {
+        for (const toolResponse of response.metadata.toolResponses) {
+          await sendProgress("tool_execution", `Tool executed: ${toolResponse.toolName}`, {
+            toolName: toolResponse.toolName,
+            toolCallId: toolResponse.toolCallId,
+          });
+        }
+      }
       
       // Call message callback if provided
       if (onMessage) {
@@ -99,6 +138,12 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
       // Handle errors
       const err = error instanceof Error ? error : new Error(String(error));
       
+      // Send error progress
+      await sendProgress("error", `Error in conversation: ${err.message}`, {
+        error: err.message,
+        turnCount,
+      });
+      
       if (onError) {
         await onError(err);
       }
@@ -111,67 +156,17 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
   };
   
   /**
-   * Send a message and wait for a complete response (including tool execution)
-   * This is useful when you want to ensure all tool calls are resolved
+   * Send a message and wait for a complete response
+   * The agent handles all tool execution internally, so we just send and receive
+   * This respects the agent's autonomy and encapsulation
    */
   const sendMessageWithToolResolution = async (
     userMessage: string,
-    maxToolRounds: number = 3
+    maxToolRounds: number = 3 // Kept for API compatibility, not used
   ): Promise<SendMessageResult> => {
-    let rounds = 0;
-    let lastResult = await sendMessage(userMessage);
-    
-    // Continue processing if there are tool calls
-    while (
-      rounds < maxToolRounds && 
-      lastResult.response.toolCalls && 
-      lastResult.response.toolCalls.length > 0 &&
-      !lastResult.conversationEnded &&
-      lastResult.response.metadata?.toolResponses
-    ) {
-      rounds++;
-      
-      try {
-        // Get agent to process the tool responses without adding a new user message
-        const response = await agent.act({
-          messages: manager.getMessages(),
-          context: {
-            userMessage: "", // Empty user message for continuation
-            state: {
-              ...manager.getState(),
-              turnCount,
-              continuingToolExecution: true,
-            },
-          },
-        });
-        
-        // Process response (updates history and context)
-        await manager.processAgentResponse(response);
-        
-        // Call message callback if provided
-        if (onMessage) {
-          await onMessage(response);
-        }
-        
-        lastResult = {
-          response,
-          conversationEnded: !isActive,
-        };
-      } catch (error) {
-        const err = error instanceof Error ? error : new Error(String(error));
-        
-        if (onError) {
-          await onError(err);
-        }
-        
-        return {
-          response: { role: "assistant", content: null },
-          error: err,
-        };
-      }
-    }
-    
-    return lastResult;
+    // Agent is responsible for all tool execution
+    // We just send the message and trust the agent to handle everything
+    return sendMessage(userMessage);
   };
   
   /**
@@ -182,8 +177,15 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
     
     isActive = false;
     
+    // Send finished progress
+    const summary = manager.getSummary();
+    await sendProgress("finished", "Conversation ended", {
+      totalMessages: summary.messageCount,
+      duration: summary.duration,
+    });
+    
     if (onComplete) {
-      await onComplete(manager.getSummary());
+      await onComplete(summary);
     }
   };
   
