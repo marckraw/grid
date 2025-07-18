@@ -14,6 +14,7 @@ import { currentTimeTool } from "../tools/demo-tools/current-time.tool.js";
 import { createImageTool } from "../tools/demo-tools/create-image.tool.js";
 import pc from "picocolors";
 import { saveConversation } from "./helpers/conversation.helper.js";
+import { Experimental_StdioMCPTransport } from "ai/mcp-stdio";
 
 export async function exploreAgentConversation(): Promise<void> {
   p.intro(pc.cyan("🤖 Agent Conversation Mode"));
@@ -24,7 +25,9 @@ export async function exploreAgentConversation(): Promise<void> {
 
   // Check if MCP server should be connected
   let mcpClient: any = null;
+  let linearMcpClient: any = null;
   let mcpTools: Record<string, any> = {};
+  let linearMcpTools: Record<string, any> = {};
 
   console.log("process.env.LINEAR_API_KEY", process.env.LINEAR_API_KEY);
 
@@ -39,6 +42,17 @@ export async function exploreAgentConversation(): Promise<void> {
       },
     });
 
+    const transport = new Experimental_StdioMCPTransport({
+      command: "npx",
+      args: ["-y", "mcp-remote", "https://mcp.linear.app/sse"],
+    });
+
+    linearMcpClient = await createMCPClient({
+      transport: transport,
+    });
+
+    linearMcpTools = await linearMcpClient.tools();
+    console.log("linearMcpTools", linearMcpTools);
     mcpTools = await mcpClient.tools();
     console.log("mcpTools", mcpTools);
     spinner.stop();
@@ -60,6 +74,13 @@ export async function exploreAgentConversation(): Promise<void> {
     ...value,
   }));
 
+  const transformedLinearMcpTools = Object.entries(linearMcpTools).map(
+    ([key, value]) => ({
+      name: key,
+      ...value,
+    })
+  );
+
   // Create tool executor and register tools
   const toolExecutor = createToolExecutor();
 
@@ -72,6 +93,11 @@ export async function exploreAgentConversation(): Promise<void> {
   for (const tool in transformerMcpTools) {
     console.log("tool", transformerMcpTools[tool]);
     toolExecutor.registerTool(transformerMcpTools[tool]);
+  }
+
+  for (const tool in transformedLinearMcpTools) {
+    console.log("tool", transformedLinearMcpTools[tool]);
+    toolExecutor.registerTool(transformedLinearMcpTools[tool]);
   }
 
   // Create configurable agent
@@ -99,7 +125,7 @@ Be concise but friendly in your responses.`,
       tools: {
         builtin: [],
         custom: [calculatorTool, currentTimeTool, createImageTool],
-        mcp: transformerMcpTools,
+        mcp: [...transformerMcpTools, ...transformedLinearMcpTools],
         agents: [],
       },
       behavior: {
