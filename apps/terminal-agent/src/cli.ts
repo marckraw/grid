@@ -6,6 +6,7 @@ import type { MenuOption } from "./types/index.js";
 import { config, validateConfig, displayConfigStatus, hasRequiredApiKeys } from "./config/index.js";
 import {
   exploreAgentPrimitives,
+  exploreAgentConversation,
   exploreWorkflowPrimitives,
   conversationMode,
   exploreToolUsage,
@@ -18,10 +19,11 @@ import {
 
 const menuOptions: MenuOption[] = [
   { value: "agent", label: "🤖 Agent Primitives", hint: "Explore basic agent capabilities" },
+  { value: "agent-conversation", label: "💬 Agent Conversation", hint: "Interactive conversation with tools" },
   { value: "workflow", label: "🔄 Workflow Primitives", hint: "Create and test workflows" },
   { value: "autonomous", label: "🚀 Autonomous Flow", hint: "Run autonomous agent loops" },
   { value: "hooks", label: "🪝 Hooks Demo", hint: "See all agent hooks in action" },
-  { value: "conversation", label: "💬 Conversation Mode", hint: "Interactive agent conversation" },
+  { value: "conversation", label: "📝 Conversation Mode", hint: "Simple text conversation" },
   { value: "tools", label: "🛠️  Tool Usage", hint: "Explore tool-calling capabilities" },
   { value: "collaboration", label: "👥 Agent Collaboration", hint: "Multiple agents working together" },
   { value: "config", label: "⚙️  Configuration", hint: "View and modify Grid settings" },
@@ -31,6 +33,7 @@ const menuOptions: MenuOption[] = [
 
 const commandHandlers: Record<string, () => Promise<void>> = {
   agent: exploreAgentPrimitives,
+  "agent-conversation": exploreAgentConversation,
   workflow: exploreWorkflowPrimitives,
   autonomous: exploreAutonomousFlow,
   hooks: exploreHooksDemo,

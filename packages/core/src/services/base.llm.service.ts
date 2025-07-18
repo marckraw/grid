@@ -20,8 +20,7 @@ export const baseLLMService = (): LLMService => {
       responseFormat,
     } = options;
 
-    console.log("[baseLLMService:runLLM] passed options", options);
-    console.log("[baseLLMService:runLLM] model", model);
+    console.log("[baseLLMService:runLLM] model used", model);
 
     // Convert messages to Vercel AI SDK format
     const formattedMessages = messages.map((msg) => {
@@ -32,19 +31,28 @@ export const baseLLMService = (): LLMService => {
             {
               type: "tool-result" as const,
               toolCallId: msg.tool_call_id!,
-              toolName: "unknown", // Tool name is not available in our message format
+              toolName: msg.tool_name || "unknown",
               result:
-                typeof msg.content === "string" ? msg.content : msg.content,
+                typeof msg.content === "string"
+                  ? JSON.parse(msg.content)
+                  : msg.content,
             },
           ],
         };
       }
 
       if (msg.toolCalls) {
+        // Convert toolCalls to Vercel AI SDK format
+        const toolCallContent = msg.toolCalls.map((toolCall: any) => ({
+          type: "tool-call" as const,
+          toolCallId: toolCall.toolCallId,
+          toolName: toolCall.toolName,
+          args: toolCall.args || {},
+        }));
+
         return {
           role: msg.role as "assistant",
-          content: msg.content || "",
-          toolCalls: msg.toolCalls,
+          content: toolCallContent,
         };
       }
 

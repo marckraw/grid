@@ -78,3 +78,18 @@ export type { ToolExecutor } from "./services/tool-executor.service.js";
 
 // Export hook types
 export type { CustomHandlers } from "./factories/configurable-agent.factory.js";
+
+// Export conversation primitives - atomic level
+export { createConversationHistory } from "./services/conversation-history.service.js";
+export type { ConversationHistory, ConversationHistoryOptions } from "./services/conversation-history.service.js";
+
+export { createConversationContext } from "./services/conversation-context.service.js";
+export type { ConversationContext, ConversationContextOptions } from "./services/conversation-context.service.js";
+
+// Export conversation primitives - composed level
+export { createConversationManager } from "./services/conversation-manager.service.js";
+export type { ConversationManager, ConversationManagerOptions } from "./services/conversation-manager.service.js";
+
+// Export conversation primitives - organism level
+export { createConversationLoop } from "./services/conversation-loop.service.js";
+export type { ConversationLoop, ConversationLoopOptions, SendMessageResult } from "./services/conversation-loop.service.js";

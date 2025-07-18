@@ -14,6 +14,7 @@ export const ChatMessageSchema = z.object({
   content: z.any(), // Can be string, null, or structured content
   toolCalls: z.array(ToolCallSchema).optional(), // Vercel AI SDK uses camelCase
   tool_call_id: z.string().optional(), // For tool responses
+  tool_name: z.string().optional(), // Tool name for tool responses
   metadata: z.record(z.string(), z.any()).optional(), // Optional metadata
 });
 

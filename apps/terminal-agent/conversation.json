@@ -1,0 +1,161 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "hey there"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! It's nice to meet you. How can I assist you today?"
+    },
+    {
+      "role": "user",
+      "content": "my name is marcin and you ?"
+    },
+    {
+      "role": "assistant",
+      "content": "It's great to meet you Marcin! My name is Claude. I'm an AI assistant created by Anthropic. I'm here to help with any questions or tasks you may have. Please let me know if there's anything I can do for you."
+    },
+    {
+      "role": "user",
+      "content": "nice :) lets do some funny excercise, are yopu ready ?"
+    },
+    {
+      "role": "assistant",
+      "content": "Sure, I'm ready for a fun exercise! What did you have in mind? I'm always happy to engage in some lighthearted activities."
+    },
+    {
+      "role": "user",
+      "content": "can you tell me the current time ? and then calculate 2 + 20 for me ?"
+    },
+    {
+      "role": "assistant",
+      "content": "Absolutely, let's do that!",
+      "toolCalls": [
+        {
+          "type": "tool-call",
+          "toolCallId": "toolu_01TmKKonZVfkEKgvYN7UfNSu",
+          "toolName": "getCurrentTime",
+          "args": {
+            "timezone": "UTC"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": "{\"time\":\"Friday, July 18, 2025 at 1:30:44 PM UTC\",\"timezone\":\"UTC\",\"timestamp\":\"2025-07-18T13:30:44.005Z\"}",
+      "tool_call_id": "toolu_01TmKKonZVfkEKgvYN7UfNSu",
+      "tool_name": "getCurrentTime"
+    },
+    {
+      "role": "assistant",
+      "content": "Okay, the current time is 1:30:44 PM UTC.\n\nNow, let's do the calculation:",
+      "toolCalls": [
+        {
+          "type": "tool-call",
+          "toolCallId": "toolu_01YE4Mkvi6r6sYBF89QoEKis",
+          "toolName": "calculator",
+          "args": {
+            "operation": "add",
+            "a": 2,
+            "b": 20
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": "{\"result\":22,\"calculation\":\"2 add 20 = 22\"}",
+      "tool_call_id": "toolu_01YE4Mkvi6r6sYBF89QoEKis",
+      "tool_name": "calculator"
+    },
+    {
+      "role": "assistant",
+      "content": "The current time is Friday, July 18, 2025 at 1:30:44 PM UTC. And the result of 2 + 20 is 22. Let me know if you need anything else!"
+    },
+    {
+      "role": "user",
+      "content": "ok lets calculate the 5+20 and tell me the time now"
+    },
+    {
+      "role": "assistant",
+      "content": "Alright, let's do it!",
+      "toolCalls": [
+        {
+          "type": "tool-call",
+          "toolCallId": "toolu_011R1wENWhm9vhHENqikzmAd",
+          "toolName": "calculator",
+          "args": {
+            "operation": "add",
+            "a": 5,
+            "b": 20
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": "{\"result\":25,\"calculation\":\"5 add 20 = 25\"}",
+      "tool_call_id": "toolu_011R1wENWhm9vhHENqikzmAd",
+      "tool_name": "calculator"
+    },
+    {
+      "role": "assistant",
+      "content": null,
+      "toolCalls": [
+        {
+          "type": "tool-call",
+          "toolCallId": "toolu_01S2eKKQp2YRWxhKExQE4FT6",
+          "toolName": "getCurrentTime",
+          "args": {
+            "timezone": "UTC"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": "{\"time\":\"Friday, July 18, 2025 at 1:31:07 PM UTC\",\"timezone\":\"UTC\",\"timestamp\":\"2025-07-18T13:31:07.848Z\"}",
+      "tool_call_id": "toolu_01S2eKKQp2YRWxhKExQE4FT6",
+      "tool_name": "getCurrentTime"
+    },
+    {
+      "role": "assistant",
+      "content": "The result of 5 + 20 is 25. And the current time is Friday, July 18, 2025 at 1:31:07 PM UTC. Let me know if you need anything else!"
+    }
+  ],
+  "state": {},
+  "metadata": {
+    "lastUserMessageTime": 1752845464409,
+    "lastResponseTime": 1752845468742,
+    "lastResponseMetadata": {
+      "toolResponses": [
+        {
+          "toolCallId": "toolu_01S2eKKQp2YRWxhKExQE4FT6",
+          "toolName": "getCurrentTime",
+          "result": {
+            "time": "Friday, July 18, 2025 at 1:31:07 PM UTC",
+            "timezone": "UTC",
+            "timestamp": "2025-07-18T13:31:07.848Z"
+          }
+        }
+      ]
+    }
+  },
+  "analytics": {
+    "sessionId": "session-1752845406218",
+    "messageCount": 18,
+    "userMessageCount": 5,
+    "assistantMessageCount": 9,
+    "toolMessageCount": 4,
+    "toolCallCount": 4,
+    "duration": 62525,
+    "hasSystemPrompt": false,
+    "turnCount": 5,
+    "isActive": true,
+    "avgUserMessageLength": 42,
+    "hasToolCalls": true
+  },
+  "timestamp": "2025-07-18T13:31:08.743Z"
+}
