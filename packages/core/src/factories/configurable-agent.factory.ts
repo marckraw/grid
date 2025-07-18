@@ -6,7 +6,7 @@ import {
   type AgentActInput,
 } from "../types/agent.types.js";
 import { type LLMService } from "../types/llm.types.js";
-import { type Tool, formatToolForLLM } from "../types/tool.types.js";
+import { type Tool, prepareToolsForSDK } from "../types/tool.types.js";
 import { type ToolExecutor } from "../services/tool-executor.service.js";
 
 // Custom handler types for hooks
@@ -32,8 +32,8 @@ export interface CustomHandlers {
 
 // Additional tools that can be passed
 export interface AdditionalTools {
-  local?: Tool[];
-  mcp?: any[]; // MCP tools will be adapted to Tool interface
+  local?: Tool<any, any>[];
+  mcp?: any[]; // MCP tools will be adapted
   agents?: any[]; // Agent tools will be adapted
 }
 
@@ -63,9 +63,9 @@ export const createConfigurableAgent = ({
   });
 
   // Prepare available tools
-  const availableTools: Tool[] = [
+  const availableTools: Tool<any, any>[] = [
     ...(additionalTools.local || []),
-    // TODO: Adapt MCP and agent tools to Tool interface
+    // TODO: Adapt MCP and agent tools
   ];
 
   return {
@@ -114,8 +114,8 @@ export const createConfigurableAgent = ({
             ...processedInput.messages,
           ];
 
-          // Format tools for LLM
-          const formattedTools = availableTools.map(formatToolForLLM);
+          // Tools are already in Vercel AI SDK format
+          const formattedTools = availableTools;
 
           // Call LLM based on response format
           let response: AgentResponse;
@@ -201,13 +201,17 @@ export const createConfigurableAgent = ({
 
           // Execute tool calls if present and tool executor is provided
           if (
-            response.tool_calls &&
-            response.tool_calls.length > 0 &&
+            response.toolCalls &&
+            response.toolCalls.length > 0 &&
             toolExecutor
           ) {
-            // Execute tools and get responses
+            // Execute tools and get responses (ensure args is always present)
+            const toolCallsWithArgs = response.toolCalls.map(tc => ({
+              ...tc,
+              args: tc.args ?? {}
+            }));
             const toolResponses = await toolExecutor.executeToolCalls(
-              response.tool_calls,
+              toolCallsWithArgs,
               {
                 agentId: config.id,
               }

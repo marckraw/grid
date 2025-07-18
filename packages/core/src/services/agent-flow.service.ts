@@ -5,7 +5,7 @@ import type {
   ProgressMessage,
 } from "../types/index.js";
 import type { ToolExecutor } from "./tool-executor.service.js";
-import type { ToolResponse } from "../types/tool.types.js";
+import type { ToolResult } from "../types/tool.types.js";
 
 export const agentFlowService = () => {
   const testVariable = "test";
@@ -116,15 +116,15 @@ export const agentFlowService = () => {
       conversationHistory.push({
         role: "assistant",
         content: response.content,
-        tool_calls: response.tool_calls,
+        toolCalls: response.toolCalls,
       });
       
       // Check if response has tool calls
-      if (response.tool_calls && response.tool_calls.length > 0) {
+      if (response.toolCalls && response.toolCalls.length > 0) {
         await sendUpdate({
           type: "notification",
-          content: `Agent requested ${response.tool_calls.length} tool call(s)`,
-          metadata: { toolCalls: response.tool_calls },
+          content: `Agent requested ${response.toolCalls.length} tool call(s)`,
+          metadata: { toolCalls: response.toolCalls },
         });
         
         // If continueOnToolCalls is false, stop here
@@ -133,7 +133,7 @@ export const agentFlowService = () => {
           await sendUpdate({
             type: "finished",
             content: "Stopping flow - tool calls require external handling",
-            metadata: { toolCalls: response.tool_calls },
+            metadata: { toolCalls: response.toolCalls },
           });
           break;
         }
@@ -141,9 +141,13 @@ export const agentFlowService = () => {
         // Execute tool calls if tool executor is provided
         if (toolExecutor) {
           try {
-            // Execute all tool calls
+            // Execute all tool calls (ensure args is always present)
+            const toolCallsWithArgs = response.toolCalls.map(tc => ({
+              ...tc,
+              args: tc.args ?? {}
+            }));
             const toolResponses = await toolExecutor.executeToolCalls(
-              response.tool_calls,
+              toolCallsWithArgs,
               {
                 agentId: agent.id,
               }
@@ -151,14 +155,19 @@ export const agentFlowService = () => {
             
             // Add tool responses to conversation history
             for (const toolResponse of toolResponses) {
-              conversationHistory.push(toolResponse as ChatMessage);
+              // Convert ToolResult to ChatMessage format
+              conversationHistory.push({
+                role: "tool",
+                content: JSON.stringify(toolResponse.result),
+                tool_call_id: toolResponse.toolCallId,
+              });
               
               await sendUpdate({
                 type: "tool_execution",
-                content: `Tool executed: ${toolResponse.name}`,
+                content: `Tool executed: ${toolResponse.toolName}`,
                 metadata: { 
-                  toolCallId: toolResponse.tool_call_id,
-                  result: toolResponse.content,
+                  toolCallId: toolResponse.toolCallId,
+                  result: toolResponse.result,
                 },
               });
             }
@@ -166,7 +175,7 @@ export const agentFlowService = () => {
             await sendUpdate({
               type: "error",
               content: `Tool execution failed: ${toolError instanceof Error ? toolError.message : "Unknown error"}`,
-              metadata: { toolCalls: response.tool_calls },
+              metadata: { toolCalls: response.toolCalls },
             });
             
             // Continue despite tool errors for now
@@ -174,10 +183,10 @@ export const agentFlowService = () => {
           }
         } else {
           // No tool executor provided, just log the requests
-          for (const toolCall of response.tool_calls) {
+          for (const toolCall of response.toolCalls) {
             await sendUpdate({
               type: "tool_execution",
-              content: `Tool requested (not executed): ${toolCall.function.name}`,
+              content: `Tool requested (not executed): ${toolCall.toolName}`,
               metadata: { toolCall },
             });
           }
@@ -226,7 +235,7 @@ export const agentFlowService = () => {
       }
       
       // Simple completion check - if no tool calls and no explicit continuation
-      if (!response.tool_calls || response.tool_calls.length === 0) {
+      if (!response.toolCalls || response.toolCalls.length === 0) {
         // If the response doesn't indicate continuation, we might be done
         if (!responseMetadata?.continueFlow) {
           // For now, continue unless explicitly told to stop
