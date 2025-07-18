@@ -8,16 +8,20 @@ import { generateText, tool } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
+import type { ObservabilityService } from "./observability.service.js";
+import type { GenerationTrace } from "../types/observability.types.js";
 
 export interface BaseLLMServiceConfig {
   toolExecutionMode?: "vercel-native" | "custom" | "none";
   defaultModel?: string;
+  observability?: ObservabilityService;
 }
 
 export const baseLLMService = (config: BaseLLMServiceConfig = {}): LLMService => {
   const { 
     toolExecutionMode = "custom", // Default to custom execution
-    defaultModel = "gpt-4.1"
+    defaultModel = "gpt-4.1",
+    observability
   } = config;
 
   const runLLM = async (options: LLMServiceOptions): Promise<ChatMessage> => {
@@ -78,6 +82,8 @@ export const baseLLMService = (config: BaseLLMServiceConfig = {}): LLMService =>
     // Format tools for Vercel AI SDK
     const formattedTools = tools.length > 0 ? formatTools(tools, toolExecutionMode) : undefined;
 
+    const startTime = Date.now();
+    
     try {
       // Determine the provider based on the model name
       const modelInstance = model.startsWith("claude")
@@ -92,6 +98,15 @@ export const baseLLMService = (config: BaseLLMServiceConfig = {}): LLMService =>
         temperature,
         maxTokens,
         maxSteps: toolExecutionMode === "vercel-native" ? 3 : 1, // Enable multi-step for vercel-native
+        experimental_telemetry: observability ? {
+          isEnabled: true,
+          functionId: "baseLLMService.runLLM",
+          metadata: {
+            model,
+            toolExecutionMode,
+            hasTools: tools.length > 0,
+          },
+        } : undefined,
       });
 
       // Log what we got from Vercel
@@ -122,6 +137,30 @@ export const baseLLMService = (config: BaseLLMServiceConfig = {}): LLMService =>
         };
       }
 
+      // Record generation if observability is enabled
+      if (observability && result.usage) {
+        const duration = Date.now() - startTime;
+        const generationTrace: GenerationTrace = {
+          model,
+          prompt: messages, // Could be more sophisticated
+          completion: result.text || "[Tool calls only]",
+          tokens: {
+            prompt: result.usage.promptTokens,
+            completion: result.usage.completionTokens,
+            total: result.usage.totalTokens,
+          },
+          duration,
+          parameters: {
+            temperature,
+            maxTokens,
+            toolChoice: "auto",
+            toolExecutionMode,
+          },
+        };
+        
+        await observability.recordGeneration(generationTrace);
+      }
+
       return response;
     } catch (error) {
       console.error("Error calling Vercel AI SDK:", error);
@@ -143,6 +182,8 @@ export const baseLLMService = (config: BaseLLMServiceConfig = {}): LLMService =>
           : JSON.stringify(msg.content),
     }));
 
+    const startTime = Date.now();
+    
     try {
       // Add system message to ensure JSON response
       const messagesWithJsonInstruction = [
@@ -164,7 +205,38 @@ export const baseLLMService = (config: BaseLLMServiceConfig = {}): LLMService =>
         messages: messagesWithJsonInstruction,
         temperature,
         maxTokens,
+        experimental_telemetry: observability ? {
+          isEnabled: true,
+          functionId: "baseLLMService.runLLMWithJSONResponse",
+          metadata: {
+            model,
+            responseFormat: "json",
+          },
+        } : undefined,
       });
+
+      // Record generation if observability is enabled
+      if (observability && result.usage) {
+        const duration = Date.now() - startTime;
+        const generationTrace: GenerationTrace = {
+          model,
+          prompt: messages,
+          completion: result.text,
+          tokens: {
+            prompt: result.usage.promptTokens,
+            completion: result.usage.completionTokens,
+            total: result.usage.totalTokens,
+          },
+          duration,
+          parameters: {
+            temperature,
+            maxTokens,
+            responseFormat: "json",
+          },
+        };
+        
+        await observability.recordGeneration(generationTrace);
+      }
 
       return {
         role: "assistant",

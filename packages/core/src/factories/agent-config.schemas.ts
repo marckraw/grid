@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { AgentTypeSchema, AgentMetadataSchema } from "../types/agent.types.js";
 import type { Tool } from "../types/tool.types.js";
+import { ObservabilityConfigSchema } from "../types/observability.types.js";
 
 // Tool source types
 export const ToolSourceSchema = z.enum(["local", "mcp", "agent", "external"]);
@@ -98,6 +99,9 @@ export const AgentConfigSchema = z.object({
 
   // Orchestration capabilities
   orchestration: AgentOrchestrationSchema.optional(),
+
+  // Observability configuration
+  observability: ObservabilityConfigSchema.optional(),
 
   // Feature flags
   features: z.record(z.boolean()).optional(),

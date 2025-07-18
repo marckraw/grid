@@ -115,3 +115,42 @@ export type {
 
 export { baseLLMService } from "./services/base.llm.service.js";
 export type { BaseLLMServiceConfig } from "./services/base.llm.service.js";
+
+// Export observability primitives
+export { createObservabilityService } from "./services/observability.service.js";
+export type { ObservabilityService } from "./services/observability.service.js";
+
+export type {
+  TraceContext,
+  SpanContext,
+  TraceEvent,
+  GenerationTrace,
+  ToolTrace,
+  SessionInfo,
+  ObservabilityProvider,
+  ObservabilityConfig,
+  TracedService,
+} from "./types/observability.types.js";
+
+export { 
+  ObservabilityConfigSchema,
+  isTracedService,
+} from "./types/observability.types.js";
+
+// Export observability providers
+export { createLangfuseProvider } from "./providers/langfuse.provider.js";
+export type { LangfuseProviderConfig } from "./providers/langfuse.provider.js";
+
+// Export observability factories
+export { 
+  createTracedService,
+  createTracedServices as createMultipleTracedServices,
+  traced,
+} from "./factories/observability-decorator.factory.js";
+export type { TracedServiceOptions } from "./factories/observability-decorator.factory.js";
+
+export { createTracedServices } from "./factories/traced-services.factory.js";
+export type { 
+  TracedServicesConfig,
+  TracedServices,
+} from "./factories/traced-services.factory.js";
