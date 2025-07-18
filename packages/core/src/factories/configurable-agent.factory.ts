@@ -123,7 +123,6 @@ export const createConfigurableAgent = ({
           try {
             // Execute LLM call with tools
             const llmResponse = await base.llmService.runLLM({
-              model: "claude-3-haiku-20240307",
               messages,
               tools: formattedTools.length > 0 ? formattedTools : undefined,
               // Add any additional LLM options from config
