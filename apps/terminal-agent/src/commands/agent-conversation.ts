@@ -6,7 +6,6 @@ import {
   type ConversationFlow,
   baseLLMService,
 } from "@mrck-labs/grid-core";
-import { experimental_createMCPClient as createMCPClient, type Tool } from "ai";
 import { textWithCancel, isCancel } from "../utils/prompts.js";
 import { createSpinner } from "../utils/spinners.js";
 import { calculatorTool } from "../tools/demo-tools/calculator.tool.js";
@@ -14,7 +13,7 @@ import { currentTimeTool } from "../tools/demo-tools/current-time.tool.js";
 import { createImageTool } from "../tools/demo-tools/create-image.tool.js";
 import pc from "picocolors";
 import { saveConversation } from "./helpers/conversation.helper.js";
-import { Experimental_StdioMCPTransport } from "ai/mcp-stdio";
+import { registerTestMCPTools } from "./helpers/registerTestMcp.js";
 
 export async function exploreAgentConversation(): Promise<void> {
   p.intro(pc.cyan("🤖 Agent Conversation Mode"));
@@ -23,62 +22,11 @@ export async function exploreAgentConversation(): Promise<void> {
     "The assistant can use tools like calculator, time checking, and image generation."
   );
 
-  // Check if MCP server should be connected
-  let mcpClient: any = null;
-  let linearMcpClient: any = null;
-  let mcpTools: Record<string, any> = {};
-  let linearMcpTools: Record<string, any> = {};
-
-  console.log("process.env.LINEAR_API_KEY", process.env.LINEAR_API_KEY);
-
-  const spinner = createSpinner();
-  spinner.start("Connecting to Figma MCP server...");
-
-  try {
-    mcpClient = await createMCPClient({
-      transport: {
-        type: "sse",
-        url: "https://figma-context-mcp-production-a90a.up.railway.app/sse",
-      },
-    });
-
-    const transport = new Experimental_StdioMCPTransport({
-      command: "npx",
-      args: ["-y", "mcp-remote", "https://mcp.linear.app/sse"],
-    });
-
-    linearMcpClient = await createMCPClient({
-      transport: transport,
-    });
-
-    linearMcpTools = await linearMcpClient.tools();
-    console.log("linearMcpTools", linearMcpTools);
-    mcpTools = await mcpClient.tools();
-    console.log("mcpTools", mcpTools);
-    spinner.stop();
-  } catch (error) {
-    spinner.stop();
-    p.log.warn(
-      `Failed to connect to Linear MCP server: ${
-        error instanceof Error ? error.message : String(error)
-      }`
-    );
-  }
+  const { transformerMcpTools, transformedLinearMcpTools } =
+    await registerTestMCPTools();
 
   p.log.info(
     pc.dim("💾 Conversation is automatically saved to conversation.json\n")
-  );
-
-  const transformerMcpTools = Object.entries(mcpTools).map(([key, value]) => ({
-    name: key,
-    ...value,
-  }));
-
-  const transformedLinearMcpTools = Object.entries(linearMcpTools).map(
-    ([key, value]) => ({
-      name: key,
-      ...value,
-    })
   );
 
   // Create tool executor and register tools

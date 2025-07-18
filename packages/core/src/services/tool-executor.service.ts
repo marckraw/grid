@@ -17,10 +17,10 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
     maxRetries: options?.maxRetries ?? 3,
     defaultTimeout: options?.defaultTimeout ?? 30000,
   };
-  
+
   // Registry of tools by name
   const toolRegistry = new Map<string, Tool<any, any>>();
-  
+
   /**
    * Register a tool
    */
@@ -30,28 +30,28 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
     }
     toolRegistry.set(tool.name, tool);
   };
-  
+
   /**
    * Unregister a tool
    */
   const unregisterTool = (toolName: string) => {
     return toolRegistry.delete(toolName);
   };
-  
+
   /**
    * Get all registered tools
    */
   const getAvailableTools = (): Tool<any, any>[] => {
     return Array.from(toolRegistry.values());
   };
-  
+
   /**
    * Get a specific tool
    */
   const getTool = (toolName: string): Tool<any, any> | undefined => {
     return toolRegistry.get(toolName);
   };
-  
+
   /**
    * Execute a single tool call
    */
@@ -60,48 +60,51 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
     context?: { agentId?: string }
   ): Promise<ToolResult> => {
     const tool = toolRegistry.get(toolCall.toolName);
-    
+
     if (!tool) {
       return {
         toolCallId: toolCall.toolCallId,
         toolName: toolCall.toolName,
         result: {
-          error: `Tool '${toolCall.toolName}' not found`
-        }
+          error: `Tool '${toolCall.toolName}' not found`,
+        },
       };
     }
-    
+
     try {
       // Execute the tool with timeout
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Tool execution timed out")), config.defaultTimeout);
+        setTimeout(
+          () => reject(new Error("Tool execution timed out")),
+          config.defaultTimeout
+        );
       });
-      
-      const executePromise = tool.execute ? 
-        tool.execute(toolCall.args, {
-          toolCallId: toolCall.toolCallId,
-          messages: [] // Empty messages for now
-        }) : 
-        Promise.reject(new Error("Tool has no execute function"));
-      
+
+      const executePromise = tool.execute
+        ? tool.execute(toolCall.args, {
+            toolCallId: toolCall.toolCallId,
+            messages: [], // Empty messages for now
+          })
+        : Promise.reject(new Error("Tool has no execute function"));
+
       const result = await Promise.race([executePromise, timeoutPromise]);
-      
+
       return {
         toolCallId: toolCall.toolCallId,
         toolName: toolCall.toolName,
-        result
+        result,
       };
     } catch (error) {
       return {
         toolCallId: toolCall.toolCallId,
         toolName: toolCall.toolName,
         result: {
-          error: error instanceof Error ? error.message : "Unknown error"
-        }
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
       };
     }
   };
-  
+
   /**
    * Execute multiple tool calls
    */
@@ -110,17 +113,17 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
     context?: { agentId?: string }
   ): Promise<ToolResult[]> => {
     return Promise.all(
-      toolCalls.map(toolCall => executeToolCall(toolCall, context))
+      toolCalls.map((toolCall) => executeToolCall(toolCall, context))
     );
   };
-  
+
   /**
    * Clear all tools
    */
   const clearTools = () => {
     toolRegistry.clear();
   };
-  
+
   return {
     // Tool management
     registerTool,
@@ -128,11 +131,11 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
     getAvailableTools,
     getTool,
     clearTools,
-    
+
     // Tool execution
     executeToolCall,
     executeToolCalls,
-    
+
     // Config
     getConfig: () => ({ ...config }),
   };
