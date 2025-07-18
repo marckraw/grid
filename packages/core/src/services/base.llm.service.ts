@@ -37,15 +37,11 @@ export const baseLLMService = (): LLMService => {
         };
       }
 
-      if (msg.tool_calls) {
+      if (msg.toolCalls) {
         return {
           role: msg.role as "assistant",
           content: msg.content || "",
-          toolCalls: msg.tool_calls.map((tc) => ({
-            toolCallId: tc.id,
-            toolName: tc.function.name,
-            args: JSON.parse(tc.function.arguments),
-          })),
+          toolCalls: msg.toolCalls,
         };
       }
 
@@ -59,14 +55,7 @@ export const baseLLMService = (): LLMService => {
     });
 
     // Format tools for Vercel AI SDK
-    const formattedTools = formatTools(tools);
-    const toolsObject =
-      formattedTools.length > 0
-        ? formattedTools.reduce((acc, t) => {
-            acc[t.name] = t;
-            return acc;
-          }, {} as Record<string, any>)
-        : undefined;
+    const formattedTools = tools.length > 0 ? formatTools(tools) : undefined;
 
     try {
       // Determine the provider based on the model name
@@ -77,7 +66,7 @@ export const baseLLMService = (): LLMService => {
       const result = await generateText({
         model: modelInstance,
         messages: formattedMessages,
-        tools: toolsObject,
+        tools: formattedTools,
         temperature,
         maxTokens,
       });
@@ -90,14 +79,7 @@ export const baseLLMService = (): LLMService => {
 
       // Handle tool calls if present
       if (result.toolCalls && result.toolCalls.length > 0) {
-        response.tool_calls = result.toolCalls.map((tc) => ({
-          id: tc.toolCallId,
-          type: "function" as const,
-          function: {
-            name: tc.toolName,
-            arguments: JSON.stringify(tc.args),
-          },
-        }));
+        response.toolCalls = result.toolCalls;
       }
 
       return response;
@@ -154,27 +136,16 @@ export const baseLLMService = (): LLMService => {
     }
   };
 
-  const formatTools = (tools: any[]): any[] => {
-    return tools.map((toolDef) => {
-      // Convert to Vercel AI tool format
-      const name = toolDef.name || toolDef.function?.name || "unknown";
-      const description =
-        toolDef.description || toolDef.function?.description || "";
-      const parameters =
-        toolDef.parameters || toolDef.function?.parameters || z.object({});
-
-      const formattedTool = tool({
-        description,
-        parameters,
-        execute: async (args) => {
-          // This is just for the type system, actual execution happens elsewhere
-          return args;
-        },
-      });
-
-      // Add name property to the tool
-      return { ...formattedTool, name };
-    });
+  const formatTools = (tools: any[]) => {
+    // Convert array of tools to object keyed by tool name
+    // This is what Vercel AI SDK expects
+    return tools.reduce((acc, tool) => {
+      if (tool.name) {
+        const { name, ...toolWithoutName } = tool;
+        acc[name] = toolWithoutName;
+      }
+      return acc;
+    }, {} as Record<string, any>);
   };
 
   const isAvailable = async (): Promise<boolean> => {
