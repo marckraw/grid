@@ -8,13 +8,20 @@ import {
 } from "../utils/prompts.js";
 import { withSpinner, simulateWork, createSpinner } from "../utils/spinners.js";
 import type { MenuOption } from "../types/index.js";
-import { createConfigurableAgent, createToolExecutor } from "@mrck-labs/grid-core";
-import { calculatorTool, currentTimeTool } from "../tools/demo-tools.js";
+import {
+  createConfigurableAgent,
+  createToolExecutor,
+} from "@mrck-labs/grid-core";
+import { calculatorTool } from "../tools/demo-tools/calculator.tool.js";
+import { currentTimeTool } from "../tools/demo-tools/current-time.tool.js";
 
 export async function exploreAgentPrimitives(): Promise<void> {
   const agentTypeOptions: MenuOption[] = [
-    { value: "basic", label: "Basic Agent", hint: "Simple Q&A agent" },
-    { value: "tooled", label: "Agent with Tools", hint: "Agent that can use calculator and time tools" },
+    {
+      value: "basic",
+      label: "Basic Agent with tools",
+      hint: "Simple Q&A agent with tools",
+    },
   ];
 
   const agentType = await selectWithCancel<string>(
@@ -24,13 +31,15 @@ export async function exploreAgentPrimitives(): Promise<void> {
 
   if (isCancel(agentType) || agentType === "back") return;
 
-  // For now, we'll pass tools directly to the agent without the executor
-  // The Vercel AI SDK handles tool execution internally
+  // Create tool executor and register tools
+  const toolExecutor = createToolExecutor();
+  
+  // Register our tools with the executor
+  toolExecutor.registerTool(calculatorTool);
+  toolExecutor.registerTool(currentTimeTool);
 
   // Configure system prompt based on agent type
-  const systemPrompt = agentType === "tooled" 
-    ? "You are a helpful assistant that can perform calculations and tell the time. When asked to do math or time-related tasks, use the available tools."
-    : "You are a helpful assistant that breaks down tasks into steps.";
+  const systemPrompt = "You are a helpful assistant";
 
   const agent = createConfigurableAgent({
     config: {
@@ -43,10 +52,8 @@ export async function exploreAgentPrimitives(): Promise<void> {
       metadata: {
         id: "demo-agent",
         type: "general",
-        name: agentType === "tooled" ? "Tool-Using Agent" : "Basic Agent",
-        description: agentType === "tooled" 
-          ? "Demonstrates tool-calling capabilities"
-          : "Demonstrates basic agent capabilities",
+        name: "Basic Agent with tools",
+        description: "Demonstrates agent capabilities",
         capabilities: ["general"],
         icon: "🤖",
         version: "1.0.0",
@@ -66,9 +73,11 @@ export async function exploreAgentPrimitives(): Promise<void> {
       orchestration: {},
     },
     // Pass tools if this is a tooled agent
-    additionalTools: agentType === "tooled" ? {
-      local: [calculatorTool, currentTimeTool]
-    } : undefined,
+    additionalTools: {
+      local: [calculatorTool, currentTimeTool],
+    },
+    // Pass the tool executor to enable tool execution
+    toolExecutor: toolExecutor,
   });
 
   const message = await textWithCancel(
@@ -91,6 +100,8 @@ export async function exploreAgentPrimitives(): Promise<void> {
 
   // Display tool calls if any
   if (response.toolCalls && response.toolCalls.length > 0) {
+    console.log("Tool calls made:");
+    console.log(response);
     p.log.step("Tool calls made:");
     for (const toolCall of response.toolCalls) {
       p.log.info(`  - ${toolCall.toolName}: ${JSON.stringify(toolCall.args)}`);

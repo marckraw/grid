@@ -9,7 +9,11 @@
       "Bash(pnpm --filter terminal-agent lint)",
       "Bash(mkdir:*)",
       "Bash(tree:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "WebFetch(domain:sdk.vercel.ai)",
+      "WebFetch(domain:ai-sdk.dev)",
+      "Bash(pnpm --filter terminal-agent remove zod)",
+      "Bash(pnpm:*)"
     ],
     "deny": []
   }

@@ -12,13 +12,18 @@ import { z } from "zod";
 export const baseLLMService = (): LLMService => {
   const runLLM = async (options: LLMServiceOptions): Promise<ChatMessage> => {
     const {
-      model = "gpt-4",
+      model = "gpt-4.1",
       messages,
       tools = [],
       temperature = 0.1,
       maxTokens,
       responseFormat,
     } = options;
+
+    console.log("[baseLLMService:runLLM] passed options", options);
+    console.log("[baseLLMService:runLLM] model", model);
+
+    console.log("[baseLLMService:runLLM] get current time tool", tools[1]);
 
     // Convert messages to Vercel AI SDK format
     const formattedMessages = messages.map((msg) => {
@@ -154,7 +159,7 @@ export const baseLLMService = (): LLMService => {
       // Try with the default model or OpenAI as fallback
       const testModel = process.env.DEFAULT_MODEL?.startsWith("claude")
         ? anthropic("claude-3-haiku-20240307")
-        : openai("gpt-4");
+        : openai("gpt-4.1");
 
       await generateText({
         model: testModel,

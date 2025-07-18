@@ -123,7 +123,6 @@ export const createConfigurableAgent = ({
           try {
             // Execute LLM call with tools
             const llmResponse = await base.llmService.runLLM({
-              model: "claude-3-haiku-20240307",
               messages,
               tools: formattedTools.length > 0 ? formattedTools : undefined,
               // Add any additional LLM options from config
@@ -206,9 +205,9 @@ export const createConfigurableAgent = ({
             toolExecutor
           ) {
             // Execute tools and get responses (ensure args is always present)
-            const toolCallsWithArgs = response.toolCalls.map(tc => ({
+            const toolCallsWithArgs = response.toolCalls.map((tc) => ({
               ...tc,
-              args: tc.args ?? {}
+              args: tc.args ?? {},
             }));
             const toolResponses = await toolExecutor.executeToolCalls(
               toolCallsWithArgs,
