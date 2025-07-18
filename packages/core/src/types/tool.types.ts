@@ -34,14 +34,7 @@ export const createNamedTool = <TParameters extends z.ZodTypeAny, TResult = any>
   return Object.assign(tool, { name: config.name });
 };
 
-/**
- * Tool call from LLM (Vercel AI SDK format)
- */
-export interface ToolCall {
-  toolCallId: string;
-  toolName: string;
-  args: unknown;
-}
+// Note: ToolCall type is imported from llm.types.ts which includes Zod schema
 
 /**
  * Tool result for LLM (Vercel AI SDK format)

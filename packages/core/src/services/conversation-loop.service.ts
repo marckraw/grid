@@ -1,5 +1,7 @@
 import type { Agent, AgentResponse } from "../types/agent.types.js";
 import type { ToolExecutor } from "./tool-executor.service.js";
+import type { ProgressMessage } from "../types/progress.types.js";
+import { createProgressMessage } from "../types/progress.types.js";
 import { 
   createConversationManager, 
   type ConversationManagerOptions 
@@ -15,6 +17,7 @@ export interface ConversationLoopOptions {
   onMessage?: (response: AgentResponse) => Promise<void>;
   onError?: (error: Error) => Promise<void>;
   onComplete?: (summary: any) => Promise<void>;
+  onProgress?: (message: ProgressMessage) => Promise<void>;
   maxTurns?: number; // Optional limit on conversation turns
 }
 
@@ -34,7 +37,7 @@ export interface SendMessageResult {
  * including agent interactions, tool execution, and state management.
  */
 export const createConversationLoop = (options: ConversationLoopOptions) => {
-  const { agent, toolExecutor, onMessage, onError, onComplete } = options;
+  const { agent, toolExecutor, onMessage, onError, onComplete, onProgress } = options;
   
   // Create conversation manager
   const manager = createConversationManager(options.conversationOptions);
@@ -42,6 +45,20 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
   // Track conversation state
   let turnCount = 0;
   let isActive = true;
+  
+  /**
+   * Send a progress update if handler is provided
+   */
+  const sendProgress = async (
+    type: ProgressMessage["type"],
+    content: string,
+    metadata?: Record<string, any>
+  ) => {
+    if (onProgress) {
+      const message = createProgressMessage(type, content, metadata);
+      await onProgress(message);
+    }
+  };
   
   /**
    * Send a message and get response
@@ -62,6 +79,12 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
       // Add user message
       manager.addUserMessage(userMessage);
       
+      // Send thinking progress
+      await sendProgress("thinking", `Processing message (turn ${turnCount})`, {
+        turnCount,
+        userMessage,
+      });
+      
       // Get agent response with full conversation history
       const response = await agent.act({
         messages: manager.getMessages(),
@@ -74,8 +97,24 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
         },
       });
       
+      // Send LLM response progress
+      await sendProgress("llm_response", "Received response from agent", {
+        hasContent: !!response.content,
+        hasToolCalls: !!(response.toolCalls && response.toolCalls.length > 0),
+      });
+      
       // Process response (updates history and context)
       await manager.processAgentResponse(response);
+      
+      // Send tool execution progress if tools were executed
+      if (response.metadata?.toolResponses) {
+        for (const toolResponse of response.metadata.toolResponses) {
+          await sendProgress("tool_execution", `Tool executed: ${toolResponse.toolName}`, {
+            toolName: toolResponse.toolName,
+            toolCallId: toolResponse.toolCallId,
+          });
+        }
+      }
       
       // Call message callback if provided
       if (onMessage) {
@@ -98,6 +137,12 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
     } catch (error) {
       // Handle errors
       const err = error instanceof Error ? error : new Error(String(error));
+      
+      // Send error progress
+      await sendProgress("error", `Error in conversation: ${err.message}`, {
+        error: err.message,
+        turnCount,
+      });
       
       if (onError) {
         await onError(err);
@@ -182,8 +227,15 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
     
     isActive = false;
     
+    // Send finished progress
+    const summary = manager.getSummary();
+    await sendProgress("finished", "Conversation ended", {
+      totalMessages: summary.messageCount,
+      duration: summary.duration,
+    });
+    
     if (onComplete) {
-      await onComplete(manager.getSummary());
+      await onComplete(summary);
     }
   };
   

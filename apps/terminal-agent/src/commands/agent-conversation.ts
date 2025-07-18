@@ -2,7 +2,7 @@ import * as p from "@clack/prompts";
 import {
   createConfigurableAgent,
   createToolExecutor,
-  createConversationLoop,
+  createConversationFlow,
 } from "@mrck-labs/grid-core";
 import { textWithCancel, isCancel } from "../utils/prompts.js";
 import { createSpinner } from "../utils/spinners.js";
@@ -85,18 +85,46 @@ Be concise but friendly in your responses.`,
     }
   };
 
-  // Create conversation loop
-  const conversation = createConversationLoop({
+  // Create conversation flow with progress streaming
+  const conversation = createConversationFlow({
     agent,
     toolExecutor,
+    maxIterations: 50, // Safety limit
+    enableProgressStreaming: true,
+    debugMode: process.env.DEBUG === "true",
     conversationOptions: {
       onToolExecution: (toolName, args, result) => {
-        p.log.step(pc.yellow(`🔧 Tool executed: ${toolName}`));
         if (process.env.DEBUG) {
           console.log("  Args:", args);
           console.log("  Result:", result);
         }
       },
+    },
+    onProgress: async (message) => {
+      // Handle different progress message types
+      switch (message.type) {
+        case "thinking":
+          // Don't show thinking messages unless in debug mode
+          if (process.env.DEBUG) {
+            p.log.step(pc.dim(`💭 ${message.content}`));
+          }
+          break;
+        case "tool_execution":
+          p.log.step(pc.yellow(`🔧 ${message.content}`));
+          break;
+        case "error":
+          p.log.error(pc.red(`❌ ${message.content}`));
+          break;
+        case "iteration":
+          if (process.env.DEBUG) {
+            p.log.step(pc.dim(`🔄 ${message.content}`));
+          }
+          break;
+        default:
+          if (process.env.DEBUG) {
+            p.log.info(pc.dim(`[${message.type}] ${message.content}`));
+          }
+      }
     },
     onMessage: async (response) => {
       // Display tool calls if any

@@ -1,4 +1,5 @@
-import type { Tool, ToolCall, ToolResult } from "../types/tool.types.js";
+import type { Tool, ToolResult } from "../types/tool.types.js";
+import type { ToolCall } from "../types/llm.types.js";
 
 /**
  * Tool executor options

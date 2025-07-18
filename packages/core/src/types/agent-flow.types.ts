@@ -1,34 +1,7 @@
 import { z } from "zod";
 
-export const ProgressMessageTypeEnum = z.enum([
-  "user_message",
-  "agent_thought",
-  "error",
-  "finished",
-  "connection",
-  "tool_execution",
-  "llm_response",
-  "tool_response",
-  "unknown",
-  "thinking",
-  "notification",
-  "memory_saved",
-  "evaluation",
-]);
-
-// Zod schema for ProgressMessage
-export const ProgressMessageSchema = z.object({
-  type: ProgressMessageTypeEnum,
-  content: z.string(),
-  metadata: z.record(z.string(), z.any()).optional(),
-});
-
-// Agent flow context schema - comprehensive definition
-
-// Chat message schema (more flexible than Message)
-
-// Inferred TypeScript types
-export type ProgressMessage = z.infer<typeof ProgressMessageSchema>;
+// Legacy progress message types - kept for backward compatibility
+// New code should use types from progress.types.ts instead
 export const AgentFlowContextSchema = z.object({
   userMessage: z.string(),
   state: z.record(z.string(), z.any()).optional(), // Mutable state across iterations

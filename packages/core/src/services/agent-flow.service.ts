@@ -2,8 +2,8 @@ import type { Agent } from "../types/agent.types.js";
 import type {
   AgentFlowContext,
   ChatMessage,
-  ProgressMessage,
 } from "../types/index.js";
+import type { ProgressMessage } from "../types/progress.types.js";
 import type { ToolExecutor } from "./tool-executor.service.js";
 import type { ToolResult } from "../types/tool.types.js";
 

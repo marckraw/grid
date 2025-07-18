@@ -57,16 +57,18 @@ export type {
   AgentFlowContext,
   ChatMessage,
   ProgressMessage,
+  ProgressMessageType,
   LLMService,
   LLMServiceOptions,
 } from "./types/index.js";
+export { createProgressMessage } from "./types/progress.types.js";
 
 // Export tool types
 export type {
   Tool,
-  ToolCall,
   ToolResult,
 } from "./types/tool.types.js";
+export type { ToolCall } from "./types/llm.types.js";
 export { 
   createTool, 
   createNamedTool,
@@ -93,3 +95,7 @@ export type { ConversationManager, ConversationManagerOptions } from "./services
 // Export conversation primitives - organism level
 export { createConversationLoop } from "./services/conversation-loop.service.js";
 export type { ConversationLoop, ConversationLoopOptions, SendMessageResult } from "./services/conversation-loop.service.js";
+
+// Export conversation flow - enhanced organism level with progress streaming
+export { createConversationFlow } from "./services/conversation-flow.service.js";
+export type { ConversationFlow, ConversationFlowOptions } from "./services/conversation-flow.service.js";
