@@ -29,6 +29,7 @@ export async function exploreAgentConversation(): Promise<void> {
 
   // Create configurable agent
   const agent = createConfigurableAgent({
+    llmService: baseLLMService({ toolExecutionMode: "custom" }),
     config: {
       id: "conversation-agent",
       type: "general",
