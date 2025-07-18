@@ -212,8 +212,8 @@ export async function exploreHooksDemo(): Promise<void> {
         version: "1.0.0",
       },
       tools: {
-        builtin: ["calculator"],
-        custom: [],
+        builtin: [],
+        custom: [calculatorTool],
         mcp: [],
         agents: [],
       },
@@ -233,9 +233,6 @@ export async function exploreHooksDemo(): Promise<void> {
       },
     },
     customHandlers,
-    additionalTools: {
-      local: [calculatorTool],
-    },
     toolExecutor,
   });
 

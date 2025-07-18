@@ -12,6 +12,7 @@ import { currentTimeTool } from "../tools/demo-tools/current-time.tool.js";
 import { createImageTool } from "../tools/demo-tools/create-image.tool.js";
 import pc from "picocolors";
 import { saveConversation } from "./helpers/conversation.helper.js";
+import { baseLLMService } from "@mrck-labs/grid-core";
 
 export async function exploreAgentConversation(): Promise<void> {
   p.intro(pc.cyan("🤖 Agent Conversation Mode"));
@@ -51,7 +52,7 @@ Be concise but friendly in your responses.`,
       },
       tools: {
         builtin: [],
-        custom: [],
+        custom: [calculatorTool, currentTimeTool, createImageTool],
         mcp: [],
         agents: [],
       },
@@ -62,9 +63,6 @@ Be concise but friendly in your responses.`,
         emitEvents: [],
       },
       orchestration: {},
-    },
-    additionalTools: {
-      local: [calculatorTool, currentTimeTool, createImageTool],
     },
     toolExecutor: toolExecutor,
   });

@@ -30,17 +30,9 @@ export interface CustomHandlers {
   transformOutput?: (output: AgentResponse) => Promise<AgentResponse>;
 }
 
-// Additional tools that can be passed
-export interface AdditionalTools {
-  local?: Tool<any, any>[];
-  mcp?: any[]; // MCP tools will be adapted
-  agents?: any[]; // Agent tools will be adapted
-}
-
 export interface CreateConfigurableAgentOptions {
   config: AgentConfig;
   customHandlers?: CustomHandlers;
-  additionalTools?: AdditionalTools;
   llmService?: LLMService;
   toolExecutor?: ToolExecutor;
 }
@@ -51,7 +43,6 @@ export interface CreateConfigurableAgentOptions {
 export const createConfigurableAgent = ({
   config,
   customHandlers = {},
-  additionalTools = {},
   llmService,
   toolExecutor,
 }: CreateConfigurableAgentOptions): Agent => {
@@ -62,10 +53,10 @@ export const createConfigurableAgent = ({
     llmService,
   });
 
-  // Prepare available tools
+  // Prepare available tools from config
   const availableTools: Tool<any, any>[] = [
-    ...(additionalTools.local || []),
-    // TODO: Adapt MCP and agent tools
+    ...(config.tools?.custom || []),
+    // TODO: Adapt builtin, MCP and agent tools
   ];
 
   return {

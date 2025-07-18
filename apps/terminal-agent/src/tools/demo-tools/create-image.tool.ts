@@ -1,5 +1,8 @@
 import { z } from "zod";
 import { createNamedTool } from "@mrck-labs/grid-core";
+import { createOpenAIImageService } from "./services/openai-image.service.js";
+import { writeFileSync } from "fs";
+import { join } from "path";
 
 /**
  * Create image tool
@@ -27,28 +30,59 @@ export const createImageTool = createNamedTool({
       .describe("Optional tags to associate with the generated image"),
   }),
   execute: async ({ reasoning, prompt, whichModelToUse, tags }) => {
-    // This is a demo tool - in a real implementation, you would integrate with actual image generation services
     const timestamp = new Date().toISOString();
     const imageTags = tags || ["ai-generated", whichModelToUse, "demo"];
 
-    console.log("[createImageTool] execute", {
-      reasoning,
-      prompt,
-      whichModelToUse,
-      tags,
-    });
+    console.log("[createImageTool] execute");
 
     if (whichModelToUse === "openai") {
-      return {
-        message: `Image would be generated using OpenAI with prompt: "${prompt}"`,
-        model: "dall-e-3",
-        reasoning,
-        prompt,
-        tags: imageTags,
-        timestamp,
-        demoUrl: `https://example.com/demo-image-openai-${Date.now()}.png`,
-        note: "This is a demo response. In production, this would generate an actual image using OpenAI's API.",
-      };
+      try {
+        const openaiImageService = createOpenAIImageService({});
+        const response = await openaiImageService.createImage(prompt);
+
+        // Save the image to disk
+        const outputDir = join(process.cwd(), "generated-images");
+        const outputPath = join(outputDir, response.filename);
+
+        // Create directory if it doesn't exist
+        try {
+          const { mkdirSync } = await import("fs");
+          mkdirSync(outputDir, { recursive: true });
+        } catch (error) {
+          // Directory might already exist
+        }
+
+        // Write the image buffer to file
+        writeFileSync(outputPath, response.image);
+
+        const final = {
+          message: `Image generated successfully using OpenAI`,
+          model: "gpt-image-1",
+          filename: response.filename,
+          filepath: outputPath,
+          size: response.image.length,
+          mimeType: response.mimeType,
+          extension: response.extension,
+          success: true,
+        };
+
+        console.log("return this shit:");
+        console.log(final);
+
+        return final;
+      } catch (error) {
+        return {
+          error: `Failed to generate image: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+          model: "gpt-image-1",
+          reasoning,
+          prompt,
+          tags: imageTags,
+          timestamp,
+          success: false,
+        };
+      }
     } else if (whichModelToUse === "leonardo") {
       return {
         message: `Image would be generated using Leonardo AI with prompt: "${prompt}"`,

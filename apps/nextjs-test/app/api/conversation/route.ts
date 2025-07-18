@@ -5,6 +5,7 @@ import {
   createConversationFlow,
   type ConversationFlow,
   type ProgressMessage,
+  baseLLMService,
 } from "@mrck-labs/grid-core";
 import { calculatorTool } from "../../tools/calculator.tool";
 import { currentTimeTool } from "../../tools/current-time.tool";
@@ -26,6 +27,7 @@ function getConversation(sessionId: string, onProgress?: ProgressHandler): Conve
 
     // Create configurable agent
     const agent = createConfigurableAgent({
+      llmService: baseLLMService({ toolExecutionMode: "custom" }),
       config: {
         id: "web-conversation-agent",
         type: "general",
@@ -47,7 +49,7 @@ Be concise but friendly in your responses.`,
         },
         tools: {
           builtin: [],
-          custom: [],
+          custom: [calculatorTool, currentTimeTool],
           mcp: [],
           agents: [],
         },
@@ -59,9 +61,6 @@ Be concise but friendly in your responses.`,
         },
         orchestration: {},
       },
-      additionalTools: {
-        local: [calculatorTool, currentTimeTool],
-      },
       toolExecutor: toolExecutor,
     });
 
@@ -71,7 +70,7 @@ Be concise but friendly in your responses.`,
       toolExecutor,
       maxIterations: 50,
       enableProgressStreaming: true,
-      onProgress: (progress) => {
+      onProgress: async (progress) => {
         const handler = progressHandlers.get(sessionId);
         if (handler) handler(progress);
       },

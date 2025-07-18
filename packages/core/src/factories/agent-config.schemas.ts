@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { AgentTypeSchema, AgentMetadataSchema } from "../types/agent.types.js";
+import type { Tool } from "../types/tool.types.js";
 
 // Tool source types
 export const ToolSourceSchema = z.enum(["local", "mcp", "agent", "external"]);
@@ -23,7 +24,7 @@ export const AgentPromptsSchema = z.object({
 // Tool configuration
 export const AgentToolsSchema = z.object({
   builtin: z.array(z.string()).default([]), // Names of built-in tools
-  custom: z.array(z.string()).optional(), // Names of custom tools
+  custom: z.array(z.custom<Tool<any, any>>()).default([]), // Custom tool instances
   mcp: z.array(z.string()).optional(), // MCP server tools
   agents: z.array(AgentTypeSchema).optional(), // Other agents as tools
 });

@@ -110,6 +110,9 @@ importers:
 
   apps/terminal-agent:
     dependencies:
+      '@ai-sdk/openai':
+        specifier: ^1.3.23
+        version: 1.3.23(zod@3.25.76)
       '@clack/prompts':
         specifier: ^0.11.0
         version: 0.11.0
@@ -122,6 +125,9 @@ importers:
       '@mrck-labs/grid-workflows':
         specifier: workspace:*
         version: link:../../packages/workflows
+      ai:
+        specifier: ^4.3.19
+        version: 4.3.19(react@18.3.1)(zod@3.25.76)
       dotenv:
         specifier: ^17.2.0
         version: 17.2.0

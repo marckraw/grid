@@ -1,1 +1,7 @@
 .env
+
+# Generated images
+generated-images/
+
+# Conversation history
+conversation.json
