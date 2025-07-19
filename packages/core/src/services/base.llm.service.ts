@@ -8,21 +8,25 @@ import { generateText, tool } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
-import type { ObservabilityService } from "./observability.service.js";
-import type { GenerationTrace } from "../types/observability.types.js";
+import { getLangfuse, initLangfuse, getActiveTrace, type LangfuseConfig } from "./langfuse.service.js";
 
 export interface BaseLLMServiceConfig {
   toolExecutionMode?: "vercel-native" | "custom" | "none";
   defaultModel?: string;
-  observability?: ObservabilityService;
+  langfuse?: LangfuseConfig;
 }
 
 export const baseLLMService = (config: BaseLLMServiceConfig = {}): LLMService => {
   const { 
     toolExecutionMode = "custom", // Default to custom execution
     defaultModel = "gpt-4.1",
-    observability
+    langfuse
   } = config;
+
+  // Initialize Langfuse if config provided
+  if (langfuse) {
+    initLangfuse(langfuse);
+  }
 
   const runLLM = async (options: LLMServiceOptions): Promise<ChatMessage> => {
     const {
@@ -98,15 +102,7 @@ export const baseLLMService = (config: BaseLLMServiceConfig = {}): LLMService =>
         temperature,
         maxTokens,
         maxSteps: toolExecutionMode === "vercel-native" ? 3 : 1, // Enable multi-step for vercel-native
-        experimental_telemetry: observability ? {
-          isEnabled: true,
-          functionId: "baseLLMService.runLLM",
-          metadata: {
-            model,
-            toolExecutionMode,
-            hasTools: tools.length > 0,
-          },
-        } : undefined,
+        // Langfuse will track via OpenTelemetry or manual tracing
       });
 
       // Log what we got from Vercel
@@ -137,28 +133,48 @@ export const baseLLMService = (config: BaseLLMServiceConfig = {}): LLMService =>
         };
       }
 
-      // Record generation if observability is enabled
-      if (observability && result.usage) {
+      // Record to Langfuse if enabled
+      const langfuseClient = getLangfuse();
+      const activeTrace = getActiveTrace();
+      
+      if (langfuseClient && result.usage) {
         const duration = Date.now() - startTime;
-        const generationTrace: GenerationTrace = {
-          model,
-          prompt: messages, // Could be more sophisticated
-          completion: result.text || "[Tool calls only]",
-          tokens: {
-            prompt: result.usage.promptTokens,
-            completion: result.usage.completionTokens,
-            total: result.usage.totalTokens,
-          },
-          duration,
-          parameters: {
-            temperature,
-            maxTokens,
-            toolChoice: "auto",
-            toolExecutionMode,
-          },
-        };
         
-        await observability.recordGeneration(generationTrace);
+        try {
+          // Create a generation linked to the active trace if available
+          const generationParams = {
+            name: "llm-generation",
+            model,
+            modelParameters: {
+              temperature,
+              ...(maxTokens && { maxTokens }),
+              toolChoice: "auto",
+              toolExecutionMode,
+            },
+            input: messages,
+            output: result.text || "[Tool calls only]",
+            usage: {
+              promptTokens: result.usage.promptTokens,
+              completionTokens: result.usage.completionTokens,
+              totalTokens: result.usage.totalTokens,
+            },
+            metadata: {
+              hasTools: tools.length > 0,
+              toolCalls: result.toolCalls?.length || 0,
+              duration,
+            },
+          };
+
+          // If we have an active trace, create generation as part of it
+          const generation = activeTrace 
+            ? activeTrace.trace.generation(generationParams)
+            : langfuseClient.generation(generationParams);
+          
+          // End the generation
+          generation.end();
+        } catch (error) {
+          console.error("[Langfuse] Failed to record generation:", error);
+        }
       }
 
       return response;
@@ -205,37 +221,47 @@ export const baseLLMService = (config: BaseLLMServiceConfig = {}): LLMService =>
         messages: messagesWithJsonInstruction,
         temperature,
         maxTokens,
-        experimental_telemetry: observability ? {
-          isEnabled: true,
-          functionId: "baseLLMService.runLLMWithJSONResponse",
-          metadata: {
-            model,
-            responseFormat: "json",
-          },
-        } : undefined,
+        // Langfuse will track via OpenTelemetry or manual tracing
       });
 
-      // Record generation if observability is enabled
-      if (observability && result.usage) {
+      // Record to Langfuse if enabled
+      const langfuseClient = getLangfuse();
+      const activeTrace = getActiveTrace();
+      
+      if (langfuseClient && result.usage) {
         const duration = Date.now() - startTime;
-        const generationTrace: GenerationTrace = {
-          model,
-          prompt: messages,
-          completion: result.text,
-          tokens: {
-            prompt: result.usage.promptTokens,
-            completion: result.usage.completionTokens,
-            total: result.usage.totalTokens,
-          },
-          duration,
-          parameters: {
-            temperature,
-            maxTokens,
-            responseFormat: "json",
-          },
-        };
         
-        await observability.recordGeneration(generationTrace);
+        try {
+          const generationParams = {
+            name: "llm-json-generation",
+            model,
+            modelParameters: {
+              temperature,
+              ...(maxTokens && { maxTokens }),
+              responseFormat: "json",
+            },
+            input: messages,
+            output: result.text,
+            usage: {
+              promptTokens: result.usage.promptTokens,
+              completionTokens: result.usage.completionTokens,
+              totalTokens: result.usage.totalTokens,
+            },
+            metadata: {
+              duration,
+              isJsonResponse: true,
+            },
+          };
+
+          // If we have an active trace, create generation as part of it
+          const generation = activeTrace 
+            ? activeTrace.trace.generation(generationParams)
+            : langfuseClient.generation(generationParams);
+          
+          generation.end();
+        } catch (error) {
+          console.error("[Langfuse] Failed to record JSON generation:", error);
+        }
       }
 
       return {

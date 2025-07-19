@@ -3,8 +3,10 @@ import {
   createConfigurableAgent,
   createToolExecutor,
   createConversationFlow,
-  type ConversationFlow,
   baseLLMService,
+  startTrace,
+  endTrace,
+  shutdownLangfuse,
 } from "@mrck-labs/grid-core";
 import { textWithCancel, isCancel } from "../utils/prompts.js";
 import { createSpinner } from "../utils/spinners.js";
@@ -13,7 +15,10 @@ import { currentTimeTool } from "../tools/demo-tools/current-time.tool.js";
 import { createImageTool } from "../tools/demo-tools/create-image.tool.js";
 import pc from "picocolors";
 import { saveConversation } from "./helpers/conversation.helper.js";
-import { registerTestMCPTools } from "./helpers/registerTestMcp.js";
+import {
+  registerTestMCPTools,
+  type MCPClientType,
+} from "./helpers/registerTestMcp.js";
 
 export async function exploreAgentConversation(): Promise<void> {
   p.intro(pc.cyan("🤖 Agent Conversation Mode"));
@@ -22,15 +27,49 @@ export async function exploreAgentConversation(): Promise<void> {
     "The assistant can use tools like calculator, time checking, and image generation."
   );
 
-  const { transformerMcpTools, transformedLinearMcpTools } =
-    await registerTestMCPTools();
+  // Multiselect for MCP clients
+  const mcpClientOptions = [
+    {
+      value: "figma" as MCPClientType,
+      label: "Figma MCP Server (Design context)",
+    },
+    {
+      value: "linear" as MCPClientType,
+      label: "Linear MCP Server (Issue tracking)",
+    },
+  ];
+
+  const selectedMcpClients = await p.multiselect({
+    message: "Select MCP clients to initialize:",
+    options: mcpClientOptions,
+    required: false,
+  });
+
+  if (p.isCancel(selectedMcpClients)) {
+    p.cancel("Operation cancelled");
+    return;
+  }
+
+  const { transformerMcpTools, transformedLinearMcpTools, clients } =
+    await registerTestMCPTools(selectedMcpClients as MCPClientType[]);
 
   p.log.info(
     pc.dim("💾 Conversation is automatically saved to conversation.json\n")
   );
 
+  // Start a Langfuse trace for this conversation session
+  const sessionId = `conversation-${Date.now()}`;
+  const traceContext = startTrace("agent-conversation", sessionId);
+  if (traceContext) {
+    p.log.info(pc.dim(`🔍 Tracing enabled (session: ${sessionId})\n`));
+  }
+
   // Create tool executor and register tools
-  const toolExecutor = createToolExecutor();
+  const toolExecutor = createToolExecutor({
+    onToolRegister: (tool) => {
+      p.log.success(`[ToolExecutor] ${tool.name} registered`);
+    },
+  });
 
   // Register local tools
   toolExecutor.registerTool(calculatorTool);
@@ -39,18 +78,19 @@ export async function exploreAgentConversation(): Promise<void> {
 
   // Register MCP tools if available
   for (const tool in transformerMcpTools) {
-    console.log("tool", transformerMcpTools[tool]);
     toolExecutor.registerTool(transformerMcpTools[tool]);
   }
 
   for (const tool in transformedLinearMcpTools) {
-    console.log("tool", transformedLinearMcpTools[tool]);
     toolExecutor.registerTool(transformedLinearMcpTools[tool]);
   }
 
   // Create configurable agent
   const agent = createConfigurableAgent({
-    llmService: baseLLMService({ toolExecutionMode: "custom" }),
+    llmService: baseLLMService({
+      toolExecutionMode: "custom",
+      langfuse: { enabled: true },
+    }),
     config: {
       id: "conversation-agent",
       type: "general",
@@ -90,12 +130,13 @@ Be concise but friendly in your responses.`,
   // Create conversation flow with progress streaming
   const conversation = createConversationFlow({
     agent,
-    toolExecutor,
     maxIterations: 50, // Safety limit
     enableProgressStreaming: true,
     debugMode: process.env.DEBUG === "true",
     conversationOptions: {
       onToolExecution: (toolName, args, result) => {
+        console.log("  Args:", args);
+        console.log("  Result:", result);
         if (process.env.DEBUG) {
           console.log("  Args:", args);
           console.log("  Result:", result);
@@ -146,6 +187,8 @@ Be concise but friendly in your responses.`,
     },
   });
 
+  p.log.success("Conversation flow created");
+
   // Start conversation loop
   let continueChat = true;
   console.log(""); // Empty line for spacing
@@ -172,6 +215,16 @@ Be concise but friendly in your responses.`,
       p.log.info(`  Messages: ${summary.messageCount}`);
       p.log.info(`  Tool calls: ${summary.toolCallCount}`);
       p.log.info(`  Duration: ${Math.round(summary.duration / 1000)}s`);
+      console.log(""); // Empty line
+      continue;
+    }
+
+    // Special commands
+    if (message.toLowerCase() === "/dupa") {
+      const dupa = conversation.getConversationState();
+      p.log.info("Conversation state:");
+      console.log(dupa);
+
       console.log(""); // Empty line
       continue;
     }
@@ -228,18 +281,37 @@ Be concise but friendly in your responses.`,
   // Save final conversation state
   await saveConversation(conversation);
 
-  // Clean up MCP client if connected
-  if (mcpClient) {
-    try {
-      await mcpClient.close();
-      p.log.info("Closed MCP connection.");
-    } catch (error) {
-      // Ignore cleanup errors
+  // Clean up MCP clients if connected
+  if (clients) {
+    if (clients.mcpClient) {
+      try {
+        await clients.mcpClient.close();
+        p.log.info("Closed Figma MCP connection.");
+      } catch (error) {
+        // Ignore cleanup errors
+      }
+    }
+    if (clients.linearMcpClient) {
+      try {
+        await clients.linearMcpClient.close();
+        p.log.info("Closed Linear MCP connection.");
+      } catch (error) {
+        // Ignore cleanup errors
+      }
     }
   }
 
   const summary = conversation.getSummary();
   const analytics = conversation.getAnalytics();
+
+  // End the Langfuse trace
+  if (traceContext) {
+    endTrace();
+    p.log.info(pc.dim("🔍 Ending trace..."));
+  }
+
+  // Ensure all Langfuse data is sent
+  await shutdownLangfuse();
 
   p.outro(pc.cyan("\n👋 Conversation ended\n"));
 
@@ -254,6 +326,12 @@ Be concise but friendly in your responses.`,
       `  Avg message length: ${Math.round(
         analytics.avgUserMessageLength
       )} chars`
+    );
+  }
+
+  if (traceContext) {
+    p.log.info(
+      pc.dim(`\n📈 View trace in Langfuse dashboard (session: ${sessionId})`)
     );
   }
 }

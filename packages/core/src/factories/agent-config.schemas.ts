@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { AgentTypeSchema, AgentMetadataSchema } from "../types/agent.types.js";
 import type { Tool } from "../types/tool.types.js";
-import { ObservabilityConfigSchema } from "../types/observability.types.js";
 
 // Tool source types
 export const ToolSourceSchema = z.enum(["local", "mcp", "agent", "external"]);
@@ -101,7 +100,7 @@ export const AgentConfigSchema = z.object({
   orchestration: AgentOrchestrationSchema.optional(),
 
   // Observability configuration
-  observability: ObservabilityConfigSchema.optional(),
+  // observability: ObservabilityConfigSchema.optional(), // Removed - using simple Langfuse integration
 
   // Feature flags
   features: z.record(z.boolean()).optional(),

@@ -1,4 +1,3 @@
-export { exploreAgentPrimitives } from "./agent.js";
 export { exploreAgentConversation } from "./agent-conversation.js";
 export { exploreWorkflowPrimitives } from "./workflow.js";
 export { conversationMode } from "./conversation.js";

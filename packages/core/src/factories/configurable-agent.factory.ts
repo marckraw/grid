@@ -8,7 +8,6 @@ import {
 import { type LLMService } from "../types/llm.types.js";
 import { type Tool, prepareToolsForSDK } from "../types/tool.types.js";
 import { type ToolExecutor } from "../services/tool-executor.service.js";
-import { type ObservabilityService } from "../services/observability.service.js";
 
 // Custom handler types for hooks
 export interface CustomHandlers {
@@ -36,7 +35,7 @@ export interface CreateConfigurableAgentOptions {
   customHandlers?: CustomHandlers;
   llmService?: LLMService;
   toolExecutor?: ToolExecutor;
-  observability?: ObservabilityService;
+  // observability?: ObservabilityService; // Removed - using simple Langfuse integration
 }
 
 /**
@@ -47,7 +46,6 @@ export const createConfigurableAgent = ({
   customHandlers = {},
   llmService,
   toolExecutor,
-  observability,
 }: CreateConfigurableAgentOptions): Agent => {
   // Create base agent with optional LLM service
   const base = createBaseAgent({
@@ -79,14 +77,7 @@ export const createConfigurableAgent = ({
 
     // Main act method with all enhancements
     act: async (input) => {
-      // Start a trace if observability is enabled
-      const traceContext = observability && config.observability?.enabled
-        ? await observability.startTrace(`agent.${config.id}.act`, {
-            agentId: config.id,
-            agentType: config.type,
-            inputMessageCount: input.messages.length,
-          })
-        : null;
+      // Tracing is now handled by Langfuse integration in baseLLMService
       let processedInput = input;
       let attempt = 0;
       const maxRetries = config.behavior?.maxRetries || 3;
@@ -269,21 +260,11 @@ export const createConfigurableAgent = ({
             response = await customHandlers.transformOutput(response);
           }
 
-          // End trace on success
-          if (traceContext && observability) {
-            await observability.endTrace(traceContext);
-          }
+          // Tracing handled by Langfuse integration
           
           return response;
         } catch (error) {
-          // Record error event if observability is enabled
-          if (observability) {
-            await observability.recordEvent("agent.error", {
-              agentId: config.id,
-              error: error instanceof Error ? error.message : String(error),
-              attempt,
-            });
-          }
+          // Error tracking can be added to Langfuse if needed
           
           // Final error handling
           if (attempt >= maxRetries) {
@@ -314,9 +295,7 @@ export const createConfigurableAgent = ({
             }
 
             // End trace on final error
-            if (traceContext && observability) {
-              await observability.endTrace(traceContext);
-            }
+            // Tracing handled by Langfuse integration
             
             throw error;
           }
@@ -324,9 +303,7 @@ export const createConfigurableAgent = ({
       }
 
       // End trace if we somehow exit the loop
-      if (traceContext && observability) {
-        await observability.endTrace(traceContext);
-      }
+      // Tracing handled by Langfuse integration
       
       // Should never reach here
       throw new Error("Unexpected end of retry loop");

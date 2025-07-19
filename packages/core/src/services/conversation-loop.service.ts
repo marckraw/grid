@@ -1,10 +1,9 @@
 import type { Agent, AgentResponse } from "../types/agent.types.js";
-import type { ToolExecutor } from "./tool-executor.service.js";
 import type { ProgressMessage } from "../types/progress.types.js";
 import { createProgressMessage } from "../types/progress.types.js";
-import { 
-  createConversationManager, 
-  type ConversationManagerOptions 
+import {
+  createConversationManager,
+  type ConversationManagerOptions,
 } from "./conversation-manager.service.js";
 
 /**
@@ -12,7 +11,6 @@ import {
  */
 export interface ConversationLoopOptions {
   agent: Agent;
-  toolExecutor?: ToolExecutor;
   conversationOptions?: ConversationManagerOptions;
   onMessage?: (response: AgentResponse) => Promise<void>;
   onError?: (error: Error) => Promise<void>;
@@ -32,20 +30,20 @@ export interface SendMessageResult {
 
 /**
  * Creates a conversation loop - organism-level service for managing full conversations
- * 
+ *
  * This is the highest-level primitive that orchestrates the entire conversation flow,
  * including agent interactions, tool execution, and state management.
  */
 export const createConversationLoop = (options: ConversationLoopOptions) => {
-  const { agent, toolExecutor, onMessage, onError, onComplete, onProgress } = options;
-  
+  const { agent, onMessage, onError, onComplete, onProgress } = options;
+
   // Create conversation manager
   const manager = createConversationManager(options.conversationOptions);
-  
+
   // Track conversation state
   let turnCount = 0;
   let isActive = true;
-  
+
   /**
    * Send a progress update if handler is provided
    */
@@ -59,11 +57,14 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
       await onProgress(message);
     }
   };
-  
+
   /**
    * Send a message and get response
    */
-  const sendMessage = async (userMessage: string): Promise<SendMessageResult> => {
+  const sendMessage = async (
+    userMessage: string
+  ): Promise<SendMessageResult> => {
+    console.log("[ConversationLoop] sendMessage", userMessage);
     if (!isActive) {
       return {
         response: { role: "assistant", content: null },
@@ -71,20 +72,20 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
         conversationEnded: true,
       };
     }
-    
+
     try {
       // Increment turn count
       turnCount++;
-      
+
       // Add user message
       manager.addUserMessage(userMessage);
-      
+
       // Send thinking progress
       await sendProgress("thinking", `Processing message (turn ${turnCount})`, {
         turnCount,
         userMessage,
       });
-      
+
       // Get agent response with full conversation history
       const response = await agent.act({
         messages: manager.getMessages(),
@@ -96,31 +97,37 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
           },
         },
       });
-      
+
+      console.log("[ConversationLoop] response", response);
+
       // Send LLM response progress
       await sendProgress("llm_response", "Received response from agent", {
         hasContent: !!response.content,
         hasToolCalls: !!(response.toolCalls && response.toolCalls.length > 0),
       });
-      
+
       // Process response (updates history and context)
       await manager.processAgentResponse(response);
-      
+
       // Send tool execution progress if tools were executed
       if (response.metadata?.toolResponses) {
         for (const toolResponse of response.metadata.toolResponses) {
-          await sendProgress("tool_execution", `Tool executed: ${toolResponse.toolName}`, {
-            toolName: toolResponse.toolName,
-            toolCallId: toolResponse.toolCallId,
-          });
+          await sendProgress(
+            "tool_execution",
+            `Tool executed: ${toolResponse.toolName}`,
+            {
+              toolName: toolResponse.toolName,
+              toolCallId: toolResponse.toolCallId,
+            }
+          );
         }
       }
-      
+
       // Call message callback if provided
       if (onMessage) {
         await onMessage(response);
       }
-      
+
       // Check if we've hit max turns
       if (options.maxTurns && turnCount >= options.maxTurns) {
         isActive = false;
@@ -128,33 +135,32 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
           await onComplete(manager.getSummary());
         }
       }
-      
+
       return {
         response,
         conversationEnded: !isActive,
       };
-      
     } catch (error) {
       // Handle errors
       const err = error instanceof Error ? error : new Error(String(error));
-      
+
       // Send error progress
       await sendProgress("error", `Error in conversation: ${err.message}`, {
         error: err.message,
         turnCount,
       });
-      
+
       if (onError) {
         await onError(err);
       }
-      
+
       return {
         response: { role: "assistant", content: null },
         error: err,
       };
     }
   };
-  
+
   /**
    * Send a message and wait for a complete response
    * The agent handles all tool execution internally, so we just send and receive
@@ -168,27 +174,27 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
     // We just send the message and trust the agent to handle everything
     return sendMessage(userMessage);
   };
-  
+
   /**
    * End the conversation
    */
   const endConversation = async () => {
     if (!isActive) return;
-    
+
     isActive = false;
-    
+
     // Send finished progress
     const summary = manager.getSummary();
     await sendProgress("finished", "Conversation ended", {
       totalMessages: summary.messageCount,
       duration: summary.duration,
     });
-    
+
     if (onComplete) {
       await onComplete(summary);
     }
   };
-  
+
   /**
    * Reset the conversation
    */
@@ -197,29 +203,31 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
     turnCount = 0;
     isActive = true;
   };
-  
+
   /**
    * Get conversation analytics
    */
   const getAnalytics = () => {
     const summary = manager.getSummary();
     const messages = manager.getMessages();
-    
+
     // Calculate average message length
-    const userMessages = messages.filter(m => m.role === "user");
-    const avgUserMessageLength = userMessages.length > 0
-      ? userMessages.reduce((sum, m) => sum + (m.content?.length || 0), 0) / userMessages.length
-      : 0;
-    
+    const userMessages = messages.filter((m) => m.role === "user");
+    const avgUserMessageLength =
+      userMessages.length > 0
+        ? userMessages.reduce((sum, m) => sum + (m.content?.length || 0), 0) /
+          userMessages.length
+        : 0;
+
     return {
       ...summary,
       turnCount,
       isActive,
       avgUserMessageLength,
-      hasToolCalls: messages.some(m => m.toolCalls && m.toolCalls.length > 0),
+      hasToolCalls: messages.some((m) => m.toolCalls && m.toolCalls.length > 0),
     };
   };
-  
+
   /**
    * Export conversation as JSON
    */
@@ -232,14 +240,14 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
       timestamp: new Date().toISOString(),
     };
   };
-  
+
   /**
    * Import conversation from JSON
    */
   const importConversation = (data: any) => {
     // Reset first
     resetConversation();
-    
+
     // Import messages
     if (data.messages && Array.isArray(data.messages)) {
       for (const message of data.messages) {
@@ -251,12 +259,12 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
         }
       }
     }
-    
+
     // Import state
     if (data.state) {
       manager.updateStates(data.state);
     }
-    
+
     // Import metadata
     if (data.metadata) {
       Object.entries(data.metadata).forEach(([key, value]) => {
@@ -264,26 +272,26 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
       });
     }
   };
-  
+
   return {
     // Core conversation methods
     sendMessage,
     sendMessageWithToolResolution,
     endConversation,
     resetConversation,
-    
+
     // State access
     getMessages: manager.getMessages,
     getState: manager.getState,
     updateState: manager.updateState,
     getConversationState: manager.getConversationState,
-    
+
     // Analytics and export
     getAnalytics,
     getSummary: manager.getSummary,
     exportConversation,
     importConversation,
-    
+
     // Status
     isActive: () => isActive,
     getTurnCount: () => turnCount,

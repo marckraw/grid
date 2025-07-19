@@ -1,7 +1,5 @@
 import type { Tool, ToolResult } from "../types/tool.types.js";
 import type { ToolCall } from "../types/llm.types.js";
-import type { ObservabilityService } from "./observability.service.js";
-import type { ToolTrace } from "../types/observability.types.js";
 
 /**
  * Tool executor options
@@ -9,7 +7,8 @@ import type { ToolTrace } from "../types/observability.types.js";
 export interface ToolExecutorOptions {
   maxRetries?: number;
   defaultTimeout?: number;
-  observability?: ObservabilityService;
+  // observability?: ObservabilityService; // Removed - using simple Langfuse integration
+  onToolRegister?: (tool: Tool<any, any>) => void;
 }
 
 /**
@@ -20,8 +19,8 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
     maxRetries: options?.maxRetries ?? 3,
     defaultTimeout: options?.defaultTimeout ?? 30000,
   };
-  
-  const observability = options?.observability;
+
+  // Observability tracking can be added to Langfuse if needed
 
   // Registry of tools by name
   const toolRegistry = new Map<string, Tool<any, any>>();
@@ -33,6 +32,7 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
     if (!tool.name) {
       throw new Error("Tool must have a name");
     }
+    options?.onToolRegister?.(tool);
     toolRegistry.set(tool.name, tool);
   };
 
@@ -68,22 +68,8 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
     const tool = toolRegistry.get(toolCall.toolName);
 
     if (!tool) {
-      // Record failed tool execution if observability is enabled
-      if (observability) {
-        const toolTrace: ToolTrace = {
-          toolName: toolCall.toolName,
-          parameters: toolCall.args as Record<string, any>,
-          result: { error: `Tool '${toolCall.toolName}' not found` },
-          duration: Date.now() - startTime,
-          error: `Tool '${toolCall.toolName}' not found`,
-          metadata: {
-            toolCallId: toolCall.toolCallId,
-            agentId: context?.agentId,
-          },
-        };
-        await observability.recordToolExecution(toolTrace);
-      }
-      
+      // Tool execution tracking can be added to Langfuse if needed
+
       return {
         toolCallId: toolCall.toolCallId,
         toolName: toolCall.toolName,
@@ -111,20 +97,7 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
 
       const result = await Promise.race([executePromise, timeoutPromise]);
 
-      // Record successful tool execution if observability is enabled
-      if (observability) {
-        const toolTrace: ToolTrace = {
-          toolName: toolCall.toolName,
-          parameters: toolCall.args as Record<string, any>,
-          result,
-          duration: Date.now() - startTime,
-          metadata: {
-            toolCallId: toolCall.toolCallId,
-            agentId: context?.agentId,
-          },
-        };
-        await observability.recordToolExecution(toolTrace);
-      }
+      // Tool execution tracking can be added to Langfuse if needed
 
       return {
         toolCallId: toolCall.toolCallId,
@@ -132,25 +105,11 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
         result,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      
-      // Record failed tool execution if observability is enabled
-      if (observability) {
-        const toolTrace: ToolTrace = {
-          toolName: toolCall.toolName,
-          parameters: toolCall.args as Record<string, any>,
-          result: { error: errorMessage },
-          duration: Date.now() - startTime,
-          error: errorMessage,
-          metadata: {
-            toolCallId: toolCall.toolCallId,
-            agentId: context?.agentId,
-            errorType: error instanceof Error ? error.constructor.name : "Unknown",
-          },
-        };
-        await observability.recordToolExecution(toolTrace);
-      }
-      
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+
+      // Tool execution tracking can be added to Langfuse if needed
+
       return {
         toolCallId: toolCall.toolCallId,
         toolName: toolCall.toolName,
@@ -168,30 +127,15 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
     toolCalls: ToolCall[],
     context?: { agentId?: string }
   ): Promise<ToolResult[]> => {
-    // If observability is enabled, record batch execution event
-    if (observability) {
-      await observability.recordEvent("tool_batch_start", {
-        toolCount: toolCalls.length,
-        toolNames: toolCalls.map(tc => tc.toolName),
-        agentId: context?.agentId,
-      });
-    }
-    
+    // Batch execution tracking can be added to Langfuse if needed
+
     const results = await Promise.all(
       toolCalls.map((toolCall) => executeToolCall(toolCall, context))
     );
-    
+
     // Record batch completion
-    if (observability) {
-      const successCount = results.filter(r => !(r.result as any).error).length;
-      await observability.recordEvent("tool_batch_complete", {
-        toolCount: toolCalls.length,
-        successCount,
-        failureCount: toolCalls.length - successCount,
-        agentId: context?.agentId,
-      });
-    }
-    
+    // Batch completion tracking can be added to Langfuse if needed
+
     return results;
   };
 
