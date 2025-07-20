@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.6.0
+
+### Minor Changes
+
+- 6107128: Add LangfuseService from hq with more features and better ideas
+
 ## 0.5.1
 
 ### Patch Changes

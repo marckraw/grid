@@ -1,5 +1,18 @@
 # terminal-agent
 
+## 0.2.0
+
+### Minor Changes
+
+- 6107128: Add LangfuseService from hq with more features and better ideas
+
+### Patch Changes
+
+- Updated dependencies [6107128]
+  - @mrck-labs/grid-core@0.6.0
+  - @mrck-labs/grid-agents@0.3.3
+  - @mrck-labs/grid-workflows@0.3.3
+
 ## 0.1.1
 
 ### Patch Changes
