@@ -1,5 +1,12 @@
 # @mrck-labs/grid-core
 
+## 0.5.1
+
+### Patch Changes
+
+- 17d2c8f: Add transform ai messages helper function
+- a4df015: add pnpm setup
+
 ## 0.5.0
 
 ### Minor Changes

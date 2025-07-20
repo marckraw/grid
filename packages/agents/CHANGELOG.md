@@ -1,5 +1,13 @@
 # @mrck-labs/grid-agents
 
+## 0.3.2
+
+### Patch Changes
+
+- Updated dependencies [17d2c8f]
+- Updated dependencies [a4df015]
+  - @mrck-labs/grid-core@0.5.1
+
 ## 0.3.1
 
 ### Patch Changes
