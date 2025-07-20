@@ -99,6 +99,9 @@ export const AgentConfigSchema = z.object({
   // Orchestration capabilities
   orchestration: AgentOrchestrationSchema.optional(),
 
+  // Observability configuration
+  // observability: ObservabilityConfigSchema.optional(), // Removed - using simple Langfuse integration
+
   // Feature flags
   features: z.record(z.boolean()).optional(),
 

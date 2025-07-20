@@ -35,6 +35,7 @@ export interface CreateConfigurableAgentOptions {
   customHandlers?: CustomHandlers;
   llmService?: LLMService;
   toolExecutor?: ToolExecutor;
+  // observability?: ObservabilityService; // Removed - using simple Langfuse integration
 }
 
 /**
@@ -76,6 +77,7 @@ export const createConfigurableAgent = ({
 
     // Main act method with all enhancements
     act: async (input) => {
+      // Tracing is now handled by Langfuse integration in baseLLMService
       let processedInput = input;
       let attempt = 0;
       const maxRetries = config.behavior?.maxRetries || 3;
@@ -258,8 +260,12 @@ export const createConfigurableAgent = ({
             response = await customHandlers.transformOutput(response);
           }
 
+          // Tracing handled by Langfuse integration
+          
           return response;
         } catch (error) {
+          // Error tracking can be added to Langfuse if needed
+          
           // Final error handling
           if (attempt >= maxRetries) {
             // Hook: onError for final failure
@@ -288,11 +294,17 @@ export const createConfigurableAgent = ({
               }
             }
 
+            // End trace on final error
+            // Tracing handled by Langfuse integration
+            
             throw error;
           }
         }
       }
 
+      // End trace if we somehow exit the loop
+      // Tracing handled by Langfuse integration
+      
       // Should never reach here
       throw new Error("Unexpected end of retry loop");
     },

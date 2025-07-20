@@ -13,7 +13,8 @@
       "WebFetch(domain:sdk.vercel.ai)",
       "WebFetch(domain:ai-sdk.dev)",
       "Bash(pnpm --filter terminal-agent remove zod)",
-      "Bash(pnpm:*)"
+      "Bash(pnpm:*)",
+      "WebFetch(domain:docusaurus.io)"
     ],
     "deny": []
   }

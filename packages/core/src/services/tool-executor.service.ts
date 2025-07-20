@@ -7,6 +7,8 @@ import type { ToolCall } from "../types/llm.types.js";
 export interface ToolExecutorOptions {
   maxRetries?: number;
   defaultTimeout?: number;
+  // observability?: ObservabilityService; // Removed - using simple Langfuse integration
+  onToolRegister?: (tool: Tool<any, any>) => void;
 }
 
 /**
@@ -18,6 +20,8 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
     defaultTimeout: options?.defaultTimeout ?? 30000,
   };
 
+  // Observability tracking can be added to Langfuse if needed
+
   // Registry of tools by name
   const toolRegistry = new Map<string, Tool<any, any>>();
 
@@ -28,6 +32,7 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
     if (!tool.name) {
       throw new Error("Tool must have a name");
     }
+    options?.onToolRegister?.(tool);
     toolRegistry.set(tool.name, tool);
   };
 
@@ -59,9 +64,12 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
     toolCall: ToolCall,
     context?: { agentId?: string }
   ): Promise<ToolResult> => {
+    const startTime = Date.now();
     const tool = toolRegistry.get(toolCall.toolName);
 
     if (!tool) {
+      // Tool execution tracking can be added to Langfuse if needed
+
       return {
         toolCallId: toolCall.toolCallId,
         toolName: toolCall.toolName,
@@ -89,17 +97,24 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
 
       const result = await Promise.race([executePromise, timeoutPromise]);
 
+      // Tool execution tracking can be added to Langfuse if needed
+
       return {
         toolCallId: toolCall.toolCallId,
         toolName: toolCall.toolName,
         result,
       };
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+
+      // Tool execution tracking can be added to Langfuse if needed
+
       return {
         toolCallId: toolCall.toolCallId,
         toolName: toolCall.toolName,
         result: {
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: errorMessage,
         },
       };
     }
@@ -112,9 +127,16 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
     toolCalls: ToolCall[],
     context?: { agentId?: string }
   ): Promise<ToolResult[]> => {
-    return Promise.all(
+    // Batch execution tracking can be added to Langfuse if needed
+
+    const results = await Promise.all(
       toolCalls.map((toolCall) => executeToolCall(toolCall, context))
     );
+
+    // Record batch completion
+    // Batch completion tracking can be added to Langfuse if needed
+
+    return results;
   };
 
   /**

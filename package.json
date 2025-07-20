@@ -21,6 +21,8 @@
     "dev": "turbo run dev",
     "test": "turbo run test",
     "lint": "turbo run lint",
+    "docs": "pnpm --filter docs start",
+    "terminal-agent": "pnpm --filter terminal-agent dev",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "turbo run build && changeset publish",
