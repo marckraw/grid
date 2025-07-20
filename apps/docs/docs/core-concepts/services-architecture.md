@@ -29,20 +29,24 @@ Grid organizes services into three distinct layers:
 
 ## Atomic Level Services
 
-These are the fundamental building blocks that handle specific, focused responsibilities.
+These are the fundamental building blocks that handle specific, focused responsibilities. All services use a closure-based pattern - no classes, just functions returning objects with methods.
 
-### BaseLLMService
+### baseLLMService
 
 The core service for LLM interactions:
 
 ```typescript
-class BaseLLMService {
-  async generateResponse(input: LLMInput): Promise<LLMResponse> {
-    // Handles communication with OpenAI/Anthropic
-    // Manages retries and error handling
-    // Formats messages for the provider
-  }
-}
+const llmService = baseLLMService({
+  provider: "openai",
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// Usage
+const response = await llmService.generateText({
+  model: "gpt-4",
+  messages: [...],
+  tools: [...],
+});
 ```
 
 Key features:
@@ -51,280 +55,423 @@ Key features:
 - Token counting and limits
 - Response streaming support
 
-### ConversationHistoryService
+### createConversationHistory
 
-Manages message history:
+Manages message history using closure-based pattern:
 
 ```typescript
-class ConversationHistoryService {
-  private messages: Message[] = [];
+export const createConversationHistory = (systemPrompt?: string) => {
+  // Private state in closure
+  const messages: Message[] = [];
   
-  addMessage(message: Message): void {
-    this.messages.push(message);
-    this.trimToLimit(); // Manage context window
+  if (systemPrompt) {
+    messages.push({ role: "system", content: systemPrompt });
   }
   
-  getRecentMessages(limit?: number): Message[] {
-    return this.messages.slice(-limit);
-  }
-  
-  clear(): void {
-    this.messages = [];
-  }
-}
+  // Public methods
+  return {
+    addMessage: (message: Message) => {
+      messages.push(message);
+    },
+    
+    getMessages: () => [...messages], // Return copy
+    
+    getNonSystemMessages: () => 
+      messages.filter(m => m.role !== "system"),
+    
+    clear: () => {
+      const systemMsg = messages.find(m => m.role === "system");
+      messages.length = 0;
+      if (systemMsg) messages.push(systemMsg);
+    },
+    
+    getLastMessageByRole: (role: MessageRole) => 
+      messages.findLast(m => m.role === role),
+  };
+};
 ```
 
 Features:
 - Message storage and retrieval
-- Context window management
-- Message filtering and search
-- Format conversion
+- System message preservation
+- Tool response handling
+- Message filtering by role
 
-### ConversationContextService
+### createConversationContext
 
 Maintains conversation state:
 
 ```typescript
-class ConversationContextService {
-  private context: Map<string, any> = new Map();
+export const createConversationContext = () => {
+  // Private state
+  const state: Record<string, any> = {};
+  const metadata: ConversationMetadata = {
+    startTime: new Date(),
+    messageCount: 0,
+    toolCallCount: 0,
+  };
   
-  set(key: string, value: any): void {
-    this.context.set(key, value);
-    this.notifyObservers(key, value);
-  }
-  
-  get<T>(key: string): T | undefined {
-    return this.context.get(key);
-  }
-  
-  merge(newContext: Record<string, any>): void {
-    Object.entries(newContext).forEach(([key, value]) => {
-      this.set(key, value);
-    });
-  }
-}
+  // Public API
+  return {
+    updateState: (key: string, value: any) => {
+      state[key] = value;
+    },
+    
+    getState: () => ({ ...state }), // Return copy
+    
+    updateMetadata: (key: string, value: any) => {
+      metadata[key] = value;
+    },
+    
+    incrementMessageCount: () => {
+      metadata.messageCount++;
+    },
+    
+    getMetrics: () => ({
+      duration: Date.now() - metadata.startTime.getTime(),
+      messages: metadata.messageCount,
+      toolCalls: metadata.toolCallCount,
+    }),
+  };
+};
 ```
 
 Use cases:
 - User preferences
 - Session state
 - Tool results caching
-- Dynamic configuration
+- Conversation metrics
 
-### ToolExecutorService
+### toolExecutor
 
 Executes tools safely and efficiently:
 
 ```typescript
-class ToolExecutorService {
-  async execute(toolCall: ToolCall): Promise<ToolResult> {
-    const tool = this.getToolByName(toolCall.name);
+export const createToolExecutor = (tools: Record<string, CoreTool>) => {
+  // Private helper functions
+  const validateParams = async (tool: CoreTool, params: any) => {
+    return tool.parameters.parseAsync(params);
+  };
+  
+  // Public methods
+  return {
+    execute: async (toolCall: ToolCall) => {
+      const tool = tools[toolCall.name];
+      if (!tool) throw new Error(`Tool not found: ${toolCall.name}`);
+      
+      try {
+        const validated = await validateParams(tool, toolCall.args);
+        const result = await tool.execute(validated);
+        return { success: true, result };
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
     
-    // Validate parameters
-    const validated = await tool.parameters.parseAsync(toolCall.args);
-    
-    // Execute with timeout and error handling
-    try {
-      const result = await this.withTimeout(
-        tool.execute(validated),
-        tool.timeout || 30000
-      );
-      return { success: true, result };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
-  }
-}
+    getAvailableTools: () => Object.keys(tools),
+  };
+};
 ```
 
 Features:
-- Parameter validation
-- Execution timeout
+- Parameter validation with Zod
 - Error boundaries
+- Tool discovery
 - Result formatting
 
 ## Composed Level Services
 
 These services combine atomic services to provide higher-level functionality.
 
-### ConversationManagerService
+### createConversationManager
 
-Orchestrates history and context:
+Orchestrates history and context using the closure pattern:
 
 ```typescript
-class ConversationManagerService {
-  constructor(
-    private history: ConversationHistoryService,
-    private context: ConversationContextService,
-    private llm: BaseLLMService,
-    private toolExecutor: ToolExecutorService
-  ) {}
+export const createConversationManager = (systemPrompt?: string) => {
+  // Compose atomic services
+  const history = createConversationHistory(systemPrompt);
+  const context = createConversationContext();
   
-  async processMessage(content: string): Promise<AIMessage> {
-    // Add user message to history
-    const userMessage = { role: "user", content };
-    this.history.addMessage(userMessage);
+  // Public API combining both services
+  return {
+    // Unified message handling
+    addUserMessage: (content: string) => {
+      history.addMessage({ role: "user", content });
+      context.incrementMessageCount();
+    },
     
-    // Prepare context for LLM
-    const messages = this.prepareMessages();
+    processAgentResponse: (response: AgentResponse) => {
+      // Add assistant message
+      history.addMessage({
+        role: "assistant",
+        content: response.content,
+        toolCalls: response.toolCalls,
+      });
+      
+      // Update context metrics
+      context.incrementMessageCount();
+      if (response.toolCalls?.length) {
+        context.incrementToolCallCount(response.toolCalls.length);
+      }
+    },
     
-    // Generate response
-    const response = await this.llm.generateResponse({
-      messages,
-      tools: this.getAvailableTools(),
-      context: this.context.getAll(),
-    });
+    // Combined state access
+    getConversationState: () => ({
+      messages: history.getMessages(),
+      context: context.getState(),
+      metrics: context.getMetrics(),
+    }),
     
-    // Handle tool calls if any
-    if (response.toolCalls) {
-      await this.executeTools(response.toolCalls);
-    }
+    // Delegate to underlying services
+    ...history,  // All history methods
+    updateState: context.updateState,
+    getMetadata: context.getMetadata,
     
-    // Add assistant response to history
-    this.history.addMessage(response);
-    
-    return response;
-  }
-}
+    reset: () => {
+      history.clear();
+      context.resetState();
+    },
+  };
+};
 ```
 
 Responsibilities:
 - Message flow coordination
 - State synchronization
-- Tool orchestration
-- Context enrichment
+- Metrics tracking
+- Unified interface
 
 ## Organism Level Services
 
 The highest level services that implement complete workflows and autonomous behaviors.
 
-### ConversationLoopService
+### createConversationLoop
 
-Manages complete conversation lifecycles:
+Manages complete conversation lifecycles with agent integration:
 
 ```typescript
-class ConversationLoopService {
-  constructor(private manager: ConversationManagerService) {}
+export const createConversationLoop = (options: ConversationLoopOptions) => {
+  // Private state
+  const manager = createConversationManager(options.systemPrompt);
+  const agent = options.agent;
+  let isActive = true;
+  let turnCount = 0;
   
-  async run(initialMessage?: string): Promise<void> {
-    if (initialMessage) {
-      await this.processUserInput(initialMessage);
-    }
+  // Private helper functions
+  const resolveToolCalls = async (toolCalls: ToolCall[], maxRounds = 5) => {
+    let rounds = 0;
+    let currentToolCalls = toolCalls;
     
-    while (this.isActive()) {
-      const input = await this.getUserInput();
-      
-      if (this.isExitCommand(input)) {
-        break;
+    while (currentToolCalls.length > 0 && rounds < maxRounds) {
+      // Execute tools and collect results
+      for (const toolCall of currentToolCalls) {
+        const result = await options.toolExecutor.execute(toolCall);
+        manager.addToolResponse(toolCall.id, toolCall.name, result);
       }
       
-      const response = await this.manager.processMessage(input);
-      await this.displayResponse(response);
+      // Get next response with tool results
+      const response = await agent.act({
+        messages: manager.getMessages(),
+      });
+      
+      currentToolCalls = response.toolCalls || [];
+      rounds++;
     }
-  }
-}
+  };
+  
+  // Public API
+  return {
+    sendMessage: async (userMessage: string) => {
+      if (!isActive) throw new Error("Conversation has ended");
+      
+      manager.addUserMessage(userMessage);
+      turnCount++;
+      
+      const response = await agent.act({
+        messages: manager.getMessages(),
+        context: manager.getState(),
+      });
+      
+      manager.processAgentResponse(response);
+      
+      if (response.toolCalls?.length) {
+        await resolveToolCalls(response.toolCalls);
+      }
+      
+      return response;
+    },
+    
+    endConversation: () => {
+      isActive = false;
+    },
+    
+    resetConversation: () => {
+      manager.reset();
+      isActive = true;
+      turnCount = 0;
+    },
+    
+    getAnalytics: () => ({
+      ...manager.getMetrics(),
+      turnCount,
+      isActive,
+    }),
+    
+    exportConversation: () => ({
+      messages: manager.getMessages(),
+      context: manager.getState(),
+      metadata: {
+        turnCount,
+        exported: new Date().toISOString(),
+      },
+    }),
+    
+    // Delegate manager methods
+    getMessages: manager.getMessages,
+    getConversationState: manager.getConversationState,
+  };
+};
 ```
 
-### ConversationFlowService
+### createConversationFlow
 
-Adds progress tracking and streaming:
+Adds progress tracking and safety features:
 
 ```typescript
-class ConversationFlowService extends ConversationLoopService {
-  private progressEmitter = new EventEmitter();
+export const createConversationFlow = (options: ConversationFlowOptions) => {
+  // Compose conversation loop
+  const loop = createConversationLoop(options);
   
-  async processWithProgress(input: string): Promise<Response> {
-    this.emitProgress({ type: "thinking", message: "Processing..." });
+  // Flow-specific state
+  let iterationCount = 0;
+  const maxIterations = options.maxIterations || 10;
+  const flowStartTime = Date.now();
+  
+  // Progress handling
+  const emitProgress = (update: ProgressUpdate) => {
+    if (options.onProgress) {
+      options.onProgress({
+        ...update,
+        metadata: {
+          iteration: iterationCount,
+          elapsed: Date.now() - flowStartTime,
+        },
+      });
+    }
+  };
+  
+  // Enhanced send message with progress
+  const sendMessageWithProgress = async (userMessage: string) => {
+    iterationCount++;
+    
+    if (iterationCount > maxIterations) {
+      throw new Error(`Maximum iterations (${maxIterations}) exceeded`);
+    }
+    
+    emitProgress({ type: "thinking", message: "Processing your message..." });
     
     try {
-      const response = await this.manager.processMessage(input);
+      const response = await loop.sendMessage(userMessage);
       
-      if (response.toolCalls) {
-        for (const toolCall of response.toolCalls) {
-          this.emitProgress({
-            type: "tool_execution",
-            toolName: toolCall.name,
-            message: `Executing ${toolCall.name}...`,
-          });
-          
-          await this.executeToolWithProgress(toolCall);
-        }
-      }
+      emitProgress({ 
+        type: "complete", 
+        message: "Response generated successfully" 
+      });
       
-      this.emitProgress({ type: "complete", message: "Done" });
       return response;
     } catch (error) {
-      this.emitProgress({ type: "error", message: error.message });
+      emitProgress({ 
+        type: "error", 
+        message: error.message 
+      });
       throw error;
     }
-  }
-}
+  };
+  
+  // Public API extends loop with flow features
+  return {
+    ...loop, // All loop methods
+    
+    sendMessage: sendMessageWithProgress,
+    
+    getFlowStats: () => ({
+      iterations: iterationCount,
+      maxIterations,
+      elapsedTime: Date.now() - flowStartTime,
+      canContinue: iterationCount < maxIterations,
+    }),
+    
+    resetFlowState: () => {
+      iterationCount = 0;
+      // Note: doesn't reset conversation, just flow state
+    },
+  };
+};
 ```
 
-### AgentFlowService
+### agentFlowService
 
 Enables autonomous agent execution:
 
 ```typescript
-class AgentFlowService {
-  async runAutonomous(config: AutonomousConfig): Promise<Result> {
-    let iteration = 0;
-    const results = [];
-    
-    while (iteration < config.maxIterations) {
-      this.emitProgress({
-        type: "iteration",
-        current: iteration + 1,
-        total: config.maxIterations,
-      });
+export const createAgentFlow = (options: AgentFlowOptions) => {
+  const { agent, goal, maxIterations = 5 } = options;
+  
+  // Private state for autonomous execution
+  const executionHistory: ExecutionStep[] = [];
+  let isRunning = false;
+  
+  return {
+    runAutonomous: async () => {
+      if (isRunning) throw new Error("Already running");
+      isRunning = true;
       
-      // Agent decides next action
-      const action = await this.planNextAction(results);
-      
-      if (action.type === "complete") {
-        break;
+      try {
+        for (let i = 0; i < maxIterations; i++) {
+          const step = await executeStep(i);
+          executionHistory.push(step);
+          
+          if (step.isComplete) break;
+        }
+        
+        return synthesizeResults(executionHistory);
+      } finally {
+        isRunning = false;
       }
-      
-      // Execute action
-      const result = await this.executeAction(action);
-      results.push(result);
-      
-      // Self-reflection
-      if (config.enableReflection) {
-        await this.reflect(results);
-      }
-      
-      iteration++;
-    }
+    },
     
-    return this.synthesizeResults(results);
-  }
-}
+    getExecutionHistory: () => [...executionHistory],
+  };
+};
 ```
 
 ## Service Integration
 
-### Dependency Injection
+### Composition Pattern
 
-Services are wired together using dependency injection:
+Services are composed together using function composition:
 
 ```typescript
-// Create atomic services
-const llmService = new BaseLLMService(config);
-const historyService = new ConversationHistoryService();
-const contextService = new ConversationContextService();
-const toolExecutor = new ToolExecutorService(tools);
+// Create an agent
+const agent = createConfigurableAgent({
+  llmConfig: { model: "gpt-4", provider: "openai" },
+  systemPrompt: "You are a helpful assistant",
+  tools: [weatherTool, calculatorTool],
+});
 
-// Create composed service
-const conversationManager = new ConversationManagerService(
-  historyService,
-  contextService,
-  llmService,
-  toolExecutor
-);
+// Create conversation flow with all features
+const conversation = createConversationFlow({
+  agent,
+  systemPrompt: agent.config.systemPrompt,
+  maxIterations: 10,
+  onProgress: (update) => {
+    console.log(`[${update.type}] ${update.message}`);
+  },
+});
 
-// Create organism service
-const agentFlow = new AgentFlowService(conversationManager);
+// Use the composed service
+const response = await conversation.sendMessage("What's the weather?");
 ```
 
 ### Service Communication
@@ -366,27 +513,39 @@ class ObservableService {
 
 ### Error Handling
 
-Consistent error handling across services:
+Consistent error handling using closure pattern:
 
 ```typescript
-class ServiceBase {
-  protected async safeExecute<T>(
-    operation: () => Promise<T>,
-    fallback?: T
-  ): Promise<T> {
-    try {
-      return await operation();
-    } catch (error) {
-      this.logger.error(`Service error: ${error.message}`);
-      
-      if (this.config.throwErrors) {
-        throw error;
-      }
-      
-      return fallback || this.getDefaultValue<T>();
+export const createServiceWithErrorHandling = (options: ServiceOptions) => {
+  // Private error handling logic
+  const handleError = async (error: Error, context: string) => {
+    console.error(`[${context}] Error:`, error.message);
+    
+    if (options.onError) {
+      await options.onError(error, context);
     }
-  }
-}
+    
+    if (options.throwErrors) {
+      throw error;
+    }
+    
+    return options.fallbackValue;
+  };
+  
+  // Public API with error boundaries
+  return {
+    safeExecute: async <T>(
+      operation: () => Promise<T>,
+      context: string
+    ): Promise<T> => {
+      try {
+        return await operation();
+      } catch (error) {
+        return handleError(error, context);
+      }
+    },
+  };
+};
 ```
 
 ### Caching
@@ -394,29 +553,55 @@ class ServiceBase {
 Services implement caching for performance:
 
 ```typescript
-class CachedService {
-  private cache = new Map<string, CacheEntry>();
+export const createCachedService = () => {
+  // Private cache state
+  const cache = new Map<string, { value: any; expiry: number }>();
   
-  async getCached<T>(
-    key: string,
-    factory: () => Promise<T>,
-    ttl: number = 3600000
-  ): Promise<T> {
-    const cached = this.cache.get(key);
-    
-    if (cached && cached.expiry > Date.now()) {
-      return cached.value as T;
+  // Cache management functions
+  const isExpired = (expiry: number) => Date.now() > expiry;
+  
+  const cleanup = () => {
+    for (const [key, entry] of cache.entries()) {
+      if (isExpired(entry.expiry)) {
+        cache.delete(key);
+      }
     }
+  };
+  
+  // Public API
+  return {
+    getCached: async <T>(
+      key: string,
+      factory: () => Promise<T>,
+      ttl: number = 3600000
+    ): Promise<T> => {
+      const cached = cache.get(key);
+      
+      if (cached && !isExpired(cached.expiry)) {
+        return cached.value as T;
+      }
+      
+      const value = await factory();
+      cache.set(key, {
+        value,
+        expiry: Date.now() + ttl,
+      });
+      
+      // Periodic cleanup
+      if (cache.size > 100) cleanup();
+      
+      return value;
+    },
     
-    const value = await factory();
-    this.cache.set(key, {
-      value,
-      expiry: Date.now() + ttl,
-    });
+    invalidate: (key: string) => {
+      cache.delete(key);
+    },
     
-    return value;
-  }
-}
+    clear: () => {
+      cache.clear();
+    },
+  };
+};
 ```
 
 ### Rate Limiting
@@ -424,19 +609,45 @@ class CachedService {
 Protect external resources:
 
 ```typescript
-class RateLimitedService {
-  private limiter = new RateLimiter({
-    tokensPerInterval: 100,
-    interval: "minute",
-  });
+export const createRateLimitedService = (config: RateLimitConfig) => {
+  // Private rate limit state
+  let tokens = config.tokensPerInterval;
+  let lastRefill = Date.now();
   
-  async executeWithLimit<T>(
-    operation: () => Promise<T>
-  ): Promise<T> {
-    await this.limiter.removeTokens(1);
-    return operation();
-  }
-}
+  // Token bucket algorithm
+  const refillTokens = () => {
+    const now = Date.now();
+    const timePassed = now - lastRefill;
+    const intervalsPasssed = timePassed / config.intervalMs;
+    
+    tokens = Math.min(
+      config.tokensPerInterval,
+      tokens + intervalsPasssed * config.tokensPerInterval
+    );
+    lastRefill = now;
+  };
+  
+  // Public API
+  return {
+    executeWithLimit: async <T>(
+      operation: () => Promise<T>
+    ): Promise<T> => {
+      refillTokens();
+      
+      if (tokens < 1) {
+        throw new Error("Rate limit exceeded");
+      }
+      
+      tokens -= 1;
+      return operation();
+    },
+    
+    getTokensRemaining: () => {
+      refillTokens();
+      return Math.floor(tokens);
+    },
+  };
+};
 ```
 
 ## Best Practices

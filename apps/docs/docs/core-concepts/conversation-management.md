@@ -68,14 +68,18 @@ const toolMessage: Message = {
 };
 ```
 
-## Conversation History Service
+## Using Conversation Primitives
 
-The `ConversationHistoryService` manages message storage and retrieval:
+Grid provides conversation primitives that handle message storage and state management. See [Conversation Primitives](/docs/core-concepts/conversation-primitives) for detailed API documentation.
 
-### Basic Usage
+### Basic Message History
+
+Using `createConversationHistory` for message management:
 
 ```typescript
-const history = new ConversationHistoryService();
+import { createConversationHistory } from "@mrck-labs/grid-core";
+
+const history = createConversationHistory("You are a helpful assistant");
 
 // Add messages
 history.addMessage({
@@ -89,77 +93,48 @@ history.addMessage({
 });
 
 // Retrieve messages
-const recent = history.getRecentMessages(10);
-const all = history.getAllMessages();
+const all = history.getMessages();
+const nonSystem = history.getNonSystemMessages();
+const lastUser = history.getLastMessageByRole("user");
 ```
 
-### Context Window Management
+### Context Management
 
-Automatically manage context windows to stay within token limits:
-
-```typescript
-const history = new ConversationHistoryService({
-  maxMessages: 50,  // Keep last 50 messages
-  maxTokens: 4000,  // Or limit by estimated tokens
-  preserveSystemMessage: true,  // Always keep system message
-});
-
-// Messages are automatically trimmed when limits are exceeded
-history.addMessage(newMessage);  // Oldest messages removed if needed
-```
-
-### Message Filtering
-
-Filter messages by type or content:
+Using `createConversationContext` for state management:
 
 ```typescript
-// Get only user and assistant messages
-const conversation = history.getMessages({
-  roles: ["user", "assistant"],
-});
+import { createConversationContext } from "@mrck-labs/grid-core";
 
-// Get messages with tool calls
-const toolInteractions = history.getMessages({
-  filter: (msg) => msg.toolCalls?.length > 0,
-});
-
-// Get messages from the last hour
-const recentHour = history.getMessages({
-  since: new Date(Date.now() - 3600000),
-});
-```
-
-## Conversation Context Service
-
-The `ConversationContextService` maintains stateful information:
-
-### Setting Context
-
-```typescript
-const context = new ConversationContextService();
+const context = createConversationContext();
 
 // Set user preferences
-context.set("user.name", "Alice");
-context.set("user.preferences", {
-  language: "en",
-  timezone: "PST",
-  verbose: true,
+context.updateState("user.name", "Alice");
+context.updateStates({
+  "user.preferences.language": "en",
+  "user.preferences.timezone": "PST",
+  "user.preferences.verbose": true,
 });
 
 // Set session data
-context.set("session.id", "sess_123");
-context.set("session.startTime", new Date());
+context.updateMetadata("sessionId", "sess_123");
+context.updateMetadata("topic", "technical-support");
+
+// Track metrics
+context.incrementMessageCount();
+context.incrementToolCallCount(1);
 ```
 
 ### Using Context in Agents
 
 ```typescript
+const context = createConversationContext();
+
 const agent = createConfigurableAgent({
   systemPrompt: "You are a helpful assistant.",
   customHandlers: {
     transformInput: async (input, config) => {
-      const userName = context.get("user.name");
-      const preferences = context.get("user.preferences");
+      const userName = context.getStateValue("user.name");
+      const language = context.getStateValue("user.preferences.language");
       
       // Personalize the interaction
       if (userName) {
@@ -175,16 +150,23 @@ const agent = createConfigurableAgent({
 
 ### Context Persistence
 
-Save and restore context:
+Save and restore conversation state:
 
 ```typescript
 // Save context
-const snapshot = context.snapshot();
+const snapshot = context.getSnapshot();
 await saveToDatabase(snapshot);
 
 // Restore context
 const saved = await loadFromDatabase();
-context.restore(saved);
+const newContext = createConversationContext();
+// Restore by updating state and metadata
+Object.entries(saved.state).forEach(([key, value]) => {
+  newContext.updateState(key, value);
+});
+Object.entries(saved.metadata).forEach(([key, value]) => {
+  newContext.updateMetadata(key, value);
+});
 ```
 
 ## Conversation Patterns
@@ -202,32 +184,40 @@ async function simpleQA(agent: Agent, question: string) {
 
 ### Multi-turn Conversations
 
-Maintain context across multiple turns:
+Maintain context across multiple turns using conversation primitives:
 
 ```typescript
-class ConversationSession {
-  private history = new ConversationHistoryService();
-  private context = new ConversationContextService();
+import { createConversationManager } from "@mrck-labs/grid-core";
+
+const createConversationSession = (agent) => {
+  const manager = createConversationManager();
   
-  async process(userInput: string): Promise<string> {
-    // Add user message
-    this.history.addMessage({ role: "user", content: userInput });
+  return {
+    process: async (userInput: string) => {
+      // Add user message
+      manager.addUserMessage(userInput);
+      
+      // Process with agent
+      const response = await agent.act({
+        messages: manager.getMessages(),
+        context: manager.getState(),
+      });
+      
+      // Process response
+      manager.processAgentResponse(response);
+      
+      return response.content;
+    },
     
-    // Get conversation context
-    const messages = this.history.getAllMessages();
-    
-    // Process with agent
-    const response = await agent.act({
-      messages,
-      context: this.context.getAll(),
-    });
-    
-    // Add response to history
-    this.history.addMessage(response);
-    
-    return response.content;
-  }
-}
+    getState: () => manager.getConversationState(),
+    reset: () => manager.reset(),
+  };
+};
+
+// Usage
+const session = createConversationSession(myAgent);
+const response1 = await session.process("Hello!");
+const response2 = await session.process("What's my name?"); // Maintains context
 ```
 
 ### Stateful Workflows
@@ -329,26 +319,44 @@ class SmartHistory extends ConversationHistoryService {
 ### Creating Sessions
 
 ```typescript
-class ConversationSessionManager {
-  private sessions = new Map<string, ConversationSession>();
+import { createConversationLoop } from "@mrck-labs/grid-core";
+
+const createSessionManager = () => {
+  const sessions = new Map();
   
-  createSession(userId: string): ConversationSession {
-    const session = new ConversationSession({
-      id: generateId(),
-      userId,
-      startTime: new Date(),
-      history: new ConversationHistoryService(),
-      context: new ConversationContextService(),
-    });
+  return {
+    createSession: (userId: string, agent: Agent) => {
+      const sessionId = generateId();
+      
+      const session = {
+        id: sessionId,
+        userId,
+        startTime: new Date(),
+        conversation: createConversationLoop({
+          agent,
+          systemPrompt: agent.config.systemPrompt,
+        }),
+      };
+      
+      sessions.set(sessionId, session);
+      return session;
+    },
     
-    this.sessions.set(session.id, session);
-    return session;
-  }
-  
-  getSession(sessionId: string): ConversationSession | undefined {
-    return this.sessions.get(sessionId);
-  }
-}
+    getSession: (sessionId: string) => {
+      return sessions.get(sessionId);
+    },
+    
+    listUserSessions: (userId: string) => {
+      return Array.from(sessions.values())
+        .filter(s => s.userId === userId)
+        .map(s => ({
+          id: s.id,
+          startTime: s.startTime,
+          analytics: s.conversation.getAnalytics(),
+        }));
+    },
+  };
+};
 ```
 
 ### Session Persistence
@@ -356,33 +364,52 @@ class ConversationSessionManager {
 Save sessions for later:
 
 ```typescript
-interface SessionStorage {
-  save(session: ConversationSession): Promise<void>;
-  load(sessionId: string): Promise<ConversationSession>;
-  list(userId: string): Promise<SessionSummary[]>;
-}
-
-class DatabaseSessionStorage implements SessionStorage {
-  async save(session: ConversationSession): Promise<void> {
-    await db.sessions.upsert({
-      id: session.id,
-      userId: session.userId,
-      messages: session.history.getAllMessages(),
-      context: session.context.snapshot(),
-      updatedAt: new Date(),
-    });
-  }
-  
-  async load(sessionId: string): Promise<ConversationSession> {
-    const data = await db.sessions.findUnique({ where: { id: sessionId } });
+const createSessionStorage = (database) => {
+  return {
+    save: async (session) => {
+      const exported = session.conversation.exportConversation();
+      
+      await database.sessions.upsert({
+        id: session.id,
+        userId: session.userId,
+        conversationData: exported,
+        updatedAt: new Date(),
+      });
+    },
     
-    const session = new ConversationSession();
-    session.history.restore(data.messages);
-    session.context.restore(data.context);
+    load: async (sessionId: string, agent: Agent) => {
+      const data = await database.sessions.findUnique({ 
+        where: { id: sessionId } 
+      });
+      
+      const conversation = createConversationLoop({
+        agent,
+        systemPrompt: agent.config.systemPrompt,
+      });
+      
+      conversation.importConversation(data.conversationData);
+      
+      return {
+        id: data.id,
+        userId: data.userId,
+        conversation,
+      };
+    },
     
-    return session;
-  }
-}
+    list: async (userId: string) => {
+      const sessions = await database.sessions.findMany({
+        where: { userId },
+        orderBy: { updatedAt: 'desc' },
+      });
+      
+      return sessions.map(s => ({
+        id: s.id,
+        updatedAt: s.updatedAt,
+        messageCount: s.conversationData.messages.length,
+      }));
+    },
+  };
+};
 ```
 
 ## Advanced Features
