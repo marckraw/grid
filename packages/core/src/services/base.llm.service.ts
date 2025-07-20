@@ -7,7 +7,6 @@ import type {
 import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { anthropic } from "@ai-sdk/anthropic";
-import type { LangfuseService } from "./LangfuseService/langfuse.service.js";
 
 export interface BaseLLMServiceConfig {
   toolExecutionMode?: "vercel-native" | "custom" | "none";
@@ -24,11 +23,6 @@ export const baseLLMService = (
     defaultModel = "gpt-4.1",
     langfuse,
   } = config;
-
-  // Initialize Langfuse if config provided
-  if (langfuse) {
-    langfuse.isEnabled();
-  }
 
   const runLLM = async (options: LLMServiceOptions): Promise<ChatMessage> => {
     const {
