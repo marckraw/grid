@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.5.0
+
+### Minor Changes
+
+- 34613c2: refactor to use vercel ai sdk, docs, beggining of observability with langfuse
+
 ## 0.4.0
 
 ### Minor Changes
