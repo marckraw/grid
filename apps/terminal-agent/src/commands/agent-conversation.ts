@@ -20,6 +20,33 @@ import {
   type MCPClientType,
 } from "./helpers/registerTestMcp.js";
 
+const sendUpdateOnProgress = async (message: any) => {
+  // Handle different progress message types
+  switch (message.type) {
+    case "thinking":
+      // Don't show thinking messages unless in debug mode
+      if (process.env.DEBUG) {
+        p.log.step(pc.dim(`💭 ${message.content}`));
+      }
+      break;
+    case "tool_execution":
+      p.log.step(pc.yellow(`🔧 ${message.content}`));
+      break;
+    case "error":
+      p.log.error(pc.red(`❌ ${message.content}`));
+      break;
+    case "iteration":
+      if (process.env.DEBUG) {
+        p.log.step(pc.dim(`🔄 ${message.content}`));
+      }
+      break;
+    default:
+      if (process.env.DEBUG) {
+        p.log.info(pc.dim(`[${message.type}] ${message.content}`));
+      }
+  }
+};
+
 export async function exploreAgentConversation(): Promise<void> {
   p.intro(pc.cyan("🤖 Agent Conversation Mode"));
   p.log.info("Chat with an AI assistant. Type 'exit' to end the conversation.");
@@ -143,32 +170,7 @@ Be concise but friendly in your responses.`,
         }
       },
     },
-    onProgress: async (message) => {
-      // Handle different progress message types
-      switch (message.type) {
-        case "thinking":
-          // Don't show thinking messages unless in debug mode
-          if (process.env.DEBUG) {
-            p.log.step(pc.dim(`💭 ${message.content}`));
-          }
-          break;
-        case "tool_execution":
-          p.log.step(pc.yellow(`🔧 ${message.content}`));
-          break;
-        case "error":
-          p.log.error(pc.red(`❌ ${message.content}`));
-          break;
-        case "iteration":
-          if (process.env.DEBUG) {
-            p.log.step(pc.dim(`🔄 ${message.content}`));
-          }
-          break;
-        default:
-          if (process.env.DEBUG) {
-            p.log.info(pc.dim(`[${message.type}] ${message.content}`));
-          }
-      }
-    },
+    onProgress: sendUpdateOnProgress,
     onMessage: async (response) => {
       // Display tool calls if any
       if (response.toolCalls && response.toolCalls.length > 0) {

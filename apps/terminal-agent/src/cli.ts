@@ -10,14 +10,8 @@ import {
 } from "./config/index.js";
 import {
   exploreAgentConversation,
-  exploreWorkflowPrimitives,
-  conversationMode,
-  exploreToolUsage,
-  exploreCollaboration,
   configureGrid,
-  exploreAutonomousFlow,
   viewEnvironment,
-  exploreHooksDemo,
 } from "./commands/index.js";
 
 const menuOptions: MenuOption[] = [
@@ -25,36 +19,6 @@ const menuOptions: MenuOption[] = [
     value: "agent-conversation",
     label: "💬 Agent Conversation",
     hint: "Interactive conversation with tools",
-  },
-  {
-    value: "workflow",
-    label: "🔄 Workflow Primitives",
-    hint: "Create and test workflows",
-  },
-  {
-    value: "autonomous",
-    label: "🚀 Autonomous Flow",
-    hint: "Run autonomous agent loops",
-  },
-  {
-    value: "hooks",
-    label: "🪝 Hooks Demo",
-    hint: "See all agent hooks in action",
-  },
-  {
-    value: "conversation",
-    label: "📝 Conversation Mode",
-    hint: "Simple text conversation",
-  },
-  {
-    value: "tools",
-    label: "🛠️  Tool Usage",
-    hint: "Explore tool-calling capabilities",
-  },
-  {
-    value: "collaboration",
-    label: "👥 Agent Collaboration",
-    hint: "Multiple agents working together",
   },
   {
     value: "config",
@@ -71,12 +35,6 @@ const menuOptions: MenuOption[] = [
 
 const commandHandlers: Record<string, () => Promise<void>> = {
   "agent-conversation": exploreAgentConversation,
-  workflow: exploreWorkflowPrimitives,
-  autonomous: exploreAutonomousFlow,
-  hooks: exploreHooksDemo,
-  conversation: conversationMode,
-  tools: exploreToolUsage,
-  collaboration: exploreCollaboration,
   config: configureGrid,
   env: viewEnvironment,
 };
