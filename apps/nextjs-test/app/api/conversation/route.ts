@@ -18,7 +18,10 @@ type ProgressHandler = (progress: ProgressMessage) => void;
 const progressHandlers = new Map<string, ProgressHandler>();
 
 // Helper to get or create conversation
-function getConversation(sessionId: string, onProgress?: ProgressHandler): ConversationFlow {
+function getConversation(
+  sessionId: string,
+  onProgress?: ProgressHandler
+): ConversationFlow {
   if (!conversations.has(sessionId)) {
     // Create tool executor and register tools
     const toolExecutor = createToolExecutor();
@@ -67,7 +70,6 @@ Be concise but friendly in your responses.`,
     // Create conversation flow with progress handler if provided
     const conversation = createConversationFlow({
       agent,
-      toolExecutor,
       maxIterations: 50,
       enableProgressStreaming: true,
       onProgress: async (progress) => {
@@ -118,8 +120,10 @@ export async function POST(request: NextRequest) {
       try {
         console.log("[SSE] Sending message:", message);
         // Send the message
-        const result = await conversation.sendMessageWithToolResolution(message);
-        
+        const result = await conversation.sendMessageWithToolResolution(
+          message
+        );
+
         console.log("[SSE] Got result:", result);
         // Send the assistant's response
         if (result.response) {
