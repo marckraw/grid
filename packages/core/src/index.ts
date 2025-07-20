@@ -63,9 +63,10 @@ export { baseLLMService } from "./services/base.llm.service.js";
 export type { BaseLLMServiceConfig } from "./services/base.llm.service.js";
 
 // Export Langfuse utilities for simple tracing
-export { 
+export {
   shutdownLangfuse,
   startTrace,
-  endTrace
+  endTrace,
 } from "./services/langfuse.service.js";
 export type { LangfuseTraceContext } from "./services/langfuse.service.js";
+console.log("Trigger");
