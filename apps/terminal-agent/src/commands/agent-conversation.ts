@@ -4,9 +4,6 @@ import {
   createToolExecutor,
   createConversationFlow,
   baseLLMService,
-  startTrace,
-  endTrace,
-  shutdownLangfuse,
 } from "@mrck-labs/grid-core";
 import { textWithCancel, isCancel } from "../utils/prompts.js";
 import { createSpinner } from "../utils/spinners.js";
@@ -83,13 +80,6 @@ export async function exploreAgentConversation(): Promise<void> {
   p.log.info(
     pc.dim("💾 Conversation is automatically saved to conversation.json\n")
   );
-
-  // Start a Langfuse trace for this conversation session
-  const sessionId = `conversation-${Date.now()}`;
-  const traceContext = startTrace("agent-conversation", sessionId);
-  if (traceContext) {
-    p.log.info(pc.dim(`🔍 Tracing enabled (session: ${sessionId})\n`));
-  }
 
   // Create tool executor and register tools
   const toolExecutor = createToolExecutor({
@@ -306,15 +296,6 @@ Be concise but friendly in your responses.`,
   const summary = conversation.getSummary();
   const analytics = conversation.getAnalytics();
 
-  // End the Langfuse trace
-  if (traceContext) {
-    endTrace();
-    p.log.info(pc.dim("🔍 Ending trace..."));
-  }
-
-  // Ensure all Langfuse data is sent
-  await shutdownLangfuse();
-
   p.outro(pc.cyan("\n👋 Conversation ended\n"));
 
   p.log.info("📊 Final Statistics:");
@@ -328,12 +309,6 @@ Be concise but friendly in your responses.`,
       `  Avg message length: ${Math.round(
         analytics.avgUserMessageLength
       )} chars`
-    );
-  }
-
-  if (traceContext) {
-    p.log.info(
-      pc.dim(`\n📈 View trace in Langfuse dashboard (session: ${sessionId})`)
     );
   }
 }
