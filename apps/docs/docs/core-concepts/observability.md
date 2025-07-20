@@ -23,119 +23,233 @@ First, create a Langfuse account at [cloud.langfuse.com](https://cloud.langfuse.
 
 ### Configuration
 
-Configure Langfuse in your environment:
+Grid's Langfuse integration supports multiple configuration methods:
+
+#### Environment Variables
 
 ```bash
 # .env file
-LANGFUSE_PUBLIC_KEY=pk-lf-...
-LANGFUSE_SECRET_KEY=sk-lf-...
-LANGFUSE_BASE_URL=https://cloud.langfuse.com  # or your self-hosted URL
+LANGFUSE_ENABLED=true                    # Enable/disable tracing (default: false)
+LANGFUSE_PUBLIC_KEY=pk-lf-...           # Required: Your public key
+LANGFUSE_SECRET_KEY=sk-lf-...           # Required: Your secret key
+LANGFUSE_BASE_URL=https://cloud.langfuse.com  # Langfuse server URL
+
+# Optional performance tuning
+LANGFUSE_FLUSH_AT=10                    # Batch size for flushing (default: 1)
+LANGFUSE_FLUSH_INTERVAL=5000            # Flush interval in ms (default: 1000)
 ```
 
-### Initialization
-
-Grid automatically initializes Langfuse when configured:
+#### Programmatic Configuration
 
 ```typescript
-import { createConfigurableAgent } from "@mrck-labs/grid-core";
+import { createLangfuseService, baseLLMService } from "@mrck-labs/grid-core";
+
+// Create Langfuse service with custom configuration
+const langfuseService = createLangfuseService({
+  env: {
+    LANGFUSE_ENABLED: true,
+    LANGFUSE_SECRET_KEY: process.env.LANGFUSE_SECRET_KEY,
+    LANGFUSE_PUBLIC_KEY: process.env.LANGFUSE_PUBLIC_KEY,
+    LANGFUSE_BASE_URL: "https://cloud.langfuse.com",
+    LANGFUSE_FLUSH_AT: 10,
+    LANGFUSE_FLUSH_INTERVAL: 5000,
+  },
+  logs: {
+    onInfo: (message) => console.log(`[Langfuse] ${message}`),
+    onError: (message) => console.error(`[Langfuse Error] ${message}`),
+    onDebug: (message) => console.debug(`[Langfuse Debug] ${message}`),
+    onWarn: (message) => console.warn(`[Langfuse Warning] ${message}`),
+  },
+});
+
+// Use with LLM service
+const llmService = baseLLMService({
+  langfuse: langfuseService,
+  toolExecutionMode: "custom",
+});
+```
+
+### Simple Agent Integration
+
+For basic usage, Grid agents can enable Langfuse with minimal configuration:
+
+```typescript
+import { createConfigurableAgent, baseLLMService } from "@mrck-labs/grid-core";
 
 const agent = createConfigurableAgent({
-  llmConfig: { model: "gpt-4", provider: "openai" },
-  observabilityConfig: {
-    enabled: true,  // Enables Langfuse
-    sessionId: "user-session-123",  // Optional session grouping
-    userId: "user-456",  // Optional user tracking
-    tags: ["production", "customer-service"],  // Optional tags
+  llmService: baseLLMService({
+    langfuse: { enabled: true },  // Uses environment variables
+    toolExecutionMode: "custom",
+  }),
+  config: {
+    id: "my-agent",
+    type: "general",
+    // ... rest of config
   },
 });
 ```
 
 ## Tracing
 
-### Automatic Tracing
+### Session-Based Tracing
 
-Grid automatically traces:
-- LLM calls
-- Tool executions
-- Agent workflows
-- Error occurrences
+Grid's new Langfuse integration provides powerful session-based tracing that maintains context across multiple agent executions:
 
 ```typescript
-// Every agent action is automatically traced
-const response = await agent.act("What's the weather?");
+import { langfuseService } from "@mrck-labs/grid-core";
 
-// In Langfuse, you'll see:
-// - The complete request/response
-// - Tool calls made
-// - Token usage
-// - Execution time
+// Start a new session
+const sessionToken = "user-session-123";
+const conversationId = "conv-456";
+
+// Create an execution trace for this session
+const trace = langfuseService.createExecutionTrace(
+  sessionToken,
+  "general",  // agent type
+  { query: "What's the weather?" },  // input
+  conversationId,
+  { userId: "user-789", feature: "weather-bot" }  // metadata
+);
+
+// Traces are automatically numbered: agent-general-execution-1, agent-general-execution-2, etc.
+
+// Create spans within the session
+const span = langfuseService.createSpanForSession(
+  sessionToken,
+  "tool_execution",
+  { toolName: "get_weather", location: "Paris" }
+);
+
+// End the span
+span.end({ output: "72°F and sunny" });
+
+// End the execution trace
+langfuseService.endExecutionTrace(
+  sessionToken,
+  { response: "The weather in Paris is 72°F and sunny" }
+);
+
+// Get session statistics
+const stats = langfuseService.getSessionStats(sessionToken);
+console.log(`Session ${sessionToken}: ${stats.executionCount} executions`);
 ```
 
-### Custom Spans
+### Automatic Sequential Naming
 
-Add custom spans for specific operations:
+Traces within a session are automatically numbered for easy tracking:
 
 ```typescript
-import { getLangfuseInstance } from "@mrck-labs/grid-core";
+// First execution: "agent-general-execution-1"
+langfuseService.createExecutionTrace(sessionToken, "general", input1);
 
-async function processData(data: any) {
-  const langfuse = getLangfuseInstance();
-  const span = langfuse.span({
-    name: "data_processing",
-    metadata: { dataSize: data.length },
-  });
-  
-  try {
-    const result = await heavyProcessing(data);
-    span.end({ output: { resultSize: result.length } });
-    return result;
-  } catch (error) {
-    span.end({ 
-      level: "ERROR", 
-      statusMessage: error.message 
-    });
-    throw error;
-  }
-}
+// Second execution: "agent-general-execution-2"
+langfuseService.createExecutionTrace(sessionToken, "general", input2);
+
+// Third execution: "agent-general-execution-3"
+langfuseService.createExecutionTrace(sessionToken, "general", input3);
 ```
 
 ### Trace Hierarchy
 
-Grid creates a hierarchical trace structure:
+Grid creates a hierarchical trace structure with session awareness:
 
 ```
-Trace: Agent Conversation
-├── Span: Agent.act()
-│   ├── Span: LLM Generation
-│   │   └── Generation: OpenAI API Call
-│   ├── Span: Tool Execution - get_weather
-│   │   └── Span: API Request
-│   └── Span: Response Formatting
-└── Span: Observability Upload
+Session: user-session-123
+├── Trace: agent-general-execution-1
+│   ├── Span: conversation_turn
+│   │   ├── Generation: LLM Call
+│   │   └── Span: tool_execution
+│   └── Span: response_formatting
+├── Trace: agent-general-execution-2
+│   ├── Span: conversation_turn
+│   │   └── Generation: LLM Call
+│   └── Span: response_formatting
+└── Session Stats: { executionCount: 2, startTime: ..., lastActivity: ... }
+```
+
+### Generation Tracking
+
+Track LLM generations within sessions:
+
+```typescript
+// Create a generation linked to the current session
+const generation = langfuseService.createGenerationForSession(
+  sessionToken,
+  {
+    name: "weather_query",
+    model: "gpt-4",
+    modelParameters: { temperature: 0.7 },
+    input: messages,
+    output: response.content,
+    usage: {
+      promptTokens: 150,
+      completionTokens: 50,
+      totalTokens: 200,
+    },
+    metadata: {
+      hasTools: true,
+      toolCalls: 1,
+    },
+  }
+);
 ```
 
 ## Metrics and Analytics
 
-### Token Usage
+### Cost Tracking
 
-Track token consumption across providers:
+Grid's Langfuse integration includes built-in cost calculation for various models:
 
 ```typescript
-const agent = createConfigurableAgent({
-  observabilityConfig: {
-    trackTokens: true,
-    tokenAlerts: {
-      warningThreshold: 10000,  // Warn at 10k tokens
-      errorThreshold: 50000,    // Error at 50k tokens
+import { langfuseService } from "@mrck-labs/grid-core";
+
+// Cost is automatically calculated for supported models
+const generation = langfuseService.createGenerationForSession(
+  sessionToken,
+  {
+    name: "chat_completion",
+    model: "gpt-4o",  // Supported: gpt-4o, gpt-4-turbo, claude-3.5-sonnet, etc.
+    usage: {
+      promptTokens: 1000,
+      completionTokens: 500,
+      totalTokens: 1500,
     },
-  },
+  }
+);
+
+// Get cost information
+const trace = langfuseService.getCurrentTrace(sessionToken);
+console.log(`Estimated cost: $${trace.cost || 0}`);
+
+// Supported models with pricing:
+// - GPT-4o: $5/$15 per 1M tokens (input/output)
+// - GPT-4-turbo: $10/$30 per 1M tokens
+// - Claude-3.5-sonnet: $3/$15 per 1M tokens
+// - Claude-3-opus: $15/$75 per 1M tokens
+// - GPT-3.5-turbo: $0.5/$1.5 per 1M tokens
+```
+
+### Session Statistics
+
+Track comprehensive metrics across sessions:
+
+```typescript
+// Get session statistics
+const stats = langfuseService.getSessionStats(sessionToken);
+
+console.log("Session Metrics:", {
+  executionCount: stats.executionCount,
+  startTime: stats.startTime,
+  lastActivity: stats.lastActivity,
+  duration: Date.now() - stats.startTime.getTime(),
 });
 
-// Access token metrics
-agent.on("metrics", (metrics) => {
-  console.log(`Tokens used: ${metrics.totalTokens}`);
-  console.log(`Estimated cost: $${metrics.estimatedCost}`);
-});
+// Clean up expired sessions
+langfuseService.cleanupExpiredSessions(3600000); // Clean sessions older than 1 hour
+
+// Get all active sessions
+const activeSessions = langfuseService.getAllSessions();
+console.log(`Active sessions: ${activeSessions.size}`);
 ```
 
 ### Performance Monitoring
@@ -240,148 +354,305 @@ const debugAgent = createConfigurableAgent({
 await debugAgent.act(copiedInput);
 ```
 
-## Production Monitoring
+## Practical Examples
 
-### Dashboards
+### Complete Conversation Flow with Observability
 
-Create monitoring dashboards:
-
-```typescript
-// Langfuse provides built-in dashboards for:
-// - Token usage over time
-// - Cost breakdown by model
-// - Error rates and types
-// - Latency percentiles
-// - User activity patterns
-```
-
-### Alerts
-
-Set up alerts for critical metrics:
+Here's a real-world example from the terminal agent:
 
 ```typescript
-const monitoring = {
-  alerts: [
-    {
-      metric: "error_rate",
-      threshold: 0.05,  // 5% error rate
-      action: "email",
-    },
-    {
-      metric: "avg_latency",
-      threshold: 3000,  // 3 seconds
-      action: "slack",
-    },
-    {
-      metric: "daily_cost",
-      threshold: 100,  // $100
-      action: "webhook",
-    },
-  ],
-};
-```
+import { 
+  createConfigurableAgent, 
+  createConversationFlow,
+  baseLLMService,
+  langfuseService 
+} from "@mrck-labs/grid-core";
 
-### Session Analysis
-
-Group traces by session:
-
-```typescript
-// Track user sessions
-const agent = createConfigurableAgent({
-  observabilityConfig: {
-    sessionId: getUserSessionId(),
-    userId: getUserId(),
-    metadata: {
-      plan: getUserPlan(),
-      feature: "chat",
-    },
+// Initialize Langfuse service
+const langfuse = createLangfuseService({
+  env: {
+    LANGFUSE_ENABLED: true,
+    // ... API keys from environment
   },
 });
 
-// Analyze in Langfuse:
-// - Session duration
-// - Messages per session
-// - Tool usage patterns
-// - User satisfaction scores
+// Create agent with Langfuse
+const agent = createConfigurableAgent({
+  llmService: baseLLMService({
+    langfuse: { enabled: true },
+    toolExecutionMode: "custom",
+  }),
+  config: {
+    id: "conversation-agent",
+    type: "general",
+    // ... rest of config
+  },
+});
+
+// Create conversation with session tracking
+const sessionToken = `session-${Date.now()}`;
+const conversationId = `conv-${Date.now()}`;
+
+// Start execution trace
+langfuse.createExecutionTrace(
+  sessionToken,
+  "general",
+  { initialMessage: "Starting conversation" },
+  conversationId,
+  { userId: "user-123", feature: "chat" }
+);
+
+// Create conversation flow
+const conversation = createConversationFlow({
+  agent,
+  onProgress: (update) => {
+    // Create spans for progress updates
+    const span = langfuse.createSpanForSession(
+      sessionToken,
+      update.type,
+      { message: update.message }
+    );
+    span.end();
+  },
+});
+
+// Process messages
+const response = await conversation.sendMessage("What's the weather?");
+
+// End execution trace
+langfuse.endExecutionTrace(
+  sessionToken,
+  { finalResponse: response.content }
+);
+
+// View session statistics
+const stats = langfuse.getSessionStats(sessionToken);
+console.log(`Session completed: ${stats.executionCount} executions`);
+```
+
+### Error Tracking and Recovery
+
+```typescript
+try {
+  const response = await agent.act(input);
+} catch (error) {
+  // Errors are automatically tracked in Langfuse
+  const errorTrace = langfuse.createExecutionTrace(
+    sessionToken,
+    "error",
+    { input, error: error.message },
+    conversationId,
+    { errorType: error.name }
+  );
+  
+  // Add error details
+  const errorSpan = langfuse.createSpanForSession(
+    sessionToken,
+    "error_details",
+    {
+      stack: error.stack,
+      retryable: error.retryable || false,
+    }
+  );
+  errorSpan.end({ level: "ERROR" });
+  
+  // End trace with error
+  langfuse.endExecutionTrace(
+    sessionToken,
+    null,
+    error
+  );
+}
+```
+
+### Multi-Agent Collaboration Tracking
+
+```typescript
+// Track multiple agents in the same session
+const mainSessionToken = "collab-session-123";
+
+// Agent 1 execution
+langfuse.createExecutionTrace(
+  mainSessionToken,
+  "researcher",
+  { task: "Find information" },
+  conversationId,
+  { agentRole: "researcher" }
+);
+
+// Agent 2 execution
+langfuse.createExecutionTrace(
+  mainSessionToken,
+  "writer",
+  { task: "Summarize findings" },
+  conversationId,
+  { agentRole: "writer" }
+);
+
+// View complete collaboration flow in Langfuse dashboard
 ```
 
 ## Best Practices
 
-### 1. Meaningful Names
+### 1. Session Management
 
-Use descriptive names for traces and spans:
+Always use session tokens to group related executions:
 
 ```typescript
-// ❌ Bad
-langfuse.trace({ name: "process" });
+// ✅ Good - Consistent session tracking
+const sessionToken = `user-${userId}-${Date.now()}`;
+langfuse.createExecutionTrace(sessionToken, "general", input);
 
-// ✅ Good
-langfuse.trace({ name: "customer_support_ticket_creation" });
+// ❌ Bad - No session grouping
+langfuse.trace({ name: "random-trace" });
 ```
 
-### 2. Structured Metadata
+### 2. Configure Environment Variables
 
-Add structured metadata for better filtering:
+Always configure Langfuse via environment variables for security:
+
+```bash
+# .env file
+LANGFUSE_ENABLED=true
+LANGFUSE_SECRET_KEY=sk-lf-...  # Never commit these!
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_FLUSH_AT=10           # Batch for performance
+LANGFUSE_FLUSH_INTERVAL=5000   # 5 second intervals
+```
+
+### 3. Clean Up Sessions
+
+Prevent memory leaks by cleaning up expired sessions:
 
 ```typescript
-const trace = langfuse.trace({
-  name: "api_request",
-  metadata: {
-    endpoint: "/api/chat",
-    method: "POST",
-    environment: "production",
-    version: "1.2.3",
+// Set up periodic cleanup
+setInterval(() => {
+  langfuseService.cleanupExpiredSessions(3600000); // 1 hour
+}, 300000); // Run every 5 minutes
+
+// Or clean up on session end
+function endUserSession(sessionToken: string) {
+  langfuseService.endExecutionTrace(sessionToken, { status: "completed" });
+  // Remove from active sessions after a delay
+  setTimeout(() => {
+    langfuseService.cleanupSession(sessionToken);
+  }, 60000); // 1 minute delay for final writes
+}
+```
+
+### 4. Use Meaningful Metadata
+
+Add context that helps with debugging and analysis:
+
+```typescript
+langfuse.createExecutionTrace(
+  sessionToken,
+  agentType,
+  input,
+  conversationId,
+  {
+    userId: user.id,
+    userPlan: user.subscription,
+    feature: "chat-support",
+    environment: process.env.NODE_ENV,
+    version: process.env.APP_VERSION,
+    // Add business-specific context
+    department: "customer-service",
+    priority: ticket.priority,
+  }
+);
+```
+
+### 5. Monitor Costs
+
+Use the built-in cost tracking to stay within budget:
+
+```typescript
+// Track costs per session
+const trace = langfuse.getCurrentTrace(sessionToken);
+if (trace?.cost && trace.cost > 1.0) {
+  console.warn(`High cost session: $${trace.cost}`);
+  // Consider switching to a cheaper model
+}
+
+// Daily cost monitoring
+async function getDailyCosts() {
+  const sessions = langfuse.getAllSessions();
+  let totalCost = 0;
+  
+  sessions.forEach((session, token) => {
+    const trace = langfuse.getCurrentTrace(token);
+    totalCost += trace?.cost || 0;
+  });
+  
+  return totalCost;
+}
+```
+
+### 6. Performance Optimization
+
+Configure flush settings based on your volume:
+
+```typescript
+// High-volume production settings
+const langfuse = createLangfuseService({
+  env: {
+    LANGFUSE_FLUSH_AT: 50,      // Larger batches
+    LANGFUSE_FLUSH_INTERVAL: 10000, // 10 second intervals
+  },
+});
+
+// Low-volume or debugging
+const langfuse = createLangfuseService({
+  env: {
+    LANGFUSE_FLUSH_AT: 1,       // Immediate sending
+    LANGFUSE_FLUSH_INTERVAL: 1000,  // 1 second intervals
   },
 });
 ```
 
-### 3. Sampling
+### 7. Error Handling
 
-Use sampling for high-volume production:
+Always handle Langfuse errors gracefully:
 
 ```typescript
-const agent = createConfigurableAgent({
-  observabilityConfig: {
-    samplingRate: 0.1,  // Sample 10% of requests
-    alwaysSample: {
-      onError: true,  // Always sample errors
-      userId: ["vip-user-1", "vip-user-2"],  // Always sample VIPs
-    },
-  },
-});
+try {
+  langfuse.createExecutionTrace(sessionToken, agentType, input);
+} catch (error) {
+  // Log but don't crash the application
+  console.error("Langfuse error:", error);
+  // Continue without observability rather than failing the request
+}
 ```
 
-### 4. Cost Management
+### 8. Privacy and Security
 
-Monitor and control costs:
-
-```typescript
-const costControls = {
-  maxDailySpend: 100,
-  maxTokensPerRequest: 4000,
-  enableCostAlerts: true,
-  costBreakdown: {
-    byModel: true,
-    byUser: true,
-    byFeature: true,
-  },
-};
-```
-
-### 5. Privacy
-
-Protect sensitive information:
+Never log sensitive information:
 
 ```typescript
-const agent = createConfigurableAgent({
-  observabilityConfig: {
-    redactPatterns: [
-      /\b\d{3}-\d{2}-\d{4}\b/g,  // SSN
-      /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,  // Email
-    ],
-    excludeFields: ["password", "apiKey", "secretToken"],
-  },
-});
+// Sanitize inputs before logging
+function sanitizeInput(input: any) {
+  const sanitized = { ...input };
+  
+  // Remove sensitive fields
+  delete sanitized.password;
+  delete sanitized.creditCard;
+  delete sanitized.ssn;
+  
+  // Mask email addresses
+  if (sanitized.email) {
+    sanitized.email = sanitized.email.replace(/(.{2}).*(@.*)/, "$1***$2");
+  }
+  
+  return sanitized;
+}
+
+langfuse.createExecutionTrace(
+  sessionToken,
+  agentType,
+  sanitizeInput(input),
+  conversationId
+);
 ```
 
 ## Advanced Observability
