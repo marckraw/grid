@@ -13,6 +13,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -54,7 +57,6 @@ jobs:
           PORT: 3000
         run: |
           echo "🤖 Running AI evaluations..."
-          cd packages/thegrid
           # npm run eval:evalite:ci
           echo "✅ AI Evals validation passed"
 

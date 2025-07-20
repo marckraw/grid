@@ -5,6 +5,7 @@
 // Export agent-flow service and types
 export { agentFlowService } from "./services/agent-flow.service.js";
 export { createConfigurableAgent } from "./factories/configurable-agent.factory.js";
+export { transformMessagesForAI } from "./transformAIMessages.js";
 export type {
   AgentFlowContext,
   ChatMessage,
@@ -63,9 +64,9 @@ export { baseLLMService } from "./services/base.llm.service.js";
 export type { BaseLLMServiceConfig } from "./services/base.llm.service.js";
 
 // Export Langfuse utilities for simple tracing
-export { 
+export {
   shutdownLangfuse,
   startTrace,
-  endTrace
+  endTrace,
 } from "./services/langfuse.service.js";
 export type { LangfuseTraceContext } from "./services/langfuse.service.js";
