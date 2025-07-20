@@ -1,162 +1,76 @@
+import { tool as createTool, type CoreTool } from "ai";
 import { z } from "zod";
 
 /**
- * JSON Schema for tool parameters (OpenAI-compatible format)
+ * Grid Tool type - directly uses Vercel AI SDK's CoreTool
  */
-export const ToolParameterSchema = z.object({
-  type: z.literal("object"),
-  properties: z.record(z.any()),
-  required: z.array(z.string()).optional(),
-  additionalProperties: z.boolean().optional(),
-});
-
-/**
- * Tool definition interface
- */
-export interface Tool {
-  name: string;
-  description: string;
-  parameters: z.infer<typeof ToolParameterSchema>;
-  
-  /**
-   * Execute the tool with validated parameters
-   */
-  execute: (params: any) => Promise<ToolResult>;
-  
-  /**
-   * Validate parameters before execution
-   */
-  validate?: (params: any) => { isValid: boolean; errors?: string[] };
-  
-  /**
-   * Optional metadata about the tool
-   */
-  metadata?: {
-    category?: string;
-    version?: string;
-    timeout?: number; // milliseconds
-    retryable?: boolean;
+export type Tool<TParameters extends z.ZodTypeAny = z.ZodTypeAny, TResult = any> = 
+  CoreTool<TParameters, TResult> & {
+    name: string; // We add name for easier identification
   };
-}
 
 /**
- * Result returned by tool execution
+ * Create a tool using Vercel AI SDK
+ */
+export { createTool };
+
+/**
+ * Helper to create a named tool
+ */
+export const createNamedTool = <TParameters extends z.ZodTypeAny, TResult = any>(
+  config: {
+    name: string;
+    description: string;
+    parameters: TParameters;
+    execute: (params: z.infer<TParameters>) => Promise<TResult>;
+  }
+): Tool<TParameters, TResult> => {
+  const tool = createTool({
+    description: config.description,
+    parameters: config.parameters,
+    execute: config.execute,
+  });
+  
+  return Object.assign(tool, { name: config.name });
+};
+
+// Note: ToolCall type is imported from llm.types.ts which includes Zod schema
+
+/**
+ * Tool result for LLM (Vercel AI SDK format)
  */
 export interface ToolResult {
-  success: boolean;
-  data?: any;
-  error?: {
-    message: string;
-    code?: string;
-    details?: any;
-  };
-  metadata?: {
-    executionTime?: number;
-    retryCount?: number;
-  };
+  toolCallId: string;
+  toolName: string;
+  result: unknown;
 }
 
 /**
- * Tool call from LLM (OpenAI format)
+ * Type guard to check if something is a Tool
  */
-export interface ToolCall {
-  id: string;
-  type: "function";
-  function: {
-    name: string;
-    arguments: string; // JSON string
-  };
-}
-
-/**
- * Tool response to send back to LLM
- */
-export interface ToolResponse {
-  tool_call_id: string;
-  role: "tool";
-  content: string;
-  name: string;
-}
-
-/**
- * Options for tool executor
- */
-export interface ToolExecutorOptions {
-  maxRetries?: number;
-  defaultTimeout?: number;
-  validateBeforeExecute?: boolean;
-  formatErrors?: boolean;
-}
-
-/**
- * Tool registry entry
- */
-export interface ToolRegistryEntry {
-  tool: Tool;
-  addedAt: Date;
-  executionCount: number;
-  lastExecutedAt?: Date;
-}
-
-/**
- * Tool execution context
- */
-export interface ToolExecutionContext {
-  toolCall: ToolCall;
-  attempt: number;
-  startTime: number;
-  agentId?: string;
-  userId?: string;
-}
-
-/**
- * Schema for validating tool definitions
- */
-export const ToolSchema = z.object({
-  name: z.string().min(1),
-  description: z.string().min(1),
-  parameters: ToolParameterSchema,
-  metadata: z.object({
-    category: z.string().optional(),
-    version: z.string().optional(),
-    timeout: z.number().positive().optional(),
-    retryable: z.boolean().optional(),
-  }).optional(),
-});
-
-/**
- * Helper to create a tool with proper typing
- */
-export const createTool = (
-  name: string,
-  description: string,
-  parameters: z.infer<typeof ToolParameterSchema>,
-  execute: (params: any) => Promise<ToolResult>,
-  options?: {
-    validate?: (params: any) => { isValid: boolean; errors?: string[] };
-    metadata?: Tool["metadata"];
-  }
-): Tool => {
-  return {
-    name,
-    description,
-    parameters,
-    execute,
-    validate: options?.validate,
-    metadata: options?.metadata,
-  };
+export const isTool = <T extends z.ZodTypeAny = z.ZodTypeAny>(
+  value: unknown
+): value is Tool<T> => {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'description' in value &&
+    'parameters' in value &&
+    'execute' in value &&
+    'name' in value
+  );
 };
 
 /**
- * Format tool for OpenAI API
+ * Get tools ready for Vercel AI SDK
+ * Converts array of tools to object keyed by tool name
  */
-export const formatToolForLLM = (tool: Tool) => {
-  return {
-    type: "function" as const,
-    function: {
-      name: tool.name,
-      description: tool.description,
-      parameters: tool.parameters,
-    },
-  };
+export const prepareToolsForSDK = <T extends Tool<any, any>>(
+  tools: T[]
+): Record<string, Omit<T, 'name'>> => {
+  return tools.reduce((acc, tool) => {
+    const { name, ...toolWithoutName } = tool;
+    acc[name] = toolWithoutName;
+    return acc;
+  }, {} as Record<string, Omit<T, 'name'>>);
 };

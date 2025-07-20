@@ -2,28 +2,23 @@ import z from "zod";
 
 // Zod schema for LLM
 
-// Tool function call schema
-export const ToolFunctionSchema = z.object({
-  name: z.string(),
-  arguments: z.string(), // JSON string
-});
-// Tool call schema
+// Tool call schema - using Vercel AI SDK format
 export const ToolCallSchema = z.object({
-  id: z.string(),
-  type: z.literal("function"),
-  function: ToolFunctionSchema,
+  toolCallId: z.string(),
+  toolName: z.string(),
+  args: z.unknown(), // Always required in Vercel AI SDK
 });
 
 export const ChatMessageSchema = z.object({
   role: z.enum(["user", "assistant", "system", "tool"]),
   content: z.any(), // Can be string, null, or structured content
-  tool_calls: z.array(ToolCallSchema).optional(),
-  tool_call_id: z.string().optional(),
+  toolCalls: z.array(ToolCallSchema).optional(), // Vercel AI SDK uses camelCase
+  tool_call_id: z.string().optional(), // For tool responses
+  tool_name: z.string().optional(), // Tool name for tool responses
   metadata: z.record(z.string(), z.any()).optional(), // Optional metadata
 });
 
 // Inferred types
-export type ToolFunction = z.infer<typeof ToolFunctionSchema>;
 export type ToolCall = z.infer<typeof ToolCallSchema>;
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 

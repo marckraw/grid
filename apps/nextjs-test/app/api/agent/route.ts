@@ -17,8 +17,7 @@ export async function POST(request: NextRequest) {
         id: "autonomous-agent",
         type: "general",
         prompts: {
-          system:
-            "You are a helpful assistant that breaks down tasks into steps. You speak like a pirate.",
+          system: "You are a helpful assistant.",
         },
         version: "1.0.0",
         metadata: {
