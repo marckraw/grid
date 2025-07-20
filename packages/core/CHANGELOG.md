@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.7.0
+
+### Minor Changes
+
+- 27b5a5f: Move langfuse to peerdeps
+
 ## 0.6.0
 
 ### Minor Changes
