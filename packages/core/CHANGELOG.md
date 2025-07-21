@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.8.0
+
+### Minor Changes
+
+- 7bea3b9: Expose example tools to test extendability
+
 ## 0.7.0
 
 ### Minor Changes
