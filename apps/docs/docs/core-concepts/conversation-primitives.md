@@ -13,7 +13,6 @@ Grid's conversation primitives are organized in three layers:
 ```
 ┌─────────────────────────────────────────┐
 │          Organism Level                 │
-│  (createConversationFlow)               │  ← Safety & Progress
 │  (createConversationLoop)               │  ← Full Orchestration
 └─────────────────────────────────────────┘
                     ↑
@@ -212,12 +211,6 @@ const loop = createConversationLoop({
 const response = await loop.sendMessage("What's the weather in Paris?");
 console.log(response.content);
 
-// With custom tool resolution rounds
-const response2 = await loop.sendMessageWithToolResolution(
-  "Book a flight and hotel",
-  maxToolRounds = 10  // Allow up to 10 rounds of tool calls
-);
-
 // Analytics
 const analytics = loop.getAnalytics();
 // {
@@ -247,54 +240,6 @@ loop.resetConversation();
 - Export/import for persistence
 - Conversation lifecycle management
 - Multi-round tool execution
-
-### createConversationFlow
-
-Enhanced conversation loop with safety features and progress streaming.
-
-```typescript
-import { createConversationFlow } from "@mrck-labs/grid-core";
-
-const flow = createConversationFlow({
-  agent: myAgent,
-  systemPrompt: "You are a helpful assistant",
-  maxIterations: 10,  // Safety limit
-  onProgress: (update) => {
-    console.log(`[${update.type}] ${update.message}`);
-    // update.metadata includes iteration count and elapsed time
-  },
-});
-
-// Send message with progress tracking
-const response = await flow.sendMessage("Complex task");
-// Console output:
-// [thinking] Processing your message...
-// [tool_execution] Running calculate_statistics...
-// [complete] Response generated successfully
-
-// Flow-specific statistics
-const stats = flow.getFlowStats();
-// {
-//   iterations: 3,
-//   maxIterations: 10,
-//   elapsedTime: 15234,
-//   canContinue: true
-// }
-
-// Reset flow state without losing conversation
-flow.resetFlowState();
-
-// All loop methods are available
-const messages = flow.getMessages();
-const exported = flow.exportConversation();
-```
-
-**Key Features:**
-- Iteration limiting (prevents infinite loops)
-- Real-time progress streaming
-- Flow-specific metrics
-- Enhanced error handling
-- Inherits all loop functionality
 
 ## Usage Patterns
 
@@ -332,10 +277,9 @@ const response = await loop.sendMessage("Help me plan a trip");
 ### Production Conversation
 
 ```typescript
-// For production with safety and monitoring
-const flow = createConversationFlow({
+// For production with monitoring
+const loop = createConversationLoop({
   agent: productionAgent,
-  maxIterations: 20,
   onProgress: (update) => {
     logger.info("Progress", update);
     websocket.emit("progress", update);
@@ -365,14 +309,14 @@ const history = createConversationHistory();
 ```typescript
 // Compose primitives for custom behavior
 const createCustomFlow = (options) => {
-  const flow = createConversationFlow(options);
+  const loop = createConversationLoop(options);
   const analytics = createAnalyticsTracker();
   
   return {
-    ...flow,
+    ...loop,
     sendMessage: async (msg) => {
       analytics.track("message.sent");
-      const response = await flow.sendMessage(msg);
+      const response = await loop.sendMessage(msg);
       analytics.track("message.completed");
       return response;
     },
@@ -383,7 +327,7 @@ const createCustomFlow = (options) => {
 ### 4. Handle Errors Gracefully
 
 ```typescript
-const flow = createConversationFlow({
+const loop = createConversationLoop({
   onProgress: (update) => {
     if (update.type === "error") {
       errorReporter.log(update.message);
@@ -402,7 +346,6 @@ import type {
   ConversationContext,
   ConversationManager,
   ConversationLoop,
-  ConversationFlow,
 } from "@mrck-labs/grid-core";
 ```
 

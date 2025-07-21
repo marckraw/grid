@@ -2,7 +2,7 @@ import * as p from "@clack/prompts";
 import {
   createConfigurableAgent,
   createToolExecutor,
-  createConversationFlow,
+  createConversationLoop,
   baseLLMService,
 } from "@mrck-labs/grid-core";
 import { textWithCancel, isCancel } from "../utils/prompts.js";
@@ -145,11 +145,8 @@ Be concise but friendly in your responses.`,
   });
 
   // Create conversation flow with progress streaming
-  const conversation = createConversationFlow({
+  const conversation = createConversationLoop({
     agent,
-    maxIterations: 50, // Safety limit
-    enableProgressStreaming: true,
-    debugMode: process.env.DEBUG === "true",
     conversationOptions: {
       onToolExecution: (toolName, args, result) => {
         console.log("  Args:", args);
@@ -251,7 +248,7 @@ Be concise but friendly in your responses.`,
     const spinner = createSpinner();
     spinner.start("Thinking...");
 
-    const result = await conversation.sendMessageWithToolResolution(message);
+    const result = await conversation.sendMessage(message);
 
     spinner.stop();
 

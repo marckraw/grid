@@ -363,7 +363,7 @@ Here's a real-world example from the terminal agent:
 ```typescript
 import { 
   createConfigurableAgent, 
-  createConversationFlow,
+  createConversationLoop,
   baseLLMService,
   langfuseService 
 } from "@mrck-labs/grid-core";
@@ -402,15 +402,15 @@ langfuse.createExecutionTrace(
   { userId: "user-123", feature: "chat" }
 );
 
-// Create conversation flow
-const conversation = createConversationFlow({
+// Create conversation loop
+const conversation = createConversationLoop({
   agent,
   onProgress: (update) => {
     // Create spans for progress updates
     const span = langfuse.createSpanForSession(
       sessionToken,
       update.type,
-      { message: update.message }
+      { message: update.content }
     );
     span.end();
   },
