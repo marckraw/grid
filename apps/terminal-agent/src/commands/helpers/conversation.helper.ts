@@ -1,11 +1,11 @@
-import type { ConversationFlow } from "@mrck-labs/grid-core";
+import type { ConversationLoop } from "@mrck-labs/grid-core";
 import { writeFile } from "fs/promises";
 import path from "path";
 import * as p from "@clack/prompts";
 import pc from "picocolors";
 
 // Helper function to save conversation to file
-export const saveConversation = async (conversation: ConversationFlow) => {
+export const saveConversation = async (conversation: ConversationLoop) => {
   try {
     const conversationData = conversation.exportConversation();
     const filePath = path.join(process.cwd(), "conversation.json");

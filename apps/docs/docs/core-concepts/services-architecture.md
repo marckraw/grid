@@ -13,7 +13,7 @@ Grid organizes services into three distinct layers:
 ```
 ┌─────────────────────────────────────────┐
 │        Organism Level Services          │
-│   (ConversationFlow, AgentFlow)         │
+│     (ConversationLoop, AgentFlow)       │
 └─────────────────────────────────────────┘
                     ↑
 ┌─────────────────────────────────────────┐
@@ -334,81 +334,6 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
 };
 ```
 
-### createConversationFlow
-
-Adds progress tracking and safety features:
-
-```typescript
-export const createConversationFlow = (options: ConversationFlowOptions) => {
-  // Compose conversation loop
-  const loop = createConversationLoop(options);
-  
-  // Flow-specific state
-  let iterationCount = 0;
-  const maxIterations = options.maxIterations || 10;
-  const flowStartTime = Date.now();
-  
-  // Progress handling
-  const emitProgress = (update: ProgressUpdate) => {
-    if (options.onProgress) {
-      options.onProgress({
-        ...update,
-        metadata: {
-          iteration: iterationCount,
-          elapsed: Date.now() - flowStartTime,
-        },
-      });
-    }
-  };
-  
-  // Enhanced send message with progress
-  const sendMessageWithProgress = async (userMessage: string) => {
-    iterationCount++;
-    
-    if (iterationCount > maxIterations) {
-      throw new Error(`Maximum iterations (${maxIterations}) exceeded`);
-    }
-    
-    emitProgress({ type: "thinking", message: "Processing your message..." });
-    
-    try {
-      const response = await loop.sendMessage(userMessage);
-      
-      emitProgress({ 
-        type: "complete", 
-        message: "Response generated successfully" 
-      });
-      
-      return response;
-    } catch (error) {
-      emitProgress({ 
-        type: "error", 
-        message: error.message 
-      });
-      throw error;
-    }
-  };
-  
-  // Public API extends loop with flow features
-  return {
-    ...loop, // All loop methods
-    
-    sendMessage: sendMessageWithProgress,
-    
-    getFlowStats: () => ({
-      iterations: iterationCount,
-      maxIterations,
-      elapsedTime: Date.now() - flowStartTime,
-      canContinue: iterationCount < maxIterations,
-    }),
-    
-    resetFlowState: () => {
-      iterationCount = 0;
-      // Note: doesn't reset conversation, just flow state
-    },
-  };
-};
-```
 
 ### agentFlowService
 
@@ -460,13 +385,16 @@ const agent = createConfigurableAgent({
   tools: [weatherTool, calculatorTool],
 });
 
-// Create conversation flow with all features
-const conversation = createConversationFlow({
+// Create conversation loop with all features
+const conversation = createConversationLoop({
   agent,
-  systemPrompt: agent.config.systemPrompt,
-  maxIterations: 10,
+  conversationOptions: {
+    historyOptions: {
+      systemPrompt: agent.config.systemPrompt,
+    },
+  },
   onProgress: (update) => {
-    console.log(`[${update.type}] ${update.message}`);
+    console.log(`[${update.type}] ${update.content}`);
   },
 });
 

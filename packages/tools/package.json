@@ -1,10 +1,11 @@
 {
-  "name": "@mrck-labs/grid-core",
-  "version": "0.8.0",
-  "description": "Core primitives for LLM orchestration and agentic workflows",
+  "name": "@mrck-labs/grid-tools",
+  "version": "0.1.0",
+  "description": "Ready-to-use tools for Grid LLM orchestration",
   "keywords": [
     "llm",
     "ai",
+    "tools",
     "agents",
     "typescript"
   ],
@@ -32,15 +33,11 @@
     "zshy": "^0.0.4"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^1.2.12",
-    "@ai-sdk/openai": "^1.3.23",
     "@mendable/firecrawl-js": "^1.29.1",
-    "ai": "^4.3.19",
-    "openai": "^5.9.0",
     "zod": "^3.25.76"
   },
   "peerDependencies": {
-    "langfuse": "^3.38.4"
+    "@mrck-labs/grid-core": "workspace:*"
   },
   "files": [
     "dist"

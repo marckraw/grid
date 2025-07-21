@@ -2,14 +2,12 @@ import * as p from "@clack/prompts";
 import {
   createConfigurableAgent,
   createToolExecutor,
-  createConversationFlow,
+  createConversationLoop,
   baseLLMService,
 } from "@mrck-labs/grid-core";
 import { textWithCancel, isCancel } from "../utils/prompts.js";
 import { createSpinner } from "../utils/spinners.js";
-import { calculatorTool } from "../tools/demo-tools/calculator.tool.js";
-import { currentTimeTool } from "../tools/demo-tools/current-time.tool.js";
-import { createImageTool } from "../tools/demo-tools/create-image.tool.js";
+import { calculatorTool, currentTimeTool } from "@mrck-labs/grid-tools";
 import pc from "picocolors";
 import { saveConversation } from "./helpers/conversation.helper.js";
 import {
@@ -91,7 +89,6 @@ export async function exploreAgentConversation(): Promise<void> {
   // Register local tools
   toolExecutor.registerTool(calculatorTool);
   toolExecutor.registerTool(currentTimeTool);
-  toolExecutor.registerTool(createImageTool);
 
   // Register MCP tools if available
   for (const tool in transformerMcpTools) {
@@ -129,7 +126,7 @@ Be concise but friendly in your responses.`,
       },
       tools: {
         builtin: [],
-        custom: [calculatorTool, currentTimeTool, createImageTool],
+        custom: [calculatorTool, currentTimeTool],
         mcp: [...transformerMcpTools, ...transformedLinearMcpTools],
         agents: [],
       },
@@ -145,11 +142,8 @@ Be concise but friendly in your responses.`,
   });
 
   // Create conversation flow with progress streaming
-  const conversation = createConversationFlow({
+  const conversation = createConversationLoop({
     agent,
-    maxIterations: 50, // Safety limit
-    enableProgressStreaming: true,
-    debugMode: process.env.DEBUG === "true",
     conversationOptions: {
       onToolExecution: (toolName, args, result) => {
         console.log("  Args:", args);
@@ -251,7 +245,7 @@ Be concise but friendly in your responses.`,
     const spinner = createSpinner();
     spinner.start("Thinking...");
 
-    const result = await conversation.sendMessageWithToolResolution(message);
+    const result = await conversation.sendMessage(message);
 
     spinner.stop();
 

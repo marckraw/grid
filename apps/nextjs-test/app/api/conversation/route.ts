@@ -2,8 +2,8 @@ import { NextRequest } from "next/server";
 import {
   createConfigurableAgent,
   createToolExecutor,
-  createConversationFlow,
-  type ConversationFlow,
+  createConversationLoop,
+  type ConversationLoop,
   type ProgressMessage,
   baseLLMService,
 } from "@mrck-labs/grid-core";
@@ -11,7 +11,7 @@ import { calculatorTool } from "../../tools/calculator.tool";
 import { currentTimeTool } from "../../tools/current-time.tool";
 
 // Store conversations in memory (in production, use a database)
-const conversations = new Map<string, ConversationFlow>();
+const conversations = new Map<string, ConversationLoop>();
 
 // Store conversation progress handlers
 type ProgressHandler = (progress: ProgressMessage) => void;
@@ -21,7 +21,7 @@ const progressHandlers = new Map<string, ProgressHandler>();
 function getConversation(
   sessionId: string,
   onProgress?: ProgressHandler
-): ConversationFlow {
+): ConversationLoop {
   if (!conversations.has(sessionId)) {
     // Create tool executor and register tools
     const toolExecutor = createToolExecutor();
@@ -67,11 +67,9 @@ Be concise but friendly in your responses.`,
       toolExecutor: toolExecutor,
     });
 
-    // Create conversation flow with progress handler if provided
-    const conversation = createConversationFlow({
+    // Create conversation loop with progress handler if provided
+    const conversation = createConversationLoop({
       agent,
-      maxIterations: 50,
-      enableProgressStreaming: true,
       onProgress: async (progress) => {
         const handler = progressHandlers.get(sessionId);
         if (handler) handler(progress);
@@ -120,9 +118,7 @@ export async function POST(request: NextRequest) {
       try {
         console.log("[SSE] Sending message:", message);
         // Send the message
-        const result = await conversation.sendMessageWithToolResolution(
-          message
-        );
+        const result = await conversation.sendMessage(message);
 
         console.log("[SSE] Got result:", result);
         // Send the assistant's response
