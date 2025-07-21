@@ -1,5 +1,16 @@
 # @mrck-labs/grid-tools
 
+## 2.0.0
+
+### Minor Changes
+
+- 3186503: Add more example tools written by claude
+
+### Patch Changes
+
+- Updated dependencies [3186503]
+  - @mrck-labs/grid-core@0.10.0
+
 ## 1.0.0
 
 ### Minor Changes
