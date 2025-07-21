@@ -1,5 +1,19 @@
 # terminal-agent
 
+## 0.3.0
+
+### Minor Changes
+
+- 3c86ecb: updates tuff
+
+### Patch Changes
+
+- Updated dependencies [3c86ecb]
+  - @mrck-labs/grid-workflows@0.4.0
+  - @mrck-labs/grid-agents@0.4.0
+  - @mrck-labs/grid-tools@3.0.0
+  - @mrck-labs/grid-core@0.11.0
+
 ## 0.2.4
 
 ### Patch Changes

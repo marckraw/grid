@@ -1,5 +1,17 @@
 # nextjs-test
 
+## 0.4.0
+
+### Minor Changes
+
+- 3c86ecb: updates tuff
+
+### Patch Changes
+
+- Updated dependencies [3c86ecb]
+  - @mrck-labs/grid-agents@0.4.0
+  - @mrck-labs/grid-core@0.11.0
+
 ## 0.3.6
 
 ### Patch Changes
