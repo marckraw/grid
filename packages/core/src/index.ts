@@ -58,7 +58,6 @@ export type {
   SendMessageResult,
 } from "./services/conversation-loop.service.js";
 
-
 export { baseLLMService } from "./services/base.llm.service.js";
 export type { BaseLLMServiceConfig } from "./services/base.llm.service.js";
 
@@ -68,3 +67,5 @@ export {
   type LangfuseService,
 } from "./services/LangfuseService/langfuse.service.js";
 
+// Prompts and prompts helpers
+export { currentDatePrompt } from "./prompts/current-date.js";
