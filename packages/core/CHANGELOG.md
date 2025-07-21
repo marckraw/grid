@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.12.0
+
+### Minor Changes
+
+- a6ea34d: add grouped handlers
+
 ## 0.11.0
 
 ### Minor Changes
