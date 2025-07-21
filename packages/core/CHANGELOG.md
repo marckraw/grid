@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.11.0
+
+### Minor Changes
+
+- 3c86ecb: updates tuff
+
 ## 0.10.0
 
 ### Minor Changes

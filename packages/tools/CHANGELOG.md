@@ -1,5 +1,16 @@
 # @mrck-labs/grid-tools
 
+## 3.0.0
+
+### Minor Changes
+
+- 3c86ecb: updates tuff
+
+### Patch Changes
+
+- Updated dependencies [3c86ecb]
+  - @mrck-labs/grid-core@0.11.0
+
 ## 2.0.0
 
 ### Minor Changes
