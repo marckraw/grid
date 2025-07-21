@@ -9,6 +9,7 @@
                 "^build"
             ],
             "outputs": [
+                "build/**",
                 "dist/**",
                 ".next/**",
                 "!.next/cache/**"
