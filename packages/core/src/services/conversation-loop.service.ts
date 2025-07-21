@@ -162,20 +162,6 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
   };
 
   /**
-   * Send a message and wait for a complete response
-   * The agent handles all tool execution internally, so we just send and receive
-   * This respects the agent's autonomy and encapsulation
-   */
-  const sendMessageWithToolResolution = async (
-    userMessage: string,
-    maxToolRounds: number = 3 // Kept for API compatibility, not used
-  ): Promise<SendMessageResult> => {
-    // Agent is responsible for all tool execution
-    // We just send the message and trust the agent to handle everything
-    return sendMessage(userMessage);
-  };
-
-  /**
    * End the conversation
    */
   const endConversation = async () => {
@@ -276,9 +262,14 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
   return {
     // Core conversation methods
     sendMessage,
-    sendMessageWithToolResolution,
     endConversation,
     resetConversation,
+
+    // Message management methods
+    addUserMessage: manager.addUserMessage,
+    addMessage: manager.history.addMessage,
+    addToolResponse: manager.history.addToolResponse,
+    processAgentResponse: manager.processAgentResponse,
 
     // State access
     getMessages: manager.getMessages,
@@ -295,6 +286,9 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
     // Status
     isActive: () => isActive,
     getTurnCount: () => turnCount,
+
+    // Direct access to primitives for advanced use cases
+    manager,
   };
 };
 
