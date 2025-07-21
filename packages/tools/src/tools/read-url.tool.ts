@@ -7,6 +7,11 @@ import FirecrawlApp from "@mendable/firecrawl-js";
  */
 export const createReadUrlTool = (config?: { firecrawlApiKey?: string }) => {
   const apiKey = config?.firecrawlApiKey || process.env.FIRECRAWL_API_KEY || "";
+  if (!apiKey) {
+    throw new Error(
+      "Missing Firecrawl API key. Please provide it via config or the FIRECRAWL_API_KEY environment variable."
+    );
+  }
   const firecrawl = new FirecrawlApp({ apiKey });
 
   return createNamedTool({
@@ -23,14 +28,16 @@ export const createReadUrlTool = (config?: { firecrawlApiKey?: string }) => {
     execute: async ({ reasoning, url }) => {
       try {
         const result = await firecrawl.scrapeUrl(url);
-        
+
         if (result.success) {
           return result.markdown as string;
         } else {
           return `Error scraping URL: ${result.error}`;
         }
       } catch (error) {
-        return `Failed to scrape URL: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        return `Failed to scrape URL: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`;
       }
     },
   });
