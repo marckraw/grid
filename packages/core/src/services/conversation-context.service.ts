@@ -1,4 +1,14 @@
 /**
+ * Event handlers for conversation context operations
+ */
+export interface ConversationContextHandlers {
+  onStateChanged?: (key: string, newValue: any, oldValue: any) => Promise<void>;
+  onStatesChanged?: (updates: Record<string, any>, oldState: Record<string, any>) => Promise<void>;
+  onMetadataChanged?: (key: string, value: any) => Promise<void>;
+  onReset?: () => Promise<void>;
+}
+
+/**
  * Options for creating a conversation context
  */
 export interface ConversationContextOptions {
@@ -6,6 +16,7 @@ export interface ConversationContextOptions {
   metadata?: Record<string, any>;
   sessionId?: string;
   userId?: string;
+  handlers?: ConversationContextHandlers; // Event handlers
 }
 
 /**
@@ -34,15 +45,27 @@ export const createConversationContext = (options?: ConversationContextOptions) 
   /**
    * Update a state value
    */
-  const updateState = (key: string, value: any) => {
+  const updateState = async (key: string, value: any) => {
+    const oldValue = state[key];
     state[key] = value;
+
+    // Call handler if provided
+    if (options?.handlers?.onStateChanged) {
+      await options.handlers.onStateChanged(key, value, oldValue);
+    }
   };
   
   /**
    * Update multiple state values at once
    */
-  const updateStates = (updates: Record<string, any>) => {
+  const updateStates = async (updates: Record<string, any>) => {
+    const oldState = { ...state };
     Object.assign(state, updates);
+
+    // Call handler if provided
+    if (options?.handlers?.onStatesChanged) {
+      await options.handlers.onStatesChanged(updates, oldState);
+    }
   };
   
   /**
@@ -70,15 +93,25 @@ export const createConversationContext = (options?: ConversationContextOptions) 
   /**
    * Reset all state
    */
-  const resetState = () => {
+  const resetState = async () => {
     Object.keys(state).forEach(key => delete state[key]);
+
+    // Call handler if provided
+    if (options?.handlers?.onReset) {
+      await options.handlers.onReset();
+    }
   };
   
   /**
    * Update metadata
    */
-  const updateMetadata = (key: string, value: any) => {
+  const updateMetadata = async (key: string, value: any) => {
     metadata[key] = value;
+
+    // Call handler if provided
+    if (options?.handlers?.onMetadataChanged) {
+      await options.handlers.onMetadataChanged(key, value);
+    }
   };
   
   /**

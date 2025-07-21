@@ -30,12 +30,14 @@ export { createConversationHistory } from "./services/conversation-history.servi
 export type {
   ConversationHistory,
   ConversationHistoryOptions,
+  ConversationHistoryHandlers,
 } from "./services/conversation-history.service.js";
 
 export { createConversationContext } from "./services/conversation-context.service.js";
 export type {
   ConversationContext,
   ConversationContextOptions,
+  ConversationContextHandlers,
 } from "./services/conversation-context.service.js";
 
 // Export conversation primitives - composed level
@@ -43,6 +45,7 @@ export { createConversationManager } from "./services/conversation-manager.servi
 export type {
   ConversationManager,
   ConversationManagerOptions,
+  ConversationManagerHandlers,
 } from "./services/conversation-manager.service.js";
 
 // Export conversation primitives - organism level
@@ -50,6 +53,7 @@ export { createConversationLoop } from "./services/conversation-loop.service.js"
 export type {
   ConversationLoop,
   ConversationLoopOptions,
+  ConversationLoopHandlers,
   SendMessageResult,
 } from "./services/conversation-loop.service.js";
 

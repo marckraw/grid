@@ -4,7 +4,7 @@ import type {
   LLMServiceOptions,
   ToolCall,
 } from "../types/index.js";
-import { generateText } from "ai";
+import { generateText, generateObject, streamText } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { anthropic } from "@ai-sdk/anthropic";
 
