@@ -5,7 +5,10 @@ import { createProgressMessage } from "../types/progress.types.js";
 import {
   createConversationManager,
   type ConversationManagerOptions,
+  type ConversationManagerHandlers,
 } from "./conversation-manager.service.js";
+import type { ConversationHistoryHandlers } from "./conversation-history.service.js";
+import type { ConversationContextHandlers } from "./conversation-context.service.js";
 
 /**
  * Event handlers for conversation loop operations
@@ -22,17 +25,26 @@ export interface ConversationLoopHandlers {
 }
 
 /**
+ * Grouped handlers for all conversation services
+ */
+export interface GroupedHandlers {
+  loop?: ConversationLoopHandlers;
+  manager?: ConversationManagerHandlers;
+  history?: ConversationHistoryHandlers;
+  context?: ConversationContextHandlers;
+}
+
+/**
  * Options for creating a conversation loop
  */
 export interface ConversationLoopOptions {
   agent: Agent;
-  conversationOptions?: ConversationManagerOptions;
+  handlers?: GroupedHandlers; // Grouped handlers for all services
   onMessage?: (response: AgentResponse) => Promise<void>;
   onError?: (error: Error) => Promise<void>;
   onComplete?: (summary: any) => Promise<void>;
   onProgress?: (message: ProgressMessage) => Promise<void>;
   maxTurns?: number; // Optional limit on conversation turns
-  handlers?: ConversationLoopHandlers; // Event handlers
 }
 
 /**
@@ -51,10 +63,22 @@ export interface SendMessageResult {
  * including agent interactions, tool execution, and state management.
  */
 export const createConversationLoop = (options: ConversationLoopOptions) => {
-  const { agent, onMessage, onError, onComplete, onProgress } = options;
+  const { agent, onMessage, onError, onComplete, onProgress, handlers } = options;
 
-  // Create conversation manager
-  const manager = createConversationManager(options.conversationOptions);
+  // Extract handlers from grouped structure
+  const loopHandlers = handlers?.loop;
+  
+  // Build manager options from grouped handlers using the new grouped format
+  const managerOptions: ConversationManagerOptions | undefined = handlers ? {
+    handlers: {
+      manager: handlers.manager,
+      history: handlers.history,
+      context: handlers.context,
+    }
+  } : undefined;
+
+  // Create conversation manager with extracted options
+  const manager = createConversationManager(managerOptions);
 
   // Track conversation state
   let turnCount = 0;
@@ -63,14 +87,14 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
 
   // Initialize conversation with handler if provided
   const initializeConversation = async () => {
-    if (!isInitialized && options.handlers?.onConversationStarted) {
+    if (!isInitialized && loopHandlers?.onConversationStarted) {
       const context = {
         sessionId: manager.context.getSessionId(),
         userId: manager.context.getUserId(),
         conversationId: manager.context.getSessionId(), // Use session ID as conversation ID
       };
       
-      const result = await options.handlers.onConversationStarted(context);
+      const result = await loopHandlers.onConversationStarted(context);
       
       // Add initial messages if provided
       if (result?.initialMessages) {
@@ -124,13 +148,13 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
       await manager.addUserMessage(userMessage);
       
       // Call handler if provided
-      if (options.handlers?.onMessageSent) {
+      if (loopHandlers?.onMessageSent) {
         const context = {
           turnCount,
           sessionId: manager.context.getSessionId(),
           userId: manager.context.getUserId(),
         };
-        await options.handlers.onMessageSent(userMessage, context);
+        await loopHandlers.onMessageSent(userMessage, context);
       }
 
       // Send thinking progress
@@ -182,13 +206,13 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
       }
       
       // Call handler if provided
-      if (options.handlers?.onResponseReceived) {
+      if (loopHandlers?.onResponseReceived) {
         const context = {
           turnCount,
           sessionId: manager.context.getSessionId(),
           userId: manager.context.getUserId(),
         };
-        await options.handlers.onResponseReceived(response, context);
+        await loopHandlers.onResponseReceived(response, context);
       }
 
       // Check if we've hit max turns
@@ -244,13 +268,13 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
     }
     
     // Call handler if provided
-    if (options.handlers?.onConversationEnded) {
+    if (loopHandlers?.onConversationEnded) {
       const context = {
         turnCount,
         sessionId: manager.context.getSessionId(),
         userId: manager.context.getUserId(),
       };
-      await options.handlers.onConversationEnded(summary, context);
+      await loopHandlers.onConversationEnded(summary, context);
     }
   };
 
