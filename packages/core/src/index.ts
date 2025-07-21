@@ -46,6 +46,7 @@ export type {
   ConversationManager,
   ConversationManagerOptions,
   ConversationManagerHandlers,
+  GroupedManagerHandlers,
 } from "./services/conversation-manager.service.js";
 
 // Export conversation primitives - organism level

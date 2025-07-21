@@ -68,11 +68,13 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
   // Extract handlers from grouped structure
   const loopHandlers = handlers?.loop;
   
-  // Build manager options from grouped handlers
+  // Build manager options from grouped handlers using the new grouped format
   const managerOptions: ConversationManagerOptions | undefined = handlers ? {
-    handlers: handlers.manager,
-    historyOptions: handlers.history ? { handlers: handlers.history } : undefined,
-    contextOptions: handlers.context ? { handlers: handlers.context } : undefined,
+    handlers: {
+      manager: handlers.manager,
+      history: handlers.history,
+      context: handlers.context,
+    }
   } : undefined;
 
   // Create conversation manager with extracted options
