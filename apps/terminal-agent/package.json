@@ -21,6 +21,7 @@
         "@mrck-labs/grid-agents": "workspace:*",
         "@mrck-labs/grid-core": "workspace:*",
         "@mrck-labs/grid-workflows": "workspace:*",
+        "@mrck-labs/grid-tools": "workspace:*",
         "ai": "^4.3.19",
         "dotenv": "^17.2.0",
         "picocolors": "^1.1.1",

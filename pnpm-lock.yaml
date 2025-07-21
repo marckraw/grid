@@ -159,6 +159,9 @@ importers:
       '@mrck-labs/grid-core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@mrck-labs/grid-tools':
+        specifier: workspace:*
+        version: link:../../packages/tools
       '@mrck-labs/grid-workflows':
         specifier: workspace:*
         version: link:../../packages/workflows
