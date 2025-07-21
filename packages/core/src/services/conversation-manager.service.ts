@@ -10,12 +10,23 @@ import {
 } from "./conversation-context.service.js";
 
 /**
+ * Event handlers for conversation manager operations
+ */
+export interface ConversationManagerHandlers {
+  onUserMessageAdded?: (message: string) => Promise<void>;
+  onAgentResponseProcessed?: (response: AgentResponse) => Promise<void>;
+  onToolExecution?: (toolName: string, args: any, result: any) => Promise<void>;
+  onReset?: () => Promise<void>;
+}
+
+/**
  * Options for creating a conversation manager
  */
 export interface ConversationManagerOptions {
   historyOptions?: ConversationHistoryOptions;
   contextOptions?: ConversationContextOptions;
-  onToolExecution?: (toolName: string, args: any, result: any) => void;
+  onToolExecution?: (toolName: string, args: any, result: any) => void; // Legacy, kept for compatibility
+  handlers?: ConversationManagerHandlers; // New event handlers
 }
 
 /**
@@ -49,19 +60,19 @@ export const createConversationManager = (options?: ConversationManagerOptions) 
     }
     
     // Add assistant message to history
-    history.addMessage(assistantMessage);
+    await history.addMessage(assistantMessage);
     
     // Handle tool responses if present
     if (response.metadata?.toolResponses) {
       for (const toolResponse of response.metadata.toolResponses) {
         // Add tool response to history
-        history.addToolResponse(
+        await history.addToolResponse(
           toolResponse.toolCallId,
           toolResponse.toolName,
           toolResponse.result
         );
         
-        // Call callback if provided
+        // Call legacy callback if provided
         if (options?.onToolExecution) {
           // Find the original tool call to get args
           const toolCall = response.toolCalls?.find(
@@ -73,26 +84,48 @@ export const createConversationManager = (options?: ConversationManagerOptions) 
             toolResponse.result
           );
         }
+        
+        // Call new handler if provided
+        if (options?.handlers?.onToolExecution) {
+          const toolCall = response.toolCalls?.find(
+            tc => tc.toolCallId === toolResponse.toolCallId
+          );
+          await options.handlers.onToolExecution(
+            toolResponse.toolName,
+            toolCall?.args || {},
+            toolResponse.result
+          );
+        }
       }
     }
     
     // Update context metadata with response info
-    context.updateMetadata('lastResponseTime', Date.now());
+    await context.updateMetadata('lastResponseTime', Date.now());
     if (response.metadata) {
-      context.updateMetadata('lastResponseMetadata', response.metadata);
+      await context.updateMetadata('lastResponseMetadata', response.metadata);
+    }
+    
+    // Call handler if provided
+    if (options?.handlers?.onAgentResponseProcessed) {
+      await options.handlers.onAgentResponseProcessed(response);
     }
   };
   
   /**
    * Add a user message to the conversation
    */
-  const addUserMessage = (content: string) => {
+  const addUserMessage = async (content: string) => {
     context.incrementMessageCount();
-    history.addMessage({
+    await history.addMessage({
       role: "user",
       content,
     });
-    context.updateMetadata('lastUserMessageTime', Date.now());
+    await context.updateMetadata('lastUserMessageTime', Date.now());
+    
+    // Call handler if provided
+    if (options?.handlers?.onUserMessageAdded) {
+      await options.handlers.onUserMessageAdded(content);
+    }
   };
   
   /**
@@ -110,12 +143,17 @@ export const createConversationManager = (options?: ConversationManagerOptions) 
   /**
    * Reset the conversation (clears history and state)
    */
-  const reset = () => {
-    history.clear();
-    context.resetState();
+  const reset = async () => {
+    await history.clear();
+    await context.resetState();
     // Reset metrics
     const newContext = createConversationContext(options?.contextOptions);
     Object.assign(context, newContext);
+    
+    // Call handler if provided
+    if (options?.handlers?.onReset) {
+      await options.handlers.onReset();
+    }
   };
   
   /**

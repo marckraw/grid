@@ -1,10 +1,25 @@
 import type { Agent, AgentResponse } from "../types/agent.types.js";
 import type { ProgressMessage } from "../types/progress.types.js";
+import type { ChatMessage } from "../types/llm.types.js";
 import { createProgressMessage } from "../types/progress.types.js";
 import {
   createConversationManager,
   type ConversationManagerOptions,
 } from "./conversation-manager.service.js";
+
+/**
+ * Event handlers for conversation loop operations
+ */
+export interface ConversationLoopHandlers {
+  onConversationStarted?: (context: { 
+    sessionId?: string; 
+    userId?: string; 
+    conversationId?: string 
+  }) => Promise<{ initialMessages?: ChatMessage[] }>;
+  onMessageSent?: (message: string, context: any) => Promise<void>;
+  onResponseReceived?: (response: AgentResponse, context: any) => Promise<void>;
+  onConversationEnded?: (summary: any, context: any) => Promise<void>;
+}
 
 /**
  * Options for creating a conversation loop
@@ -17,6 +32,7 @@ export interface ConversationLoopOptions {
   onComplete?: (summary: any) => Promise<void>;
   onProgress?: (message: ProgressMessage) => Promise<void>;
   maxTurns?: number; // Optional limit on conversation turns
+  handlers?: ConversationLoopHandlers; // Event handlers
 }
 
 /**
@@ -43,6 +59,29 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
   // Track conversation state
   let turnCount = 0;
   let isActive = true;
+  let isInitialized = false;
+
+  // Initialize conversation with handler if provided
+  const initializeConversation = async () => {
+    if (!isInitialized && options.handlers?.onConversationStarted) {
+      const context = {
+        sessionId: manager.context.getSessionId(),
+        userId: manager.context.getUserId(),
+        conversationId: manager.context.getSessionId(), // Use session ID as conversation ID
+      };
+      
+      const result = await options.handlers.onConversationStarted(context);
+      
+      // Add initial messages if provided
+      if (result?.initialMessages) {
+        for (const message of result.initialMessages) {
+          await manager.history.addMessage(message);
+        }
+      }
+      
+      isInitialized = true;
+    }
+  };
 
   /**
    * Send a progress update if handler is provided
@@ -65,6 +104,10 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
     userMessage: string
   ): Promise<SendMessageResult> => {
     console.log("[ConversationLoop] sendMessage", userMessage);
+    
+    // Initialize if needed
+    await initializeConversation();
+    
     if (!isActive) {
       return {
         response: { role: "assistant", content: null },
@@ -78,7 +121,17 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
       turnCount++;
 
       // Add user message
-      manager.addUserMessage(userMessage);
+      await manager.addUserMessage(userMessage);
+      
+      // Call handler if provided
+      if (options.handlers?.onMessageSent) {
+        const context = {
+          turnCount,
+          sessionId: manager.context.getSessionId(),
+          userId: manager.context.getUserId(),
+        };
+        await options.handlers.onMessageSent(userMessage, context);
+      }
 
       // Send thinking progress
       await sendProgress("thinking", `Processing message (turn ${turnCount})`, {
@@ -126,6 +179,16 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
       // Call message callback if provided
       if (onMessage) {
         await onMessage(response);
+      }
+      
+      // Call handler if provided
+      if (options.handlers?.onResponseReceived) {
+        const context = {
+          turnCount,
+          sessionId: manager.context.getSessionId(),
+          userId: manager.context.getUserId(),
+        };
+        await options.handlers.onResponseReceived(response, context);
       }
 
       // Check if we've hit max turns
@@ -179,6 +242,16 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
     if (onComplete) {
       await onComplete(summary);
     }
+    
+    // Call handler if provided
+    if (options.handlers?.onConversationEnded) {
+      const context = {
+        turnCount,
+        sessionId: manager.context.getSessionId(),
+        userId: manager.context.getUserId(),
+      };
+      await options.handlers.onConversationEnded(summary, context);
+    }
   };
 
   /**
@@ -188,6 +261,7 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
     manager.reset();
     turnCount = 0;
     isActive = true;
+    isInitialized = false; // Reset initialization flag
   };
 
   /**
@@ -268,6 +342,7 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
     // Message management methods
     addUserMessage: manager.addUserMessage,
     addMessage: manager.history.addMessage,
+    addMessages: manager.history.addMessages,
     addToolResponse: manager.history.addToolResponse,
     processAgentResponse: manager.processAgentResponse,
 
