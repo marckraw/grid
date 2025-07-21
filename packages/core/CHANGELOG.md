@@ -1,5 +1,17 @@
 # @mrck-labs/grid-core
 
+## 0.10.0
+
+### Minor Changes
+
+- 3186503: Add more example tools written by claude
+
+## 0.9.0
+
+### Minor Changes
+
+- 8ac076a: Package for tools, remove not needed layer with conversationf low
+
 ## 0.8.0
 
 ### Minor Changes
