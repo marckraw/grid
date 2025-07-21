@@ -68,3 +68,7 @@ export {
   langfuseService,
   type LangfuseService,
 } from "./services/LangfuseService/langfuse.service.js";
+
+// Exaple tools
+export { currentTimeTool } from "./tools-to-export/current-time.tool.js";
+export { calculatorTool } from "./tools-to-export/calculator.tool.js";
