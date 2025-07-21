@@ -4,27 +4,73 @@
  * work well for content-centric websites.
  */
 
-/* You can override the default Infima variables here. */
+/* Grid custom theme - Modern blue/purple for AI/tech */
 :root {
-  --ifm-color-primary: #2e8555;
-  --ifm-color-primary-dark: #29784c;
-  --ifm-color-primary-darker: #277148;
-  --ifm-color-primary-darkest: #205d3b;
-  --ifm-color-primary-light: #33925d;
-  --ifm-color-primary-lighter: #359962;
-  --ifm-color-primary-lightest: #3cad6e;
+  --ifm-color-primary: #0070f3;
+  --ifm-color-primary-dark: #0061da;
+  --ifm-color-primary-darker: #005acc;
+  --ifm-color-primary-darkest: #0047a6;
+  --ifm-color-primary-light: #1a82ff;
+  --ifm-color-primary-lighter: #338fff;
+  --ifm-color-primary-lightest: #66a9ff;
   --ifm-code-font-size: 95%;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  
+  /* Additional custom properties */
+  --ifm-hero-background-color: #f8f9fa;
+  --ifm-font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
 }
 
 /* For readability concerns, you should choose a lighter palette in dark mode. */
 [data-theme='dark'] {
-  --ifm-color-primary: #25c2a0;
-  --ifm-color-primary-dark: #21af90;
-  --ifm-color-primary-darker: #1fa588;
-  --ifm-color-primary-darkest: #1a8870;
-  --ifm-color-primary-light: #29d5b0;
-  --ifm-color-primary-lighter: #32d8b4;
-  --ifm-color-primary-lightest: #4fddbf;
+  --ifm-color-primary: #7928ca;
+  --ifm-color-primary-dark: #6b21b6;
+  --ifm-color-primary-darker: #651fac;
+  --ifm-color-primary-darkest: #53198d;
+  --ifm-color-primary-light: #8739d8;
+  --ifm-color-primary-lighter: #914ae2;
+  --ifm-color-primary-lightest: #a66eec;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+  
+  /* Dark mode enhancements */
+  --ifm-background-color: #0a0a0a;
+  --ifm-hero-background-color: #0a0a0a;
+}
+
+/* Custom styles for Grid */
+.hero--primary {
+  background: linear-gradient(135deg, var(--ifm-color-primary) 0%, var(--ifm-color-primary-darker) 100%);
+}
+
+.hero__title {
+  font-size: 4rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.hero__subtitle {
+  font-size: 1.5rem;
+  font-weight: 400;
+  margin-top: 1rem;
+  opacity: 0.9;
+}
+
+@media screen and (max-width: 966px) {
+  .hero__title {
+    font-size: 2.5rem;
+  }
+  
+  .hero__subtitle {
+    font-size: 1.2rem;
+  }
+}
+
+/* Feature cards enhancement */
+.features {
+  padding: 4rem 0;
+}
+
+/* Code blocks enhancement */
+pre code {
+  font-family: 'Fira Code', 'Consolas', 'Monaco', 'Andale Mono', 'Ubuntu Mono', monospace;
 }

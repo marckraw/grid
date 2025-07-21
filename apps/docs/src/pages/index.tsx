@@ -5,6 +5,7 @@ import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
 import HomepageFeatures from '@site/src/components/HomepageFeatures';
 import Heading from '@theme/Heading';
+import CodeBlock from '@theme/CodeBlock';
 
 import styles from './index.module.css';
 
@@ -21,7 +22,7 @@ function HomepageHeader() {
           <Link
             className="button button--secondary button--lg"
             to="/docs/intro">
-            Docusaurus Tutorial - 5min ⏱️
+            Get Started with Grid →
           </Link>
         </div>
       </div>
@@ -33,11 +34,46 @@ export default function Home(): ReactNode {
   const {siteConfig} = useDocusaurusContext();
   return (
     <Layout
-      title={`Hello from ${siteConfig.title}`}
-      description="Description will go into a meta tag in <head />">
+      title={`${siteConfig.title} - LLM Orchestration Framework`}
+      description="Grid is a powerful TypeScript framework for building AI agents with tool-calling capabilities, observability, and production-ready features">
       <HomepageHeader />
       <main>
         <HomepageFeatures />
+        <section className="container margin-vert--xl">
+          <div className="row">
+            <div className="col col--8 col--offset-2">
+              <Heading as="h2" className="text--center margin-bottom--lg">
+                Get Started in Seconds
+              </Heading>
+              <CodeBlock language="typescript">
+{`import { createConfigurableAgent, calculatorTool } from "@mrck-labs/grid-core";
+
+// Create an intelligent agent
+const agent = createConfigurableAgent({
+  llmConfig: {
+    model: "gpt-4",
+    provider: "openai",
+  },
+  systemPrompt: "You are a helpful math tutor.",
+  tools: [calculatorTool],
+});
+
+// Use the agent
+const response = await agent.act("What's 15% of 200?");
+console.log(response.content);
+// "To calculate 15% of 200, I'll help you with that calculation..."
+// "15% of 200 is 30"`}
+              </CodeBlock>
+              <div className="text--center margin-top--lg">
+                <Link
+                  className="button button--primary button--lg"
+                  to="/docs/intro">
+                  Start Building →
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
     </Layout>
   );
