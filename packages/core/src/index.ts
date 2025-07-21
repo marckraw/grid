@@ -53,7 +53,7 @@ export { createConversationLoop } from "./services/conversation-loop.service.js"
 export type {
   ConversationLoop,
   ConversationLoopOptions,
-  ConversationLoopHandlers,
+  GroupedHandlers,
   SendMessageResult,
 } from "./services/conversation-loop.service.js";
 
