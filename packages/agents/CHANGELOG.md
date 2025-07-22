@@ -1,5 +1,17 @@
 # @mrck-labs/grid-agents
 
+## 0.5.0
+
+### Minor Changes
+
+- bfbdf39: Add 2 example agents
+
+### Patch Changes
+
+- Updated dependencies [bfbdf39]
+  - @mrck-labs/grid-core@0.13.0
+  - @mrck-labs/grid-tools@5.0.0
+
 ## 0.4.1
 
 ### Patch Changes

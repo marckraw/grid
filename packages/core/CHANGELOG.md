@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.13.0
+
+### Minor Changes
+
+- bfbdf39: Add 2 example agents
+
 ## 0.12.0
 
 ### Minor Changes
