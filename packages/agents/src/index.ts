@@ -1,14 +1,21 @@
 /**
- * @grid/agents - Agent orchestration primitives
+ * @mrck-labs/grid-agents - Pre-configured agents for common use cases
  */
 
-export const VERSION = "0.0.0";
+// Export individual agents
+export { researchAgent, createCustomResearchAgent } from "./agents/research.agent";
+export { mathDataAgent, createCustomMathDataAgent } from "./agents/math-data.agent";
 
-export type Agent = {
-  id: string;
-  name: string;
+// Import for collection
+import { researchAgent } from "./agents/research.agent";
+import { mathDataAgent } from "./agents/math-data.agent";
+import type { Agent } from "@mrck-labs/grid-core";
+
+// Export all agents as a collection for convenience
+export const allAgents: Record<string, Agent> = {
+  research: researchAgent,
+  mathData: mathDataAgent,
 };
 
-export const createAgent = (id: string, name: string): Agent => {
-  return { id, name };
-};
+// Type exports for agent configurations
+export type { Agent } from "@mrck-labs/grid-core";
