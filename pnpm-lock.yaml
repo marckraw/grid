@@ -193,6 +193,9 @@ importers:
       '@mrck-labs/grid-core':
         specifier: workspace:*
         version: link:../core
+      '@mrck-labs/grid-tools':
+        specifier: workspace:*
+        version: link:../tools
       zod:
         specifier: ^3.22.4
         version: 3.25.76

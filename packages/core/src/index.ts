@@ -7,6 +7,7 @@ export { agentFlowService } from "./services/agent-flow.service.js";
 export { createConfigurableAgent } from "./factories/configurable-agent.factory.js";
 export { transformMessagesForAI } from "./transformAIMessages.js";
 export type {
+  Agent,
   AgentFlowContext,
   ChatMessage,
   ProgressMessage,
