@@ -10,11 +10,12 @@ sidebar_position: 1
 
 Grid provides a comprehensive framework for orchestrating Large Language Model (LLM) interactions, enabling you to build sophisticated AI agents that can:
 
-- 🤖 **Execute complex workflows** with tool-calling capabilities
+- 🤖 **Execute complex tasks** with tool-calling capabilities
 - 🔄 **Run autonomously** with configurable iteration limits and state management
 - 📊 **Track everything** with built-in observability via Langfuse
 - 🎯 **Stay flexible** with an extensive hook system for customizing behavior
 - 🚀 **Stream progress** in real-time for responsive user experiences
+- 💾 **Persist conversations** with event-based hooks for any database
 
 ## Key Features
 
@@ -66,22 +67,28 @@ Grid is designed for developers who need:
 3. **Comprehensive monitoring** and debugging capabilities
 4. **Flexibility** to integrate with multiple LLM providers
 5. **Modern developer experience** with TypeScript and excellent tooling
+6. **Event-driven architecture** for seamless database integration
+7. **Pre-built components** for rapid development
 
 ## Quick Example
 
 Here's a simple example of creating an agent with Grid:
 
 ```typescript
-import { createConfigurableAgent } from "@mrck-labs/grid-core";
-import { calculator } from "./tools/calculator";
+import { createConfigurableAgent, baseLLMService } from "@mrck-labs/grid-core";
+import { calculator } from "@mrck-labs/grid-tools";
 
 const agent = createConfigurableAgent({
-  llmConfig: {
+  llmService: baseLLMService({
     model: "gpt-4",
-    provider: "openai",
+    apiKey: process.env.OPENAI_API_KEY,
+  }),
+  config: {
+    id: "math-assistant",
+    type: "general",
+    systemPrompt: "You are a helpful assistant with calculation abilities.",
+    availableTools: [calculator],
   },
-  systemPrompt: "You are a helpful assistant with calculation abilities.",
-  tools: [calculator],
 });
 
 const response = await agent.act("What's 2 + 2?");

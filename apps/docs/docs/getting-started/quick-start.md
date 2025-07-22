@@ -11,15 +11,19 @@ Build your first Grid application in under 5 minutes.
 Let's create a basic conversational agent that can answer questions:
 
 ```typescript
-import { createConfigurableAgent } from "@mrck-labs/grid-core";
+import { createConfigurableAgent, baseLLMService } from "@mrck-labs/grid-core";
 
 // Create an agent instance
 const agent = createConfigurableAgent({
-  llmConfig: {
+  llmService: baseLLMService({
     model: "gpt-4",
-    provider: "openai",
+    apiKey: process.env.OPENAI_API_KEY,
+  }),
+  config: {
+    id: "helpful-assistant",
+    type: "general",
+    systemPrompt: "You are a helpful AI assistant. Be concise and friendly.",
   },
-  systemPrompt: "You are a helpful AI assistant. Be concise and friendly.",
 });
 
 // Use the agent
@@ -36,7 +40,7 @@ main();
 Make your agent more capable by adding tools:
 
 ```typescript
-import { createConfigurableAgent, createNamedTool } from "@mrck-labs/grid-core";
+import { createConfigurableAgent, baseLLMService, createNamedTool } from "@mrck-labs/grid-core";
 import { z } from "zod";
 
 // Define a weather tool
@@ -54,12 +58,16 @@ const weatherTool = createNamedTool({
 
 // Create an agent with tools
 const agent = createConfigurableAgent({
-  llmConfig: {
+  llmService: baseLLMService({
     model: "gpt-4",
-    provider: "openai",
+    apiKey: process.env.OPENAI_API_KEY,
+  }),
+  config: {
+    id: "weather-assistant",
+    type: "general",
+    systemPrompt: "You are a helpful assistant that can check the weather.",
+    availableTools: [weatherTool],
   },
-  systemPrompt: "You are a helpful assistant that can check the weather.",
-  tools: [weatherTool],
 });
 
 // The agent will automatically use tools when needed
@@ -76,9 +84,13 @@ Get real-time updates as your agent works:
 
 ```typescript
 const agent = createConfigurableAgent({
-  llmConfig: {
+  llmService: baseLLMService({
     model: "gpt-4",
-    provider: "openai",
+    apiKey: process.env.OPENAI_API_KEY,
+  }),
+  config: {
+    id: "progress-demo",
+    type: "general",
   },
   progressConfig: {
     enabled: true,
@@ -100,9 +112,13 @@ Customize agent behavior with hooks:
 
 ```typescript
 const agent = createConfigurableAgent({
-  llmConfig: {
+  llmService: baseLLMService({
     model: "gpt-4",
-    provider: "openai",
+    apiKey: process.env.OPENAI_API_KEY,
+  }),
+  config: {
+    id: "hooks-demo",
+    type: "general",
   },
   customHandlers: {
     beforeAct: async (input, config) => {
@@ -122,7 +138,7 @@ const agent = createConfigurableAgent({
 Here's a complete example combining everything:
 
 ```typescript
-import { createConfigurableAgent, createNamedTool } from "@mrck-labs/grid-core";
+import { createConfigurableAgent, baseLLMService, createNamedTool } from "@mrck-labs/grid-core";
 import { z } from "zod";
 
 // Create a calculation tool
@@ -145,13 +161,17 @@ const calculator = createNamedTool({
 
 // Configure the agent
 const agent = createConfigurableAgent({
-  llmConfig: {
+  llmService: baseLLMService({
     model: "gpt-4",
-    provider: "openai",
+    apiKey: process.env.OPENAI_API_KEY,
+  }),
+  config: {
+    id: "math-tutor",
+    type: "general",
+    systemPrompt: `You are a helpful math tutor. 
+      Help students with calculations and explain your work.`,
+    availableTools: [calculator],
   },
-  systemPrompt: `You are a helpful math tutor. 
-    Help students with calculations and explain your work.`,
-  tools: [calculator],
   progressConfig: {
     enabled: true,
     onProgress: (update) => {
@@ -178,11 +198,27 @@ async function tutorSession() {
 tutorSession();
 ```
 
+## Using Pre-built Agents
+
+Grid also provides pre-built agents for common use cases:
+
+```typescript
+import { researchAgent } from "@mrck-labs/grid-agents";
+
+// Use a pre-configured research agent
+async function doResearch() {
+  const response = await researchAgent.act(
+    "Research the latest advances in quantum computing"
+  );
+  console.log(response.content);
+}
+```
+
 ## What's Next?
 
 Congratulations! You've created your first Grid agent. To dive deeper:
 
 - [Build a more complex agent](/docs/getting-started/first-agent)
 - [Learn about the core concepts](/docs/core-concepts/agents)
-- [Explore advanced features](/docs/guides/agent-hooks)
-- [Set up observability](/docs/guides/langfuse-integration)
+- [Explore pre-built agents](/docs/getting-started/pre-built-agents)
+- [Set up observability](/docs/core-concepts/observability)

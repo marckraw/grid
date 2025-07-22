@@ -151,26 +151,29 @@ export const saveResultsTool = createNamedTool({
 Create `src/research-agent.ts`:
 
 ```typescript
-import { createConfigurableAgent } from "@mrck-labs/grid-core";
+import { createConfigurableAgent, baseLLMService } from "@mrck-labs/grid-core";
 import { searchTool } from "./tools/search.tool";
 import { summarizeTool } from "./tools/summarize.tool";
 import { saveResultsTool } from "./tools/save.tool";
 
 export function createResearchAgent() {
   return createConfigurableAgent({
-    llmConfig: {
+    llmService: baseLLMService({
       model: process.env.DEFAULT_MODEL || "gpt-4",
-      provider: process.env.DEFAULT_PROVIDER as "openai" | "anthropic" || "openai",
-      temperature: 0.7,
+      apiKey: process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY,
+    }),
+    config: {
+      id: "research-agent",
+      type: "general",
+      systemPrompt: `You are a professional research assistant. Your job is to:
+        1. Search for information on topics requested by the user
+        2. Analyze and summarize the findings
+        3. Save the results in an organized format
+        
+        Always provide clear, well-structured research results. When saving files,
+        use descriptive names and organize content logically.`,
+      availableTools: [searchTool, summarizeTool, saveResultsTool],
     },
-    systemPrompt: `You are a professional research assistant. Your job is to:
-      1. Search for information on topics requested by the user
-      2. Analyze and summarize the findings
-      3. Save the results in an organized format
-      
-      Always provide clear, well-structured research results. When saving files,
-      use descriptive names and organize content logically.`,
-    tools: [searchTool, summarizeTool, saveResultsTool],
     progressConfig: {
       enabled: true,
       onProgress: (update) => {
@@ -344,6 +347,6 @@ You've built a complete research assistant! To enhance it further:
 
 Continue learning:
 - [Explore core concepts](/docs/core-concepts/agents)
-- [Build custom tools](/docs/guides/building-custom-tools)
-- [Add observability](/docs/guides/langfuse-integration)
-- [Deploy to production](/docs/guides/production-deployment)
+- [Build custom tools](/docs/core-concepts/tools)
+- [Add observability](/docs/core-concepts/observability)
+- [Use pre-built agents](/docs/getting-started/pre-built-agents)

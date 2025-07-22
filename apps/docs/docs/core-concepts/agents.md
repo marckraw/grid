@@ -21,15 +21,19 @@ In Grid, an agent is an intelligent entity that:
 Grid provides the `createConfigurableAgent` factory function for creating agents:
 
 ```typescript
-import { createConfigurableAgent } from "@mrck-labs/grid-core";
+import { createConfigurableAgent, baseLLMService } from "@mrck-labs/grid-core";
 
 const agent = createConfigurableAgent({
-  llmConfig: {
+  llmService: baseLLMService({
     model: "gpt-4",
-    provider: "openai",
+    apiKey: process.env.OPENAI_API_KEY,
     temperature: 0.7,
+  }),
+  config: {
+    id: "my-agent",
+    type: "general",
+    systemPrompt: "You are a helpful assistant.",
   },
-  systemPrompt: "You are a helpful assistant.",
 });
 ```
 
@@ -37,16 +41,20 @@ const agent = createConfigurableAgent({
 
 Agents are highly configurable through the `AgentConfig` interface:
 
-### LLM Configuration
+### LLM Service Configuration
+
+Agents use the `baseLLMService` to configure LLM interactions:
 
 ```typescript
-interface LLMConfig {
-  model: string;              // Model identifier (e.g., "gpt-4", "claude-3")
-  provider: "openai" | "anthropic";
-  temperature?: number;       // 0-1, controls randomness
-  maxTokens?: number;        // Maximum response length
-  apiKey?: string;           // Override environment variable
-}
+const agent = createConfigurableAgent({
+  llmService: baseLLMService({
+    model: "gpt-4",                    // Model identifier
+    apiKey: process.env.OPENAI_API_KEY, // API key
+    temperature: 0.7,                   // 0-1, controls randomness
+    maxTokens: 2000,                    // Maximum response length
+  }),
+  config: { /* agent config */ },
+});
 ```
 
 ### System Prompts
@@ -55,12 +63,16 @@ System prompts define your agent's personality and behavior:
 
 ```typescript
 const agent = createConfigurableAgent({
-  systemPrompt: `You are a customer service agent for TechCorp.
-    - Be professional and courteous
-    - Help customers with product inquiries
-    - Escalate complex issues to human agents
-    - Never share internal company information`,
-  // ... other config
+  llmService: baseLLMService({ /* ... */ }),
+  config: {
+    id: "customer-service",
+    type: "general",
+    systemPrompt: `You are a customer service agent for TechCorp.
+      - Be professional and courteous
+      - Help customers with product inquiries
+      - Escalate complex issues to human agents
+      - Never share internal company information`,
+  },
 });
 ```
 
@@ -70,9 +82,12 @@ Agents can use tools to extend their capabilities:
 
 ```typescript
 const agent = createConfigurableAgent({
-  tools: [searchTool, calculatorTool, emailTool],
-  toolChoice: "auto",  // "auto" | "none" | "required"
-  // ... other config
+  llmService: baseLLMService({ /* ... */ }),
+  config: {
+    id: "tool-agent",
+    type: "general",
+    availableTools: [searchTool, calculatorTool, emailTool],
+  },
 });
 ```
 
@@ -191,16 +206,21 @@ const agent = createConfigurableAgent({
 Create agents for specific domains:
 
 ```typescript
-// Customer Support Agent
-const supportAgent = createConfigurableAgent({
-  systemPrompt: "You are a customer support specialist...",
-  tools: [lookupOrder, checkInventory, createTicket],
-});
+import { researchAgent, mathDataAgent } from "@mrck-labs/grid-agents";
 
-// Code Review Agent
-const reviewAgent = createConfigurableAgent({
-  systemPrompt: "You are a senior software engineer reviewing code...",
-  tools: [analyzeCode, suggestImprovements, checkSecurity],
+// Use pre-built agents
+const researcher = researchAgent;
+const calculator = mathDataAgent;
+
+// Or create custom specialized agents
+const supportAgent = createConfigurableAgent({
+  llmService: baseLLMService({ model: "gpt-4" }),
+  config: {
+    id: "support-agent",
+    type: "general",
+    systemPrompt: "You are a customer support specialist...",
+    availableTools: [lookupOrder, checkInventory, createTicket],
+  },
 });
 ```
 
@@ -211,12 +231,26 @@ Use different models for different tasks:
 ```typescript
 // Fast agent for simple queries
 const fastAgent = createConfigurableAgent({
-  llmConfig: { model: "gpt-3.5-turbo", provider: "openai" },
+  llmService: baseLLMService({ 
+    model: "gpt-3.5-turbo",
+    apiKey: process.env.OPENAI_API_KEY,
+  }),
+  config: {
+    id: "fast-agent",
+    type: "general",
+  },
 });
 
 // Powerful agent for complex reasoning
 const powerfulAgent = createConfigurableAgent({
-  llmConfig: { model: "gpt-4", provider: "openai" },
+  llmService: baseLLMService({ 
+    model: "gpt-4",
+    apiKey: process.env.OPENAI_API_KEY,
+  }),
+  config: {
+    id: "powerful-agent",
+    type: "general",
+  },
 });
 
 // Router logic
@@ -233,20 +267,30 @@ Create agents that can work independently:
 
 ```typescript
 const autonomousAgent = createConfigurableAgent({
-  systemPrompt: `You are an autonomous research agent.
-    Break down complex tasks into steps and work through them systematically.`,
-  tools: [search, analyze, summarize, save],
+  llmService: baseLLMService({ model: "gpt-4" }),
+  config: {
+    id: "autonomous-researcher",
+    type: "general",
+    systemPrompt: `You are an autonomous research agent.
+      Break down complex tasks into steps and work through them systematically.`,
+    availableTools: [search, analyze, summarize, save],
+  },
   behaviorConfig: {
-    maxIterations: 10,
-    enableSelfReflection: true,
+    maxRetries: 3,
+    continueOnError: true,
   },
 });
 
-// Run autonomously
-const result = await autonomousAgent.runAutonomous({
-  goal: "Research and summarize recent AI breakthroughs",
-  maxIterations: 5,
+// Run with conversation loop for autonomous behavior
+import { createConversationLoop } from "@mrck-labs/grid-core";
+
+const loop = createConversationLoop({
+  agent: autonomousAgent,
 });
+
+const result = await loop.sendMessage(
+  "Research and summarize recent AI breakthroughs"
+);
 ```
 
 ## Best Practices
@@ -282,4 +326,5 @@ Now that you understand agents, explore:
 
 - [Tools](/docs/core-concepts/tools) - Extend agent capabilities
 - [Services Architecture](/docs/core-concepts/services-architecture) - Understand the underlying systems
-- [Agent Hooks](/docs/guides/agent-hooks) - Advanced customization techniques
+- [Event Handlers](/docs/getting-started/event-handlers) - Implement persistence with events
+- [Pre-built Agents](/docs/getting-started/pre-built-agents) - Use ready-made agents
