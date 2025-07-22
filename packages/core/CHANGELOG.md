@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.14.0
+
+### Minor Changes
+
+- 874c50d: Update docs, fix code, remove workflows package
+
 ## 0.13.0
 
 ### Minor Changes

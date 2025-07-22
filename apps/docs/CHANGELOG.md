@@ -1,5 +1,11 @@
 # docs
 
+## 0.2.0
+
+### Minor Changes
+
+- 874c50d: Update docs, fix code, remove workflows package
+
 ## 0.1.0
 
 ### Minor Changes
