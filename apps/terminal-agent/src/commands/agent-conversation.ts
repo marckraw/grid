@@ -144,14 +144,16 @@ Be concise but friendly in your responses.`,
   // Create conversation flow with progress streaming
   const conversation = createConversationLoop({
     agent,
-    conversationOptions: {
-      onToolExecution: (toolName, args, result) => {
-        console.log("  Args:", args);
-        console.log("  Result:", result);
-        if (process.env.DEBUG) {
+    handlers: {
+      manager: {
+        onToolExecution: async (toolName, args, result) => {
           console.log("  Args:", args);
           console.log("  Result:", result);
-        }
+          if (process.env.DEBUG) {
+            console.log("  Args:", args);
+            console.log("  Result:", result);
+          }
+        },
       },
     },
     onProgress: sendUpdateOnProgress,

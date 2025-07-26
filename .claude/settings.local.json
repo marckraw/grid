@@ -14,7 +14,8 @@
       "WebFetch(domain:ai-sdk.dev)",
       "Bash(pnpm --filter terminal-agent remove zod)",
       "Bash(pnpm:*)",
-      "WebFetch(domain:docusaurus.io)"
+      "WebFetch(domain:docusaurus.io)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }
