@@ -1,5 +1,11 @@
 # docs
 
+## 0.3.0
+
+### Minor Changes
+
+- 4878f68: update docs, add use case testing of agent with custom llm and customHandlers
+
 ## 0.2.0
 
 ### Minor Changes
