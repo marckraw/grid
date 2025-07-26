@@ -72,17 +72,53 @@ If you're using TypeScript, ensure your `tsconfig.json` includes:
 Create a simple test file to verify Grid is installed correctly:
 
 ```typescript
-import { createConfigurableAgent } from "@mrck-labs/grid-core";
+import { 
+  createConfigurableAgent, 
+  baseLLMService, 
+  createToolExecutor 
+} from "@mrck-labs/grid-core";
 
+// Create the LLM service
+const llmService = baseLLMService({
+  langfuse: { enabled: false }
+});
+
+// Create a tool executor
+const toolExecutor = createToolExecutor();
+
+// Create a simple agent
 const agent = createConfigurableAgent({
-  llmConfig: {
-    model: "gpt-4",
-    provider: "openai",
-  },
-  systemPrompt: "You are a helpful assistant.",
+  llmService,
+  toolExecutor,
+  config: {
+    id: "test-agent",
+    type: "general",
+    version: "1.0.0",
+    prompts: {
+      system: "You are a helpful assistant."
+    },
+    metadata: {
+      id: "test-agent",
+      type: "general",
+      name: "Test Agent",
+      description: "A simple test agent",
+      capabilities: ["general"],
+      version: "1.0.0"
+    },
+    tools: {
+      builtin: [],
+      custom: [],
+      mcp: []
+    },
+    behavior: {
+      maxRetries: 3,
+      responseFormat: "text"
+    }
+  }
 });
 
 console.log("Grid is installed and ready!");
+console.log("Agent created:", agent.id);
 ```
 
 ## Environment Variables
