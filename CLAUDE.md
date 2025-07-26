@@ -37,12 +37,23 @@ pnpm changeset
 
 # Check release status
 pnpm release:status
+
+# Run a single test file
+pnpm --filter <package-name> test <test-file-path>
+
+# Run documentation site locally
+pnpm docs
+
+# Run terminal agent demo
+pnpm terminal-agent
 ```
 
 ### Important Build Notes
 - The core package uses `zshy` for bundler-free TypeScript compilation
 - Packages are built as dual ESM/CJS modules
 - Use `pnpm` exclusively - the project uses workspaces and pnpm@8.15.1
+- TypeScript configuration uses NodeNext module resolution with ES2022 target
+- All packages extend from root tsconfig.json with strict mode enabled
 
 ## Architecture Overview
 
@@ -121,9 +132,15 @@ The codebase was recently refactored to fully align with Vercel AI SDK:
 Terminal agent requires API keys in `.env`:
 - `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` for LLM access
 - `DEFAULT_MODEL` can be set to preferred model
+- `LANGFUSE_SECRET_KEY` and `LANGFUSE_PUBLIC_KEY` for observability (optional)
+- `LINEAR_API_KEY` for Linear integration (optional)
+- MCP server configuration via `MCP_SERVER_COMMAND` and `MCP_SERVER_ARGS` (optional)
 
 ### Release Process
 Automated releases via GitHub Actions:
 - Beta releases from `develop` branch
 - Stable releases from `master` branch
 - Use `pnpm changeset` to document changes
+- Releases require `NPM_TOKEN` GitHub secret
+- Version packages: `pnpm version-packages`
+- Dry run: `pnpm release:dry-run`
