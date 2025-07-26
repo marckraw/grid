@@ -4,6 +4,7 @@ import { selectWithCancel, isCancel } from "../../utils/prompts.js";
 import type { MenuOption } from "../../types/index.js";
 import { testGeneralAgent } from "./agent-selection/general.js";
 import { testGeneralAgentWithCustomHandlers } from "./agent-selection/general-with-custom-handlers.js";
+import { testGeneralAgentWithCustomLLM } from "./agent-selection/general-with-custom-llm/general-with-custom-llm.js";
 
 const agentOptions: MenuOption[] = [
   {
@@ -15,6 +16,11 @@ const agentOptions: MenuOption[] = [
     value: "general-with-handlers",
     label: "🔧 General agent with custom handlers",
     hint: "Test all available hooks",
+  },
+  {
+    value: "general-with-custom-llm",
+    label: "🎭 General agent with custom LLM",
+    hint: "Custom LLM service implementation",
   },
   {
     value: "back",
@@ -42,6 +48,9 @@ export async function exploreTestAgents(): Promise<void> {
         break;
       case "general-with-handlers":
         await testGeneralAgentWithCustomHandlers();
+        break;
+      case "general-with-custom-llm":
+        await testGeneralAgentWithCustomLLM();
         break;
       default:
         p.log.error(pc.red("Unknown agent selected"));

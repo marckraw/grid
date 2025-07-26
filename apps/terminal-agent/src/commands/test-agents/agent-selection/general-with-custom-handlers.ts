@@ -67,50 +67,56 @@ export const testGeneralAgentWithCustomHandlers = async () => {
       // Called before processing the input
       beforeAct: async (input, config) => {
         p.log.info(pc.blue("🔵 [beforeAct] Processing input..."));
-        p.log.info(pc.dim(`   Input: ${JSON.stringify(input.messages[0].content)}`));
+        p.log.info(
+          pc.dim(`   Input: ${JSON.stringify(input.messages[0].content)}`)
+        );
         return input;
       },
-      
+
       // Called after receiving the response
       afterResponse: async (response, input) => {
         p.log.info(pc.green("🟢 [afterResponse] Response received"));
-        p.log.info(pc.dim(`   Response length: ${response.content?.length || 0} chars`));
+        p.log.info(
+          pc.dim(`   Response length: ${response.content?.length || 0} chars`)
+        );
         return response;
       },
-      
+
       // Called when an error occurs
       onError: async (error, attempt) => {
-        p.log.error(pc.red(`🔴 [onError] Error on attempt ${attempt}: ${error.message}`));
+        p.log.error(
+          pc.red(`🔴 [onError] Error on attempt ${attempt}: ${error.message}`)
+        );
         // Return retry decision
         return { retry: attempt < 3, modifiedInput: undefined };
       },
-      
+
       // Called to validate the response
       validateResponse: async (response) => {
         p.log.info(pc.yellow("🟡 [validateResponse] Validating response..."));
         const isValid = response.content && response.content.length > 0;
         const result = {
           isValid,
-          errors: isValid ? undefined : ["Response is empty"]
+          errors: isValid ? undefined : ["Response is empty"],
         };
         p.log.info(pc.dim(`   Valid: ${result.isValid}`));
         return result;
       },
-      
+
       // Called to transform input before processing
       transformInput: async (input) => {
         p.log.info(pc.magenta("🟣 [transformInput] Transforming input..."));
         // Just log, don't actually transform
         return input;
       },
-      
+
       // Called to transform output before returning
       transformOutput: async (output) => {
         p.log.info(pc.cyan("🔵 [transformOutput] Transforming output..."));
         // Just log, don't actually transform
         return output;
-      }
-    }
+      },
+    },
   });
 
   // Start conversation loop
