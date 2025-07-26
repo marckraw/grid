@@ -26,15 +26,25 @@ npm install @mrck-labs/grid-core
 
 Grid offers additional packages for specific use cases:
 
+### Pre-built Tools
+```bash npm2yarn
+npm install @mrck-labs/grid-tools
+```
+
+Includes ready-to-use tools like:
+- Web scraping and URL reading
+- String manipulation utilities
+- Data conversion and formatting
+- System information tools
+
 ### Pre-built Agents
 ```bash npm2yarn
 npm install @mrck-labs/grid-agents
 ```
 
-### Workflow Orchestration
-```bash npm2yarn
-npm install @mrck-labs/grid-workflows
-```
+Provides specialized agents:
+- Research Agent - For information gathering and analysis
+- Math & Data Agent - For calculations and data processing
 
 ## LLM Provider Setup
 
@@ -146,4 +156,5 @@ Now that Grid is installed, you're ready to:
 
 - [Create your first agent](/docs/getting-started/quick-start)
 - [Explore the core concepts](/docs/core-concepts/agents)
-- [Build custom tools](/docs/guides/building-custom-tools)
+- [Build custom tools](/docs/core-concepts/tools)
+- [Use pre-built agents](/docs/getting-started/pre-built-agents)

@@ -153,7 +153,17 @@ const agent = createConfigurableAgent({
 Save and restore conversation state:
 
 ```typescript
-// Save context
+// Save context automatically with event handlers
+const context = createConversationContext({
+  onStateChanged: async (key, value) => {
+    await database.state.upsert({ key, value });
+  },
+  onMetadataChanged: async (key, value) => {
+    await database.metadata.upsert({ key, value });
+  },
+});
+
+// Or manually save snapshots
 const snapshot = context.getSnapshot();
 await saveToDatabase(snapshot);
 
@@ -166,6 +176,123 @@ Object.entries(saved.state).forEach(([key, value]) => {
 });
 Object.entries(saved.metadata).forEach(([key, value]) => {
   newContext.updateMetadata(key, value);
+});
+```
+
+## Event-Based Persistence
+
+Grid provides event handlers at all levels of the conversation architecture for seamless database integration:
+
+### History-Level Events
+
+```typescript
+import { createConversationHistory } from "@mrck-labs/grid-core";
+
+const history = createConversationHistory("You are a helpful assistant", {
+  onMessageAdded: async (message) => {
+    await database.messages.create({
+      data: {
+        role: message.role,
+        content: message.content,
+        timestamp: new Date(),
+      },
+    });
+  },
+  onMessagesCleared: async () => {
+    await database.messages.deleteMany({ sessionId: currentSession });
+  },
+});
+```
+
+### Context-Level Events
+
+```typescript
+import { createConversationContext } from "@mrck-labs/grid-core";
+
+const context = createConversationContext({
+  onStateChanged: async (key, value) => {
+    await database.state.upsert({
+      where: { key },
+      update: { value },
+      create: { key, value },
+    });
+  },
+  onMetadataChanged: async (key, value) => {
+    await database.metadata.upsert({
+      where: { key },
+      update: { value },
+      create: { key, value },
+    });
+  },
+});
+```
+
+### Manager-Level Grouped Events
+
+```typescript
+import { createConversationManager } from "@mrck-labs/grid-core";
+
+const manager = createConversationManager("You are a helpful assistant", {
+  // Grouped handlers for clean organization
+  manager: {
+    onUserMessageAdded: async (message) => {
+      await analytics.track("user_message", { content: message });
+    },
+    onAgentResponseProcessed: async (response) => {
+      await analytics.track("agent_response", { 
+        hasTools: response.toolCalls?.length > 0 
+      });
+    },
+  },
+  history: {
+    onMessageAdded: async (message) => {
+      await database.messages.create({ data: message });
+    },
+  },
+  context: {
+    onStateChanged: async (key, value) => {
+      await database.state.upsert({ key, value });
+    },
+  },
+});
+```
+
+### Loop-Level Events
+
+```typescript
+import { createConversationLoop } from "@mrck-labs/grid-core";
+
+const loop = createConversationLoop({
+  agent,
+  handlers: {
+    onConversationStarted: async ({ sessionId, userId }) => {
+      // Load previous messages from database
+      const messages = await database.messages.findMany({ 
+        where: { sessionId } 
+      });
+      return { initialMessages: messages };
+    },
+    onMessageSent: async (message, context) => {
+      await database.audit.create({ 
+        type: "message_sent",
+        content: message,
+        context,
+      });
+    },
+    onResponseReceived: async (response, context) => {
+      await database.audit.create({ 
+        type: "response_received",
+        response,
+        context,
+      });
+    },
+    onConversationEnded: async (summary, context) => {
+      await database.sessions.update({
+        where: { id: context.sessionId },
+        data: { summary, endedAt: new Date() },
+      });
+    },
+  },
 });
 ```
 
@@ -500,5 +627,5 @@ Be mindful of sensitive information in conversation history.
 ## Next Steps
 
 - [Observability](/docs/core-concepts/observability) - Monitor conversations with Langfuse
-- [Agent Hooks](/docs/guides/agent-hooks) - Customize conversation behavior
-- [Production Deployment](/docs/guides/production-deployment) - Scale conversation management
+- [Event Handlers](/docs/getting-started/event-handlers) - Implement persistence with events
+- [Conversation Primitives](/docs/core-concepts/conversation-primitives) - Deep dive into primitives

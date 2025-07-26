@@ -1,6 +1,6 @@
 {
     "name": "terminal-agent",
-    "version": "0.3.2",
+    "version": "0.4.0",
     "description": "Terminal app showcasing Grid library features",
     "type": "module",
     "private": true,
@@ -20,7 +20,6 @@
         "@clack/prompts": "^0.11.0",
         "@mrck-labs/grid-agents": "workspace:*",
         "@mrck-labs/grid-core": "workspace:*",
-        "@mrck-labs/grid-workflows": "workspace:*",
         "@mrck-labs/grid-tools": "workspace:*",
         "ai": "^4.3.19",
         "dotenv": "^17.2.0",

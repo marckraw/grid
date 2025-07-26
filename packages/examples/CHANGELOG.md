@@ -1,5 +1,17 @@
 # @mrck-labs/grid-examples
 
+## 0.5.0
+
+### Minor Changes
+
+- 874c50d: Update docs, fix code, remove workflows package
+
+### Patch Changes
+
+- Updated dependencies [874c50d]
+  - @mrck-labs/grid-agents@0.6.0
+  - @mrck-labs/grid-core@0.14.0
+
 ## 0.4.2
 
 ### Patch Changes

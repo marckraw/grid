@@ -55,12 +55,22 @@ export const createPrimitive = (options?: PrimitiveOptions) => {
 
 ### createConversationHistory
 
-Manages the storage and retrieval of conversation messages.
+Manages the storage and retrieval of conversation messages with optional event handlers.
 
 ```typescript
 import { createConversationHistory } from "@mrck-labs/grid-core";
 
-const history = createConversationHistory("You are a helpful assistant");
+const history = createConversationHistory("You are a helpful assistant", {
+  // Optional event handlers for persistence
+  onMessageAdded: async (message) => {
+    console.log("Message added:", message);
+    await database.messages.create({ data: message });
+  },
+  onMessagesCleared: async () => {
+    console.log("Messages cleared");
+    await database.messages.deleteMany({ sessionId });
+  },
+});
 
 // Add messages
 history.addMessage({ role: "user", content: "Hello!" });
@@ -85,7 +95,7 @@ const lastUser = history.getLastMessageByRole("user");
 const userCount = history.getMessageCountByRole("user");
 const hasMessages = history.hasMessages();
 
-// Clear (preserves system message)
+// Clear (preserves system message, triggers onMessagesCleared)
 history.clear();
 ```
 
@@ -97,14 +107,24 @@ history.clear();
 
 ### createConversationContext
 
-Manages contextual information and conversation metadata.
+Manages contextual information and conversation metadata with optional event handlers.
 
 ```typescript
 import { createConversationContext } from "@mrck-labs/grid-core";
 
-const context = createConversationContext();
+const context = createConversationContext({
+  // Optional event handlers for persistence
+  onStateChanged: async (key, value) => {
+    console.log(`State changed: ${key} = ${value}`);
+    await database.state.upsert({ key, value });
+  },
+  onMetadataChanged: async (key, value) => {
+    console.log(`Metadata changed: ${key} = ${value}`);
+    await database.metadata.upsert({ key, value });
+  },
+});
 
-// State management
+// State management (triggers onStateChanged)
 context.updateState("user.name", "Alice");
 context.updateStates({
   "user.preferences.language": "en",
@@ -116,7 +136,7 @@ context.updateStates({
 const state = context.getState(); // Returns copy
 const userName = context.getStateValue("user.name");
 
-// Metadata tracking
+// Metadata tracking (triggers onMetadataChanged)
 context.updateMetadata("topic", "weather");
 context.incrementMessageCount();
 context.incrementToolCallCount(2);
@@ -139,14 +159,38 @@ const snapshot = context.getSnapshot();
 
 ### createConversationManager
 
-Combines history and context into a unified interface.
+Combines history and context into a unified interface with grouped event handlers.
 
 ```typescript
 import { createConversationManager } from "@mrck-labs/grid-core";
 
-const manager = createConversationManager("You are a helpful assistant");
+const manager = createConversationManager("You are a helpful assistant", {
+  // Grouped handlers for clean organization
+  manager: {
+    onUserMessageAdded: async (message) => {
+      await analytics.track("user_message", { message });
+    },
+    onAgentResponseProcessed: async (response) => {
+      await analytics.track("agent_response", response);
+    },
+    onToolResponseAdded: async (toolCallId, toolName, result) => {
+      await analytics.track("tool_executed", { toolName, result });
+    },
+  },
+  // Delegate to underlying primitive handlers
+  history: {
+    onMessageAdded: async (message) => {
+      await database.messages.create({ data: message });
+    },
+  },
+  context: {
+    onStateChanged: async (key, value) => {
+      await database.state.upsert({ key, value });
+    },
+  },
+});
 
-// Unified message handling
+// Unified message handling (triggers handlers)
 manager.addUserMessage("What's the weather?");
 
 // Process agent responses
@@ -196,7 +240,7 @@ manager.reset();
 
 ### createConversationLoop
 
-Orchestrates complete conversation flows with agent integration.
+Orchestrates complete conversation flows with agent integration and lifecycle event handlers.
 
 ```typescript
 import { createConversationLoop } from "@mrck-labs/grid-core";
@@ -205,6 +249,40 @@ const loop = createConversationLoop({
   agent: myAgent,
   systemPrompt: "You are a helpful assistant",
   toolExecutor: myToolExecutor,
+  handlers: {
+    // Lifecycle event handlers
+    onConversationStarted: async ({ sessionId, userId, conversationId }) => {
+      console.log("Conversation started", { sessionId });
+      // Load previous messages from database
+      const messages = await database.messages.findMany({ 
+        where: { sessionId } 
+      });
+      return { initialMessages: messages };
+    },
+    onMessageSent: async (message, context) => {
+      console.log("Message sent:", message);
+      await database.audit.create({ 
+        type: "message_sent",
+        content: message,
+        context,
+      });
+    },
+    onResponseReceived: async (response, context) => {
+      console.log("Response received:", response);
+      await database.audit.create({ 
+        type: "response_received",
+        response,
+        context,
+      });
+    },
+    onConversationEnded: async (summary, context) => {
+      console.log("Conversation ended", summary);
+      await database.sessions.update({
+        where: { id: context.sessionId },
+        data: { summary, endedAt: new Date() },
+      });
+    },
+  },
 });
 
 // Send messages with automatic tool resolution
@@ -229,7 +307,7 @@ const exported = loop.exportConversation();
 const newLoop = createConversationLoop(options);
 newLoop.importConversation(exported);
 
-// Lifecycle management
+// Lifecycle management (triggers handlers)
 loop.endConversation();
 loop.resetConversation();
 ```
@@ -377,4 +455,5 @@ const createCustomHistory = () => {
 
 - [Services Architecture](/docs/core-concepts/services-architecture) - Deep dive into service patterns
 - [Conversation Management](/docs/core-concepts/conversation-management) - Advanced conversation patterns
-- [Building Custom Tools](/docs/guides/building-custom-tools) - Extend conversations with tools
+- [Event Handlers](/docs/getting-started/event-handlers) - Implement persistence with events
+- [Tools](/docs/core-concepts/tools) - Extend conversations with tools
