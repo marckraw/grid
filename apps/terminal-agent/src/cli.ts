@@ -10,6 +10,7 @@ import {
 } from "./config/index.js";
 import {
   exploreAgentConversation,
+  exploreTestAgents,
   configureGrid,
   viewEnvironment,
 } from "./commands/index.js";
@@ -19,6 +20,11 @@ const menuOptions: MenuOption[] = [
     value: "agent-conversation",
     label: "💬 Agent Conversation",
     hint: "Interactive conversation with tools",
+  },
+  {
+    value: "test-agents",
+    label: "🧪 Test different agents",
+    hint: "Test and interact with various agent types",
   },
   {
     value: "config",
@@ -35,6 +41,7 @@ const menuOptions: MenuOption[] = [
 
 const commandHandlers: Record<string, () => Promise<void>> = {
   "agent-conversation": exploreAgentConversation,
+  "test-agents": exploreTestAgents,
   config: configureGrid,
   env: viewEnvironment,
 };
