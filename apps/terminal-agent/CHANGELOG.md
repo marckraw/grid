@@ -1,5 +1,11 @@
 # terminal-agent
 
+## 0.5.0
+
+### Minor Changes
+
+- 4878f68: update docs, add use case testing of agent with custom llm and customHandlers
+
 ## 0.4.0
 
 ### Minor Changes
