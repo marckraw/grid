@@ -26,18 +26,46 @@ npm install @mrck-labs/grid-core
 
 **Example:**
 ```typescript
-import { createConfigurableAgent, baseLLMService } from "@mrck-labs/grid-core";
+import { 
+  createConfigurableAgent, 
+  baseLLMService,
+  createToolExecutor 
+} from "@mrck-labs/grid-core";
+
+// Create services
+const llmService = baseLLMService({
+  langfuse: { enabled: false }
+});
+const toolExecutor = createToolExecutor();
 
 const agent = createConfigurableAgent({
-  llmService: baseLLMService({
-    model: "gpt-4",
-    apiKey: process.env.OPENAI_API_KEY,
-  }),
+  llmService,
+  toolExecutor,
   config: {
     id: "my-agent",
     type: "general",
-    systemPrompt: "You are a helpful assistant.",
-  },
+    version: "1.0.0",
+    prompts: {
+      system: "You are a helpful assistant."
+    },
+    metadata: {
+      id: "my-agent",
+      type: "general",
+      name: "My Agent",
+      description: "A helpful assistant",
+      capabilities: ["general"],
+      version: "1.0.0"
+    },
+    tools: {
+      builtin: [],
+      custom: [],
+      mcp: []
+    },
+    behavior: {
+      maxRetries: 3,
+      responseFormat: "text"
+    }
+  }
 });
 ```
 

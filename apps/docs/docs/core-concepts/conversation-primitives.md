@@ -346,9 +346,40 @@ manager.processAgentResponse({
 
 ```typescript
 // For full agent integration
-const loop = createConversationLoop({
-  agent: createConfigurableAgent({ /* ... */ }),
+const llmService = baseLLMService({ langfuse: { enabled: false } });
+const toolExecutor = createToolExecutor();
+
+const agent = createConfigurableAgent({
+  llmService,
+  toolExecutor,
+  config: {
+    id: "travel-planner",
+    type: "general",
+    version: "1.0.0",
+    prompts: {
+      system: "You are a helpful travel planning assistant."
+    },
+    metadata: {
+      id: "travel-planner",
+      type: "general",
+      name: "Travel Planner",
+      description: "Helps plan trips and travel itineraries",
+      capabilities: ["general"],
+      version: "1.0.0"
+    },
+    tools: {
+      builtin: [],
+      custom: [],
+      mcp: []
+    },
+    behavior: {
+      maxRetries: 3,
+      responseFormat: "text"
+    }
+  }
 });
+
+const loop = createConversationLoop({ agent });
 const response = await loop.sendMessage("Help me plan a trip");
 ```
 

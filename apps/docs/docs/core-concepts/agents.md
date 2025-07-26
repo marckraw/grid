@@ -21,19 +21,47 @@ In Grid, an agent is an intelligent entity that:
 Grid provides the `createConfigurableAgent` factory function for creating agents:
 
 ```typescript
-import { createConfigurableAgent, baseLLMService } from "@mrck-labs/grid-core";
+import { 
+  createConfigurableAgent, 
+  baseLLMService,
+  createToolExecutor 
+} from "@mrck-labs/grid-core";
 
+// Create services
+const llmService = baseLLMService({
+  langfuse: { enabled: false }
+});
+const toolExecutor = createToolExecutor();
+
+// Create a basic agent
 const agent = createConfigurableAgent({
-  llmService: baseLLMService({
-    model: "gpt-4",
-    apiKey: process.env.OPENAI_API_KEY,
-    temperature: 0.7,
-  }),
+  llmService,
+  toolExecutor,
   config: {
     id: "my-agent",
     type: "general",
-    systemPrompt: "You are a helpful assistant.",
-  },
+    version: "1.0.0",
+    prompts: {
+      system: "You are a helpful assistant."
+    },
+    metadata: {
+      id: "my-agent",
+      type: "general",
+      name: "My Agent",
+      description: "A helpful assistant",
+      capabilities: ["general"],
+      version: "1.0.0"
+    },
+    tools: {
+      builtin: [],
+      custom: [],
+      mcp: []
+    },
+    behavior: {
+      maxRetries: 3,
+      responseFormat: "text"
+    }
+  }
 });
 ```
 
@@ -46,13 +74,18 @@ Agents are highly configurable through the `AgentConfig` interface:
 Agents use the `baseLLMService` to configure LLM interactions:
 
 ```typescript
+// Configure the LLM service
+const llmService = baseLLMService({
+  // Model configuration is handled by environment variables
+  // or can be passed when calling agent.act()
+  langfuse: { enabled: true } // Enable observability
+});
+
+const toolExecutor = createToolExecutor();
+
 const agent = createConfigurableAgent({
-  llmService: baseLLMService({
-    model: "gpt-4",                    // Model identifier
-    apiKey: process.env.OPENAI_API_KEY, // API key
-    temperature: 0.7,                   // 0-1, controls randomness
-    maxTokens: 2000,                    // Maximum response length
-  }),
+  llmService,
+  toolExecutor,
   config: { /* agent config */ },
 });
 ```
@@ -64,15 +97,36 @@ System prompts define your agent's personality and behavior:
 ```typescript
 const agent = createConfigurableAgent({
   llmService: baseLLMService({ /* ... */ }),
+  toolExecutor: createToolExecutor(),
   config: {
     id: "customer-service",
     type: "general",
-    systemPrompt: `You are a customer service agent for TechCorp.
+    version: "1.0.0",
+    prompts: {
+      system: `You are a customer service agent for TechCorp.
       - Be professional and courteous
       - Help customers with product inquiries
       - Escalate complex issues to human agents
-      - Never share internal company information`,
-  },
+      - Never share internal company information`
+    },
+    metadata: {
+      id: "customer-service",
+      type: "general",
+      name: "Customer Service Agent",
+      description: "Handles customer inquiries",
+      capabilities: ["general"],
+      version: "1.0.0"
+    },
+    tools: {
+      builtin: [],
+      custom: [],
+      mcp: []
+    },
+    behavior: {
+      maxRetries: 3,
+      responseFormat: "text"
+    }
+  }
 });
 ```
 
@@ -83,11 +137,32 @@ Agents can use tools to extend their capabilities:
 ```typescript
 const agent = createConfigurableAgent({
   llmService: baseLLMService({ /* ... */ }),
+  toolExecutor: createToolExecutor(),
   config: {
     id: "tool-agent",
     type: "general",
-    availableTools: [searchTool, calculatorTool, emailTool],
-  },
+    version: "1.0.0",
+    prompts: {
+      system: "You are an AI assistant with access to various tools."
+    },
+    metadata: {
+      id: "tool-agent",
+      type: "general",
+      name: "Tool Agent",
+      description: "Agent with tool capabilities",
+      capabilities: ["general"],
+      version: "1.0.0"
+    },
+    tools: {
+      builtin: [],
+      custom: [searchTool, calculatorTool, emailTool],
+      mcp: []
+    },
+    behavior: {
+      maxRetries: 3,
+      responseFormat: "text"
+    }
+  }
 });
 ```
 
@@ -176,25 +251,26 @@ const agent = createConfigurableAgent({
 
 ### Progress Tracking
 
-Enable real-time progress updates:
+Progress tracking is handled at the conversation level, not the agent level:
 
 ```typescript
-const agent = createConfigurableAgent({
-  progressConfig: {
-    enabled: true,
-    onProgress: (update) => {
-      switch (update.type) {
-        case "thinking":
-          console.log("🤔 Agent is thinking...");
-          break;
-        case "tool_execution":
-          console.log(`🔧 Running ${update.toolName}...`);
-          break;
-        case "error":
-          console.log(`❌ Error: ${update.message}`);
-          break;
-      }
-    },
+import { createConversationLoop } from "@mrck-labs/grid-core";
+
+// Create conversation with progress tracking
+const conversation = createConversationLoop({
+  agent,
+  onProgress: (update) => {
+    switch (update.type) {
+      case "thinking":
+        console.log("🤔 Agent is thinking...");
+        break;
+      case "tool_execution":
+        console.log(`🔧 Running ${update.toolName}...`);
+        break;
+      case "error":
+        console.log(`❌ Error: ${update.message}`);
+        break;
+    }
   },
 });
 ```
@@ -214,13 +290,33 @@ const calculator = mathDataAgent;
 
 // Or create custom specialized agents
 const supportAgent = createConfigurableAgent({
-  llmService: baseLLMService({ model: "gpt-4" }),
+  llmService: baseLLMService({ langfuse: { enabled: true } }),
+  toolExecutor: createToolExecutor(),
   config: {
     id: "support-agent",
     type: "general",
-    systemPrompt: "You are a customer support specialist...",
-    availableTools: [lookupOrder, checkInventory, createTicket],
-  },
+    version: "1.0.0",
+    prompts: {
+      system: "You are a customer support specialist..."
+    },
+    metadata: {
+      id: "support-agent",
+      type: "general",
+      name: "Support Agent",
+      description: "Customer support specialist",
+      capabilities: ["general"],
+      version: "1.0.0"
+    },
+    tools: {
+      builtin: [],
+      custom: [lookupOrder, checkInventory, createTicket],
+      mcp: []
+    },
+    behavior: {
+      maxRetries: 3,
+      responseFormat: "text"
+    }
+  }
 });
 ```
 
@@ -267,18 +363,34 @@ Create agents that can work independently:
 
 ```typescript
 const autonomousAgent = createConfigurableAgent({
-  llmService: baseLLMService({ model: "gpt-4" }),
+  llmService: baseLLMService({ langfuse: { enabled: true } }),
+  toolExecutor: createToolExecutor(),
   config: {
     id: "autonomous-researcher",
     type: "general",
-    systemPrompt: `You are an autonomous research agent.
-      Break down complex tasks into steps and work through them systematically.`,
-    availableTools: [search, analyze, summarize, save],
-  },
-  behaviorConfig: {
-    maxRetries: 3,
-    continueOnError: true,
-  },
+    version: "1.0.0",
+    prompts: {
+      system: `You are an autonomous research agent.
+      Break down complex tasks into steps and work through them systematically.`
+    },
+    metadata: {
+      id: "autonomous-researcher",
+      type: "general",
+      name: "Autonomous Researcher",
+      description: "Autonomous research agent",
+      capabilities: ["general"],
+      version: "1.0.0"
+    },
+    tools: {
+      builtin: [],
+      custom: [search, analyze, summarize, save],
+      mcp: []
+    },
+    behavior: {
+      maxRetries: 3,
+      responseFormat: "text"
+    }
+  }
 });
 
 // Run with conversation loop for autonomous behavior

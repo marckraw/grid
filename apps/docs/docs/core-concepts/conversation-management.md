@@ -128,11 +128,39 @@ context.incrementToolCallCount(1);
 
 ```typescript
 const context = createConversationContext();
+const llmService = baseLLMService({ langfuse: { enabled: false } });
+const toolExecutor = createToolExecutor();
 
 const agent = createConfigurableAgent({
-  systemPrompt: "You are a helpful assistant.",
+  llmService,
+  toolExecutor,
+  config: {
+    id: "contextual-agent",
+    type: "general",
+    version: "1.0.0",
+    prompts: {
+      system: "You are a helpful assistant."
+    },
+    metadata: {
+      id: "contextual-agent",
+      type: "general",
+      name: "Contextual Agent",
+      description: "Agent with context awareness",
+      capabilities: ["general"],
+      version: "1.0.0"
+    },
+    tools: {
+      builtin: [],
+      custom: [],
+      mcp: []
+    },
+    behavior: {
+      maxRetries: 3,
+      responseFormat: "text"
+    }
+  },
   customHandlers: {
-    transformInput: async (input, config) => {
+    transformInput: async (input) => {
       const userName = context.getStateValue("user.name");
       const language = context.getStateValue("user.preferences.language");
       
@@ -143,8 +171,8 @@ const agent = createConfigurableAgent({
       }
       
       return input;
-    },
-  },
+    }
+  }
 });
 ```
 

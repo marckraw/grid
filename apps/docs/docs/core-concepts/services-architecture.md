@@ -378,21 +378,46 @@ export const createAgentFlow = (options: AgentFlowOptions) => {
 Services are composed together using function composition:
 
 ```typescript
+// Create services
+const llmService = baseLLMService({
+  langfuse: { enabled: false }
+});
+const toolExecutor = createToolExecutor();
+
 // Create an agent
 const agent = createConfigurableAgent({
-  llmConfig: { model: "gpt-4", provider: "openai" },
-  systemPrompt: "You are a helpful assistant",
-  tools: [weatherTool, calculatorTool],
+  llmService,
+  toolExecutor,
+  config: {
+    id: "example-agent",
+    type: "general",
+    version: "1.0.0",
+    prompts: {
+      system: "You are a helpful assistant"
+    },
+    metadata: {
+      id: "example-agent",
+      type: "general",
+      name: "Example Agent",
+      description: "An example agent",
+      capabilities: ["general"],
+      version: "1.0.0"
+    },
+    tools: {
+      builtin: [],
+      custom: [weatherTool, calculatorTool],
+      mcp: []
+    },
+    behavior: {
+      maxRetries: 3,
+      responseFormat: "text"
+    }
+  }
 });
 
 // Create conversation loop with all features
 const conversation = createConversationLoop({
   agent,
-  conversationOptions: {
-    historyOptions: {
-      systemPrompt: agent.config.systemPrompt,
-    },
-  },
   onProgress: (update) => {
     console.log(`[${update.type}] ${update.content}`);
   },

@@ -355,13 +355,42 @@ const dataProcessingTool = createNamedTool({
 ### Adding Tools to Agents
 
 ```typescript
+const llmService = baseLLMService({ langfuse: { enabled: false } });
+const toolExecutor = createToolExecutor();
+
+// Register tools with the executor
+toolExecutor.registerTool(weatherTool);
+toolExecutor.registerTool(calculatorTool);
+toolExecutor.registerTool(databaseTool);
+
 const agent = createConfigurableAgent({
-  tools: [
-    weatherTool,
-    calculatorTool,
-    databaseTool,
-  ],
-  toolChoice: "auto", // Let the agent decide when to use tools
+  llmService,
+  toolExecutor,
+  config: {
+    id: "tool-enabled-agent",
+    type: "general",
+    version: "1.0.0",
+    prompts: {
+      system: "You are an AI assistant with access to various tools."
+    },
+    metadata: {
+      id: "tool-enabled-agent",
+      type: "general",
+      name: "Tool-Enabled Agent",
+      description: "Agent with tool capabilities",
+      capabilities: ["general"],
+      version: "1.0.0"
+    },
+    tools: {
+      builtin: [],
+      custom: [weatherTool, calculatorTool, databaseTool],
+      mcp: []
+    },
+    behavior: {
+      maxRetries: 3,
+      responseFormat: "text"
+    }
+  }
 });
 ```
 
@@ -388,8 +417,12 @@ toolChoice: { type: "tool", toolName: "calculator" }
 Grid supports Model Context Protocol (MCP) tools:
 
 ```typescript
-const agent = createConfigurableAgent({
-  mcpServers: [
+// MCP tools are registered separately and then added to the agent
+import { registerMCPTools } from "@mrck-labs/grid-core";
+
+// Register MCP server tools
+const mcpTools = await registerMCPTools({
+  servers: [
     {
       name: "figma",
       command: "npx",
@@ -397,6 +430,37 @@ const agent = createConfigurableAgent({
       env: { FIGMA_ACCESS_TOKEN: process.env.FIGMA_TOKEN },
     },
   ],
+});
+
+// Add MCP tools to agent
+const agent = createConfigurableAgent({
+  llmService,
+  toolExecutor,
+  config: {
+    id: "mcp-agent",
+    type: "general",
+    version: "1.0.0",
+    prompts: {
+      system: "You are an AI assistant with MCP tool access."
+    },
+    metadata: {
+      id: "mcp-agent",
+      type: "general",
+      name: "MCP Agent",
+      description: "Agent with MCP tools",
+      capabilities: ["general"],
+      version: "1.0.0"
+    },
+    tools: {
+      builtin: [],
+      custom: [],
+      mcp: mcpTools
+    },
+    behavior: {
+      maxRetries: 3,
+      responseFormat: "text"
+    }
+  }
 });
 ```
 

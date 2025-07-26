@@ -151,35 +151,54 @@ export const saveResultsTool = createNamedTool({
 Create `src/research-agent.ts`:
 
 ```typescript
-import { createConfigurableAgent, baseLLMService } from "@mrck-labs/grid-core";
+import { 
+  createConfigurableAgent, 
+  baseLLMService,
+  createToolExecutor 
+} from "@mrck-labs/grid-core";
 import { searchTool } from "./tools/search.tool";
 import { summarizeTool } from "./tools/summarize.tool";
 import { saveResultsTool } from "./tools/save.tool";
 
 export function createResearchAgent() {
+  const llmService = baseLLMService({
+    langfuse: { enabled: true }
+  });
+  const toolExecutor = createToolExecutor();
+
   return createConfigurableAgent({
-    llmService: baseLLMService({
-      model: process.env.DEFAULT_MODEL || "gpt-4",
-      apiKey: process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY,
-    }),
+    llmService,
+    toolExecutor,
     config: {
       id: "research-agent",
       type: "general",
-      systemPrompt: `You are a professional research assistant. Your job is to:
+      version: "1.0.0",
+      prompts: {
+        system: `You are a professional research assistant. Your job is to:
         1. Search for information on topics requested by the user
         2. Analyze and summarize the findings
         3. Save the results in an organized format
         
         Always provide clear, well-structured research results. When saving files,
-        use descriptive names and organize content logically.`,
-      availableTools: [searchTool, summarizeTool, saveResultsTool],
-    },
-    progressConfig: {
-      enabled: true,
-      onProgress: (update) => {
-        const timestamp = new Date().toLocaleTimeString();
-        console.log(`[${timestamp}] ${update.type}: ${update.message}`);
+        use descriptive names and organize content logically.`
       },
+      metadata: {
+        id: "research-agent",
+        type: "general",
+        name: "Research Agent",
+        description: "Professional research assistant",
+        capabilities: ["general"],
+        version: "1.0.0"
+      },
+      tools: {
+        builtin: [],
+        custom: [searchTool, summarizeTool, saveResultsTool],
+        mcp: []
+      },
+      behavior: {
+        maxRetries: 3,
+        responseFormat: "text"
+      }
     },
     customHandlers: {
       beforeAct: async (input, config) => {
@@ -193,10 +212,11 @@ export function createResearchAgent() {
       onError: async (error, attempt) => {
         console.error(`\n❌ Error on attempt ${attempt}: ${error.message}`);
         if (attempt < 3) {
-          return { shouldRetry: true, delayMs: 1000 * attempt };
+          return { retry: true };
         }
-      },
-    },
+        return { retry: false };
+      }
+    }
   });
 }
 ```
@@ -208,6 +228,7 @@ Create `src/index.ts`:
 ```typescript
 import { config } from "dotenv";
 import { createResearchAgent } from "./research-agent";
+import { createConversationLoop } from "@mrck-labs/grid-core";
 import * as readline from "readline/promises";
 
 // Load environment variables
@@ -226,6 +247,15 @@ async function main() {
   console.log("Type 'exit' to quit.\n");
 
   const agent = createResearchAgent();
+  
+  // Create conversation loop with progress tracking
+  const conversation = await createConversationLoop({
+    agent,
+    onProgress: (update) => {
+      const timestamp = new Date().toLocaleTimeString();
+      console.log(`[${timestamp}] ${update.type}: ${update.message}`);
+    }
+  });
   
   // Example research tasks
   const examples = [
@@ -246,7 +276,7 @@ async function main() {
     }
 
     try {
-      const response = await agent.act(input);
+      const response = await conversation.sendMessage(input);
       console.log("\n📊 Research Results:");
       console.log("-------------------");
       console.log(response.content);
@@ -256,6 +286,8 @@ async function main() {
     }
   }
 
+  // Clean up
+  await conversation.end();
   rl.close();
   console.log("\nThank you for using Grid Research Assistant!");
 }

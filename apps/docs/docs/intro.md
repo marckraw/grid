@@ -75,20 +75,47 @@ Grid is designed for developers who need:
 Here's a simple example of creating an agent with Grid:
 
 ```typescript
-import { createConfigurableAgent, baseLLMService } from "@mrck-labs/grid-core";
+import { 
+  createConfigurableAgent, 
+  baseLLMService,
+  createToolExecutor 
+} from "@mrck-labs/grid-core";
 import { calculator } from "@mrck-labs/grid-tools";
 
+// Create services
+const llmService = baseLLMService({
+  langfuse: { enabled: false }
+});
+const toolExecutor = createToolExecutor();
+
 const agent = createConfigurableAgent({
-  llmService: baseLLMService({
-    model: "gpt-4",
-    apiKey: process.env.OPENAI_API_KEY,
-  }),
+  llmService,
+  toolExecutor,
   config: {
     id: "math-assistant",
     type: "general",
-    systemPrompt: "You are a helpful assistant with calculation abilities.",
-    availableTools: [calculator],
-  },
+    version: "1.0.0",
+    prompts: {
+      system: "You are a helpful assistant with calculation abilities."
+    },
+    metadata: {
+      id: "math-assistant",
+      type: "general",
+      name: "Math Assistant",
+      description: "Assistant with calculation abilities",
+      capabilities: ["general"],
+      version: "1.0.0"
+    },
+    tools: {
+      builtin: [],
+      custom: [calculator],
+      mcp: []
+    },
+    behavior: {
+      maxRetries: 3,
+      responseFormat: "text"
+    }
+  }
 });
 
 const response = await agent.act("What's 2 + 2?");
