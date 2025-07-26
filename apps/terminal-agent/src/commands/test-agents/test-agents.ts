@@ -3,12 +3,18 @@ import pc from "picocolors";
 import { selectWithCancel, isCancel } from "../../utils/prompts.js";
 import type { MenuOption } from "../../types/index.js";
 import { testGeneralAgent } from "./agent-selection/general.js";
+import { testGeneralAgentWithCustomHandlers } from "./agent-selection/general-with-custom-handlers.js";
 
 const agentOptions: MenuOption[] = [
   {
     value: "general",
     label: "🤖 General agent",
     hint: "A general-purpose agent",
+  },
+  {
+    value: "general-with-handlers",
+    label: "🔧 General agent with custom handlers",
+    hint: "Test all available hooks",
   },
   {
     value: "back",
@@ -32,7 +38,10 @@ export async function exploreTestAgents(): Promise<void> {
 
     switch (selectedAgent) {
       case "general":
-        testGeneralAgent();
+        await testGeneralAgent();
+        break;
+      case "general-with-handlers":
+        await testGeneralAgentWithCustomHandlers();
         break;
       default:
         p.log.error(pc.red("Unknown agent selected"));
