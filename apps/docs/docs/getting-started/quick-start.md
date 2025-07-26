@@ -11,19 +11,49 @@ Build your first Grid application in under 5 minutes.
 Let's create a basic conversational agent that can answer questions:
 
 ```typescript
-import { createConfigurableAgent, baseLLMService } from "@mrck-labs/grid-core";
+import { 
+  createConfigurableAgent,
+  baseLLMService,
+  createToolExecutor 
+} from "@mrck-labs/grid-core";
+
+// Create the LLM service
+const llmService = baseLLMService({
+  langfuse: { enabled: false }
+});
+
+// Create a tool executor
+const toolExecutor = createToolExecutor();
 
 // Create an agent instance
 const agent = createConfigurableAgent({
-  llmService: baseLLMService({
-    model: "gpt-4",
-    apiKey: process.env.OPENAI_API_KEY,
-  }),
+  llmService,
+  toolExecutor,
   config: {
-    id: "helpful-assistant",
+    id: "simple-agent",
     type: "general",
-    systemPrompt: "You are a helpful AI assistant. Be concise and friendly.",
-  },
+    version: "1.0.0",
+    prompts: {
+      system: "You are a helpful AI assistant. Be concise and friendly."
+    },
+    metadata: {
+      id: "simple-agent",
+      type: "general",
+      name: "Simple Agent",
+      description: "A basic conversational agent",
+      capabilities: ["general"],
+      version: "1.0.0"
+    },
+    tools: {
+      builtin: [],
+      custom: [],
+      mcp: []
+    },
+    behavior: {
+      maxRetries: 3,
+      responseFormat: "text"
+    }
+  }
 });
 
 // Use the agent
@@ -40,7 +70,12 @@ main();
 Make your agent more capable by adding tools:
 
 ```typescript
-import { createConfigurableAgent, baseLLMService, createNamedTool } from "@mrck-labs/grid-core";
+import { 
+  createConfigurableAgent, 
+  baseLLMService,createNamedTool,
+  baseLLMService,
+  createToolExecutor 
+} from "@mrck-labs/grid-core";
 import { z } from "zod";
 
 // Define a weather tool
@@ -56,18 +91,41 @@ const weatherTool = createNamedTool({
   },
 });
 
+// Create services
+const llmService = baseLLMService({
+  langfuse: { enabled: false }
+});
+const toolExecutor = createToolExecutor();
+
 // Create an agent with tools
 const agent = createConfigurableAgent({
-  llmService: baseLLMService({
-    model: "gpt-4",
-    apiKey: process.env.OPENAI_API_KEY,
-  }),
+  llmService,
+  toolExecutor,
   config: {
-    id: "weather-assistant",
+    id: "weather-agent",
     type: "general",
-    systemPrompt: "You are a helpful assistant that can check the weather.",
-    availableTools: [weatherTool],
-  },
+    version: "1.0.0",
+    prompts: {
+      system: "You are a helpful assistant that can check the weather."
+    },
+    metadata: {
+      id: "weather-agent",
+      type: "general",
+      name: "Weather Agent",
+      description: "An agent that can check weather",
+      capabilities: ["general"],
+      version: "1.0.0"
+    },
+    tools: {
+      builtin: [],
+      custom: [weatherTool],
+      mcp: []
+    },
+    behavior: {
+      maxRetries: 3,
+      responseFormat: "text"
+    }
+  }
 });
 
 // The agent will automatically use tools when needed
@@ -83,27 +141,8 @@ async function main() {
 Get real-time updates as your agent works:
 
 ```typescript
-const agent = createConfigurableAgent({
-  llmService: baseLLMService({
-    model: "gpt-4",
-    apiKey: process.env.OPENAI_API_KEY,
-  }),
-  config: {
-    id: "progress-demo",
-    type: "general",
-  },
-  progressConfig: {
-    enabled: true,
-    onProgress: (update) => {
-      console.log(`[${update.type}] ${update.message}`);
-    },
-  },
-});
-
-// You'll see progress updates like:
-// [thinking] Processing your request...
-// [tool_execution] Running get_weather...
-// [complete] Task completed successfully
+// Progress is handled at the conversation level when using createConversationLoop
+// See the complete example below for full implementation
 ```
 
 ## Add Custom Hooks
@@ -111,14 +150,44 @@ const agent = createConfigurableAgent({
 Customize agent behavior with hooks:
 
 ```typescript
+import { 
+  createConfigurableAgent,
+  baseLLMService,
+  createToolExecutor 
+} from "@mrck-labs/grid-core";
+
+const llmService = baseLLMService({
+  langfuse: { enabled: false }
+});
+const toolExecutor = createToolExecutor();
+
 const agent = createConfigurableAgent({
-  llmService: baseLLMService({
-    model: "gpt-4",
-    apiKey: process.env.OPENAI_API_KEY,
-  }),
+  llmService,
+  toolExecutor,
   config: {
-    id: "hooks-demo",
+    id: "hooked-agent",
     type: "general",
+    version: "1.0.0",
+    prompts: {
+      system: "You are a helpful assistant."
+    },
+    metadata: {
+      id: "hooked-agent",
+      type: "general",
+      name: "Hooked Agent",
+      description: "An agent with custom hooks",
+      capabilities: ["general"],
+      version: "1.0.0"
+    },
+    tools: {
+      builtin: [],
+      custom: [],
+      mcp: []
+    },
+    behavior: {
+      maxRetries: 3,
+      responseFormat: "text"
+    }
   },
   customHandlers: {
     beforeAct: async (input, config) => {
@@ -128,8 +197,8 @@ const agent = createConfigurableAgent({
     afterResponse: async (response, input) => {
       console.log(`Agent responded: ${response.content}`);
       return response;
-    },
-  },
+    }
+  }
 });
 ```
 
@@ -138,7 +207,13 @@ const agent = createConfigurableAgent({
 Here's a complete example combining everything:
 
 ```typescript
-import { createConfigurableAgent, baseLLMService, createNamedTool } from "@mrck-labs/grid-core";
+import { 
+  createConfigurableAgent, 
+  baseLLMService,createNamedTool,
+  baseLLMService,
+  createToolExecutor,
+  createConversationLoop
+} from "@mrck-labs/grid-core";
 import { z } from "zod";
 
 // Create a calculation tool
@@ -159,28 +234,45 @@ const calculator = createNamedTool({
   },
 });
 
+// Create services
+const llmService = baseLLMService({
+  langfuse: { enabled: false }
+});
+const toolExecutor = createToolExecutor();
+
 // Configure the agent
 const agent = createConfigurableAgent({
-  llmService: baseLLMService({
-    model: "gpt-4",
-    apiKey: process.env.OPENAI_API_KEY,
-  }),
+  llmService,
+  toolExecutor,
   config: {
     id: "math-tutor",
     type: "general",
-    systemPrompt: `You are a helpful math tutor. 
-      Help students with calculations and explain your work.`,
-    availableTools: [calculator],
-  },
-  progressConfig: {
-    enabled: true,
-    onProgress: (update) => {
-      console.log(`[${update.type}] ${update.message}`);
+    version: "1.0.0",
+    prompts: {
+      system: `You are a helpful math tutor. 
+        Help students with calculations and explain your work.`
     },
-  },
+    metadata: {
+      id: "math-tutor",
+      type: "general",
+      name: "Math Tutor",
+      description: "A helpful math tutor agent",
+      capabilities: ["general"],
+      version: "1.0.0"
+    },
+    tools: {
+      builtin: [],
+      custom: [calculator],
+      mcp: []
+    },
+    behavior: {
+      maxRetries: 3,
+      responseFormat: "text"
+    }
+  }
 });
 
-// Interactive session
+// Interactive session with conversation loop for better context management
 async function tutorSession() {
   const questions = [
     "What is 15% of 200?",
@@ -188,11 +280,24 @@ async function tutorSession() {
     "What's the square root of 144?",
   ];
 
+  // Create conversation loop for progress tracking
+  const conversation = createConversationLoop({
+    agent,
+    progressHandlers: {
+      onProgress: async (update) => {
+        console.log(`[${update.type}] ${update.message}`);
+      }
+    }
+  });
+
   for (const question of questions) {
     console.log(`\nStudent: ${question}`);
-    const response = await agent.act(question);
+    const response = await conversation.sendMessage(question);
     console.log(`Tutor: ${response.content}`);
   }
+
+  // Clean up
+  await conversation.end();
 }
 
 tutorSession();
