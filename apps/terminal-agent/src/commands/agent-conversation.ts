@@ -208,11 +208,49 @@ Be concise but friendly in your responses.`,
     }
 
     // Special commands
-    if (message.toLowerCase() === "/dupa") {
-      const dupa = conversation.getConversationState();
+    if (message.toLowerCase() === "/conversation-conversation-state") {
+      const conversationState = conversation.getConversationState();
       p.log.info("Conversation state:");
-      console.log(dupa);
+      console.log(conversationState);
+      console.log(""); // Empty line
+      continue;
+    }
 
+    if (message.toLowerCase() === "/conversation-messages") {
+      const conversationMessages = conversation.getMessages();
+      p.log.info("Conversation messages:");
+      console.log(conversationMessages);
+      console.log(""); // Empty line
+      continue;
+    }
+
+    if (message.toLowerCase() === "/conversation-state") {
+      const conversationState = conversation.getState();
+      p.log.info("Conversation state:");
+      console.log(conversationState);
+      console.log(""); // Empty line
+      continue;
+    }
+
+    if (message.toLowerCase() === "/conversation") {
+      const conversationSummary = conversation.getSummary();
+      p.log.info("Conversation summary:");
+      console.log(conversationSummary);
+      console.log(""); // Empty line
+      const conversationAnalytics = conversation.getAnalytics();
+      p.log.info("Conversation analytics:");
+      console.log(conversationAnalytics);
+      console.log(""); // Empty line
+      continue;
+    }
+
+    if (message.toLowerCase() === "/conversation-manager") {
+      const conversationManager = conversation.manager.getConversationState();
+      const contextStateValue = conversation.manager.getStateValue("context");
+      p.log.info("Conversation manager state:");
+      console.log(conversationManager);
+      p.log.info("Context state value:");
+      console.log(contextStateValue);
       console.log(""); // Empty line
       continue;
     }
@@ -233,6 +271,11 @@ Be concise but friendly in your responses.`,
     if (message.toLowerCase() === "/help") {
       p.log.info("\n📖 Available commands:");
       p.log.info("  /summary - Show conversation statistics");
+      p.log.info("  /conversation - Show summary and analytics");
+      p.log.info("  /conversation-messages - Show all messages");
+      p.log.info("  /conversation-state - Show conversation state");
+      p.log.info("  /conversation-conversation-state - Show full conversation state");
+      p.log.info("  /conversation-manager - Show manager state");
       p.log.info("  /export - Export conversation to JSON");
       p.log.info("  /help - Show this help message");
       p.log.info("  exit/quit - End the conversation");
