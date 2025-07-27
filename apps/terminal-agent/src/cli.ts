@@ -14,6 +14,7 @@ import {
   configureGrid,
   viewEnvironment,
   deepSearch,
+  exploreWorkflowExamples,
 } from "./commands/index.js";
 
 const menuOptions: MenuOption[] = [
@@ -33,6 +34,11 @@ const menuOptions: MenuOption[] = [
     hint: "Test and interact with various agent types",
   },
   {
+    value: "workflow-examples",
+    label: "🔄 Workflow Examples",
+    hint: "Explore workflow patterns with primitives",
+  },
+  {
     value: "config",
     label: "⚙️  Configuration",
     hint: "View and modify Grid settings",
@@ -49,6 +55,7 @@ const commandHandlers: Record<string, () => Promise<void>> = {
   "agent-conversation": exploreAgentConversation,
   "test-agents": exploreTestAgents,
   "deep-search": deepSearch,
+  "workflow-examples": exploreWorkflowExamples,
   config: configureGrid,
   env: viewEnvironment,
 };

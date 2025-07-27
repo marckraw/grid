@@ -16,6 +16,7 @@ Grid provides a comprehensive framework for orchestrating Large Language Model (
 - 🎯 **Stay flexible** with an extensive hook system for customizing behavior
 - 🚀 **Stream progress** in real-time for responsive user experiences
 - 💾 **Persist conversations** with event-based hooks for any database
+- 🔄 **Build workflows** with deterministic multi-step processes and AI integration
 
 ## Key Features
 
@@ -25,6 +26,7 @@ Grid's architecture follows a clear hierarchy from atomic services to complex or
 - **Atomic Level**: Core building blocks (history, context, tool execution)
 - **Composed Level**: Combined services (conversation management)
 - **Organism Level**: Full conversation flows and autonomous agents
+- **Workflow Layer**: Deterministic multi-step processes with conditional routing
 
 ### 🛠️ Powerful Tool System
 Create tools that seamlessly integrate with your agents:
@@ -69,6 +71,7 @@ Grid is designed for developers who need:
 5. **Modern developer experience** with TypeScript and excellent tooling
 6. **Event-driven architecture** for seamless database integration
 7. **Pre-built components** for rapid development
+8. **Workflow orchestration** for complex multi-step processes
 
 ## Quick Example
 

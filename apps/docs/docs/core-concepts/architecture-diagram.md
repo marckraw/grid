@@ -10,8 +10,8 @@ Grid's conversation primitives follow a layered architecture that provides flexi
 
 ```
 ┌─────────────────────────────────────────────────┐
-│              workflowLoop                       │  ← Future: Workflow patterns
-│         (autonomous, guided, hybrid)            │     (not yet implemented)
+│              Workflow Patterns                  │  ← Workflow Layer: Deterministic flows
+│    (createWorkflow from @mrck-labs/grid-workflows)    │     Multi-step processes with routing
 └─────────────────────────────────────────────────┘
                        ↓
 ┌─────────────────────────────────────────────────┐
@@ -79,13 +79,23 @@ const loop = createConversationLoop({ agent });
 const response = await loop.sendMessage("Hello");
 ```
 
-### 🚀 Workflow Layer (Future)
+### 🚀 Workflow Layer
 
-Planned abstraction for different conversation patterns:
+The workflow package provides deterministic multi-step processes:
 
-- **`workflowLoop`**: Will support autonomous, guided, and hybrid flows
-- Different execution strategies and patterns
-- Built on top of conversation loop
+- **`createWorkflow`**: Build complex flows with conditional routing
+- Combines function steps with LLM steps
+- Each step receives injected conversation primitives
+- Perfect for business processes, support flows, and structured interactions
+
+```typescript
+// Deterministic workflow with AI integration
+const workflow = createWorkflow();
+workflow
+  .step('analyze')
+    .llm(agent)
+    .then(result => result.includes('urgent') ? 'escalate' : 'normal');
+```
 
 ## Key Design Principles
 
