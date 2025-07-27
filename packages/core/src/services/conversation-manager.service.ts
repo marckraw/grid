@@ -1,14 +1,14 @@
 import type { AgentResponse } from "../types/agent.types.js";
 import type { ChatMessage } from "../types/llm.types.js";
-import { 
-  createConversationHistory, 
+import {
+  createConversationHistory,
   type ConversationHistoryOptions,
-  type ConversationHistoryHandlers 
+  type ConversationHistoryHandlers,
 } from "./conversation-history.service.js";
-import { 
-  createConversationContext, 
+import {
+  createConversationContext,
   type ConversationContextOptions,
-  type ConversationContextHandlers 
+  type ConversationContextHandlers,
 } from "./conversation-context.service.js";
 
 /**
@@ -43,49 +43,53 @@ export interface ConversationManagerOptions {
 
 /**
  * Creates a conversation manager - composed primitive that combines history and context
- * 
+ *
  * This is a higher-level primitive that combines conversation history management
  * with context/state management, providing a unified interface for conversation handling.
  */
-export const createConversationManager = (options?: ConversationManagerOptions) => {
+export const createConversationManager = (
+  options?: ConversationManagerOptions
+) => {
   // Extract handlers from grouped structure
   const managerHandlers = options?.handlers?.manager;
-  
+
   // Build options for atomic services
-  const historyOptions: ConversationHistoryOptions | undefined = options?.handlers?.history 
+  const historyOptions: ConversationHistoryOptions | undefined = options
+    ?.handlers?.history
     ? { handlers: options.handlers.history }
     : options?.historyOptions;
-    
-  const contextOptions: ConversationContextOptions | undefined = options?.handlers?.context
+
+  const contextOptions: ConversationContextOptions | undefined = options
+    ?.handlers?.context
     ? { handlers: options.handlers.context }
     : options?.contextOptions;
-  
+
   // Create atomic primitives with extracted options
   const history = createConversationHistory(historyOptions);
   const context = createConversationContext(contextOptions);
-  
+
   /**
    * Process an agent response and update conversation accordingly
    */
   const processAgentResponse = async (response: AgentResponse) => {
     // Increment message count
     context.incrementMessageCount();
-    
+
     // Create the assistant message
     const assistantMessage: ChatMessage = {
       role: "assistant",
       content: response.content,
     };
-    
+
     // Add tool calls if present
     if (response.toolCalls && response.toolCalls.length > 0) {
       assistantMessage.toolCalls = response.toolCalls;
       context.incrementToolCallCount(response.toolCalls.length);
     }
-    
+
     // Add assistant message to history
     await history.addMessage(assistantMessage);
-    
+
     // Handle tool responses if present
     if (response.metadata?.toolResponses) {
       for (const toolResponse of response.metadata.toolResponses) {
@@ -95,12 +99,12 @@ export const createConversationManager = (options?: ConversationManagerOptions) 
           toolResponse.toolName,
           toolResponse.result
         );
-        
+
         // Call legacy callback if provided
         if (options?.onToolExecution) {
           // Find the original tool call to get args
           const toolCall = response.toolCalls?.find(
-            tc => tc.toolCallId === toolResponse.toolCallId
+            (tc) => tc.toolCallId === toolResponse.toolCallId
           );
           options.onToolExecution(
             toolResponse.toolName,
@@ -108,11 +112,11 @@ export const createConversationManager = (options?: ConversationManagerOptions) 
             toolResponse.result
           );
         }
-        
+
         // Call new handler if provided
         if (managerHandlers?.onToolExecution) {
           const toolCall = response.toolCalls?.find(
-            tc => tc.toolCallId === toolResponse.toolCallId
+            (tc) => tc.toolCallId === toolResponse.toolCallId
           );
           await managerHandlers.onToolExecution(
             toolResponse.toolName,
@@ -122,19 +126,19 @@ export const createConversationManager = (options?: ConversationManagerOptions) 
         }
       }
     }
-    
+
     // Update context metadata with response info
-    await context.updateMetadata('lastResponseTime', Date.now());
+    await context.updateMetadata("lastResponseTime", Date.now());
     if (response.metadata) {
-      await context.updateMetadata('lastResponseMetadata', response.metadata);
+      await context.updateMetadata("lastResponseMetadata", response.metadata);
     }
-    
+
     // Call handler if provided
     if (managerHandlers?.onAgentResponseProcessed) {
       await managerHandlers.onAgentResponseProcessed(response);
     }
   };
-  
+
   /**
    * Add a user message to the conversation
    */
@@ -144,14 +148,14 @@ export const createConversationManager = (options?: ConversationManagerOptions) 
       role: "user",
       content,
     });
-    await context.updateMetadata('lastUserMessageTime', Date.now());
-    
+    await context.updateMetadata("lastUserMessageTime", Date.now());
+
     // Call handler if provided
     if (managerHandlers?.onUserMessageAdded) {
       await managerHandlers.onUserMessageAdded(content);
     }
   };
-  
+
   /**
    * Get the full conversation state including history and context
    */
@@ -163,7 +167,7 @@ export const createConversationManager = (options?: ConversationManagerOptions) 
       messageCount: history.getMessages().length,
     };
   };
-  
+
   /**
    * Reset the conversation (clears history and state)
    */
@@ -173,20 +177,20 @@ export const createConversationManager = (options?: ConversationManagerOptions) 
     // Reset metrics
     const newContext = createConversationContext(contextOptions);
     Object.assign(context, newContext);
-    
+
     // Call handler if provided
     if (managerHandlers?.onReset) {
       await managerHandlers.onReset();
     }
   };
-  
+
   /**
    * Get a summary of the conversation
    */
   const getSummary = () => {
     const messages = history.getMessages();
     const metrics = context.getMetrics();
-    
+
     return {
       sessionId: context.getSessionId(),
       userId: context.getUserId(),
@@ -196,21 +200,21 @@ export const createConversationManager = (options?: ConversationManagerOptions) 
       toolMessageCount: history.getMessageCountByRole("tool"),
       toolCallCount: metrics.toolCallCount,
       duration: metrics.duration,
-      hasSystemPrompt: messages.some(m => m.role === "system"),
+      hasSystemPrompt: messages.some((m) => m.role === "system"),
     };
   };
-  
+
   return {
     // Message management
     addUserMessage,
     processAgentResponse,
-    
+
     // History methods (delegated)
     getMessages: history.getMessages,
     getNonSystemMessages: history.getNonSystemMessages,
     getLastMessageByRole: history.getLastMessageByRole,
     hasMessages: history.hasMessages,
-    
+
     // Context methods (delegated)
     updateState: context.updateState,
     updateStates: context.updateStates,
@@ -218,12 +222,12 @@ export const createConversationManager = (options?: ConversationManagerOptions) 
     getStateValue: context.getStateValue,
     updateMetadata: context.updateMetadata,
     getMetadata: context.getMetadata,
-    
+
     // Combined methods
     getConversationState,
     getSummary,
     reset,
-    
+
     // Direct access to primitives if needed
     history,
     context,

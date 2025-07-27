@@ -83,16 +83,20 @@ The conversation manager provides grouped handlers for better organization:
 ```typescript
 import { createConversationManager } from "@mrck-labs/grid-core";
 
-const manager = createConversationManager("You are a helpful assistant", {
-  // Manager-specific events
-  manager: {
-    onUserMessageAdded: async (message) => {
-      // Track user interactions
-      await analytics.track("user_message", {
-        content: message,
-        timestamp: new Date(),
-      });
-    },
+const manager = createConversationManager({
+  historyOptions: {
+    systemPrompt: "You are a helpful assistant"
+  },
+  handlers: {
+    // Manager-specific events
+    manager: {
+      onUserMessageAdded: async (message) => {
+        // Track user interactions
+        await analytics.track("user_message", {
+          content: message,
+          timestamp: new Date(),
+        });
+      },
     
     onAgentResponseProcessed: async (response) => {
       // Monitor agent responses
@@ -309,7 +313,12 @@ const analyticsHandlers = {
   },
 };
 
-const manager = createConversationManager("Assistant", analyticsHandlers);
+const manager = createConversationManager({
+  historyOptions: {
+    systemPrompt: "Assistant"
+  },
+  handlers: analyticsHandlers
+});
 ```
 
 ### Multi-Database Pattern

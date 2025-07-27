@@ -37,7 +37,7 @@ export const createConversationHistory = (
   };
 
   // Internal message storage using closure
-  const messages: ChatMessage[] = [];
+  let messages: ChatMessage[] = [];
 
   // Add system prompt if provided
   if (config.systemPrompt) {
@@ -80,11 +80,27 @@ export const createConversationHistory = (
   };
 
   /**
+   * Set the messages in the conversation history (all in replace)
+   */
+  const setMessages = async (newMessages: ChatMessage[]) => {
+    messages = newMessages;
+  };
+
+  /**
    * Get all messages in the conversation
    */
   const getMessages = (): ChatMessage[] => {
     // Return a copy to prevent external modifications
     return [...messages];
+  };
+
+  /**
+   * Get the message history as XML
+   */
+  const getMessageHistoryAsXml = (): string => {
+    return messages
+      .map((m) => `<${m.role}>${m.content}</${m.role}>`)
+      .join("\n");
   };
 
   /**
@@ -109,7 +125,7 @@ export const createConversationHistory = (
       tool_call_id: toolCallId,
       tool_name: toolName,
     };
-    
+
     messages.push(toolMessage);
 
     // Call handlers
@@ -117,7 +133,11 @@ export const createConversationHistory = (
       await options.handlers.onMessageAdded(toolMessage);
     }
     if (options?.handlers?.onToolResponseAdded) {
-      await options.handlers.onToolResponseAdded({ toolCallId, toolName, result });
+      await options.handlers.onToolResponseAdded({
+        toolCallId,
+        toolName,
+        result,
+      });
     }
   };
 
@@ -160,8 +180,10 @@ export const createConversationHistory = (
 
   return {
     // Core methods
+    setMessages,
     addMessage,
     addMessages,
+    getMessageHistoryAsXml,
     getMessages,
     getNonSystemMessages,
     addToolResponse,

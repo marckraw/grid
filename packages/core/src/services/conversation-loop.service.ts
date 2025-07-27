@@ -14,10 +14,10 @@ import type { ConversationContextHandlers } from "./conversation-context.service
  * Event handlers for conversation loop operations
  */
 export interface ConversationLoopHandlers {
-  onConversationStarted?: (context: { 
-    sessionId?: string; 
-    userId?: string; 
-    conversationId?: string 
+  onConversationStarted?: (context: {
+    sessionId?: string;
+    userId?: string;
+    conversationId?: string;
   }) => Promise<{ initialMessages?: ChatMessage[] }>;
   onMessageSent?: (message: string, context: any) => Promise<void>;
   onResponseReceived?: (response: AgentResponse, context: any) => Promise<void>;
@@ -63,19 +63,22 @@ export interface SendMessageResult {
  * including agent interactions, tool execution, and state management.
  */
 export const createConversationLoop = (options: ConversationLoopOptions) => {
-  const { agent, onMessage, onError, onComplete, onProgress, handlers } = options;
+  const { agent, onMessage, onError, onComplete, onProgress, handlers } =
+    options;
 
   // Extract handlers from grouped structure
   const loopHandlers = handlers?.loop;
-  
+
   // Build manager options from grouped handlers using the new grouped format
-  const managerOptions: ConversationManagerOptions | undefined = handlers ? {
-    handlers: {
-      manager: handlers.manager,
-      history: handlers.history,
-      context: handlers.context,
-    }
-  } : undefined;
+  const managerOptions: ConversationManagerOptions | undefined = handlers
+    ? {
+        handlers: {
+          manager: handlers.manager,
+          history: handlers.history,
+          context: handlers.context,
+        },
+      }
+    : undefined;
 
   // Create conversation manager with extracted options
   const manager = createConversationManager(managerOptions);
@@ -93,16 +96,16 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
         userId: manager.context.getUserId(),
         conversationId: manager.context.getSessionId(), // Use session ID as conversation ID
       };
-      
+
       const result = await loopHandlers.onConversationStarted(context);
-      
+
       // Add initial messages if provided
       if (result?.initialMessages) {
         for (const message of result.initialMessages) {
           await manager.history.addMessage(message);
         }
       }
-      
+
       isInitialized = true;
     }
   };
@@ -128,10 +131,10 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
     userMessage: string
   ): Promise<SendMessageResult> => {
     console.log("[ConversationLoop] sendMessage", userMessage);
-    
+
     // Initialize if needed
     await initializeConversation();
-    
+
     if (!isActive) {
       return {
         response: { role: "assistant", content: null },
@@ -146,7 +149,7 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
 
       // Add user message
       await manager.addUserMessage(userMessage);
-      
+
       // Call handler if provided
       if (loopHandlers?.onMessageSent) {
         const context = {
@@ -204,7 +207,7 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
       if (onMessage) {
         await onMessage(response);
       }
-      
+
       // Call handler if provided
       if (loopHandlers?.onResponseReceived) {
         const context = {
@@ -266,7 +269,7 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
     if (onComplete) {
       await onComplete(summary);
     }
-    
+
     // Call handler if provided
     if (loopHandlers?.onConversationEnded) {
       const context = {
@@ -372,7 +375,6 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
 
     // State access
     getMessages: manager.getMessages,
-    getState: manager.getState,
     updateState: manager.updateState,
     getConversationState: manager.getConversationState,
 
@@ -383,6 +385,9 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
     importConversation,
 
     // Status
+    setIsActive: (isActive: boolean) => {
+      isActive = isActive;
+    },
     isActive: () => isActive,
     getTurnCount: () => turnCount,
 

@@ -260,12 +260,16 @@ const context = createConversationContext({
 ```typescript
 import { createConversationManager } from "@mrck-labs/grid-core";
 
-const manager = createConversationManager("You are a helpful assistant", {
-  // Grouped handlers for clean organization
-  manager: {
-    onUserMessageAdded: async (message) => {
-      await analytics.track("user_message", { content: message });
-    },
+const manager = createConversationManager({
+  historyOptions: {
+    systemPrompt: "You are a helpful assistant"
+  },
+  handlers: {
+    // Grouped handlers for clean organization
+    manager: {
+      onUserMessageAdded: async (message) => {
+        await analytics.track("user_message", { content: message });
+      },
     onAgentResponseProcessed: async (response) => {
       await analytics.track("agent_response", { 
         hasTools: response.toolCalls?.length > 0 
@@ -489,7 +493,6 @@ const createSessionManager = () => {
         startTime: new Date(),
         conversation: createConversationLoop({
           agent,
-          systemPrompt: agent.config.systemPrompt,
         }),
       };
       
@@ -539,7 +542,6 @@ const createSessionStorage = (database) => {
       
       const conversation = createConversationLoop({
         agent,
-        systemPrompt: agent.config.systemPrompt,
       });
       
       conversation.importConversation(data.conversationData);

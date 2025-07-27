@@ -13,6 +13,7 @@ import {
   exploreTestAgents,
   configureGrid,
   viewEnvironment,
+  deepSearch,
 } from "./commands/index.js";
 
 const menuOptions: MenuOption[] = [
@@ -20,6 +21,11 @@ const menuOptions: MenuOption[] = [
     value: "agent-conversation",
     label: "💬 Agent Conversation",
     hint: "Interactive conversation with tools",
+  },
+  {
+    value: "deep-search",
+    label: "🔍 Deep Search",
+    hint: "Deep search mode with tools",
   },
   {
     value: "test-agents",
@@ -42,6 +48,7 @@ const menuOptions: MenuOption[] = [
 const commandHandlers: Record<string, () => Promise<void>> = {
   "agent-conversation": exploreAgentConversation,
   "test-agents": exploreTestAgents,
+  "deep-search": deepSearch,
   config: configureGrid,
   env: viewEnvironment,
 };

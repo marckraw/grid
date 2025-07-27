@@ -4,7 +4,16 @@ sidebar_position: 6
 
 # Conversation Primitives
 
-Grid provides a hierarchical set of conversation primitives that enable flexible conversation management. All primitives use a closure-based functional pattern - no classes, just functions returning objects with methods.
+Grid provides a hierarchical set of conversation primitives that enable flexible conversation management. **Each primitive can be used independently** - you don't need to use all layers. All primitives use a closure-based functional pattern - no classes, just functions returning objects with methods.
+
+## Independence by Design
+
+**Important**: While these primitives work beautifully together, each one is designed to function independently:
+
+- **Use only what you need** - Don't want the manager? Use atomic primitives directly
+- **No forced dependencies** - Each layer is optional
+- **Mix and match** - Combine primitives however suits your needs
+- **Future-proof** - Start simple, add layers as requirements grow
 
 ## Architecture Overview
 
@@ -164,12 +173,16 @@ Combines history and context into a unified interface with grouped event handler
 ```typescript
 import { createConversationManager } from "@mrck-labs/grid-core";
 
-const manager = createConversationManager("You are a helpful assistant", {
-  // Grouped handlers for clean organization
-  manager: {
-    onUserMessageAdded: async (message) => {
-      await analytics.track("user_message", { message });
-    },
+const manager = createConversationManager({
+  historyOptions: {
+    systemPrompt: "You are a helpful assistant"
+  },
+  handlers: {
+    // Grouped handlers for clean organization
+    manager: {
+      onUserMessageAdded: async (message) => {
+        await analytics.track("user_message", { message });
+      },
     onAgentResponseProcessed: async (response) => {
       await analytics.track("agent_response", response);
     },
@@ -247,8 +260,6 @@ import { createConversationLoop } from "@mrck-labs/grid-core";
 
 const loop = createConversationLoop({
   agent: myAgent,
-  systemPrompt: "You are a helpful assistant",
-  toolExecutor: myToolExecutor,
   handlers: {
     // Lifecycle event handlers
     onConversationStarted: async ({ sessionId, userId, conversationId }) => {
@@ -318,6 +329,60 @@ loop.resetConversation();
 - Export/import for persistence
 - Conversation lifecycle management
 - Multi-round tool execution
+
+## Independent Usage Examples
+
+### Using Only ConversationHistory
+
+Perfect when you just need message storage:
+
+```typescript
+// No manager, no loop - just history
+const history = createConversationHistory("System prompt");
+
+// Use it directly for logging, auditing, or simple chats
+await history.addMessage({ role: "user", content: "Hello" });
+await history.addMessage({ role: "assistant", content: "Hi!" });
+
+// That's it! No other primitives required
+const messages = history.getMessages();
+```
+
+### Using Only ConversationContext
+
+Great for state management without message tracking:
+
+```typescript
+// Just context - no history needed
+const context = createConversationContext();
+
+// Perfect for tracking user preferences, form state, etc.
+await context.updateState("form.step", 1);
+await context.updateState("user.preferences", { theme: "dark" });
+
+// Access your state
+const currentStep = context.getStateValue("form.step");
+```
+
+### Building Your Own Manager
+
+Skip ConversationManager and build exactly what you need:
+
+```typescript
+// Custom combination of primitives
+function createMyCustomFlow() {
+  const history = createConversationHistory();
+  const context = createConversationContext();
+  
+  return {
+    // Only expose what you need
+    addMessage: (msg: string) => history.addMessage({ role: "user", content: msg }),
+    getState: () => context.getState(),
+    updatePreference: (key: string, value: any) => 
+      context.updateState(`prefs.${key}`, value)
+  };
+}
+```
 
 ## Usage Patterns
 

@@ -20,7 +20,7 @@ export const baseLLMService = (
 ): LLMService => {
   const {
     toolExecutionMode = "custom", // Default to custom execution
-    defaultModel = "gpt-4.1",
+    defaultModel = "gpt-4.1-mini",
     langfuse,
   } = config;
 
