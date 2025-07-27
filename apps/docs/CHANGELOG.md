@@ -1,5 +1,11 @@
 # docs
 
+## 0.5.0
+
+### Minor Changes
+
+- b39611a: Add new package - worflows for high level orchestration based on common patterns
+
 ## 0.4.0
 
 ### Minor Changes
