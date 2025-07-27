@@ -208,8 +208,8 @@ Be concise but friendly in your responses.`,
     }
 
     // Special commands
-    if (message.toLowerCase() === "/conversation-conversation-state") {
-      const conversationState = conversation.getConversationState();
+    if (message.toLowerCase() === "/conversation-state") {
+      const conversationState = conversation.manager.getConversationState();
       p.log.info("Conversation state:");
       console.log(conversationState);
       console.log(""); // Empty line
@@ -220,14 +220,6 @@ Be concise but friendly in your responses.`,
       const conversationMessages = conversation.getMessages();
       p.log.info("Conversation messages:");
       console.log(conversationMessages);
-      console.log(""); // Empty line
-      continue;
-    }
-
-    if (message.toLowerCase() === "/conversation-state") {
-      const conversationState = conversation.getState();
-      p.log.info("Conversation state:");
-      console.log(conversationState);
       console.log(""); // Empty line
       continue;
     }
@@ -255,6 +247,14 @@ Be concise but friendly in your responses.`,
       continue;
     }
 
+    if (message.toLowerCase() === "/conversation-context") {
+      const contextStateValue = conversation.manager.context.getSnapshot();
+      p.log.info("Context state value:");
+      console.log(contextStateValue);
+      console.log(""); // Empty line
+      continue;
+    }
+
     if (message.toLowerCase() === "/export") {
       const exportData = conversation.exportConversation();
       const filename = `conversation-${Date.now()}.json`;
@@ -274,8 +274,11 @@ Be concise but friendly in your responses.`,
       p.log.info("  /conversation - Show summary and analytics");
       p.log.info("  /conversation-messages - Show all messages");
       p.log.info("  /conversation-state - Show conversation state");
-      p.log.info("  /conversation-conversation-state - Show full conversation state");
+      p.log.info(
+        "  /conversation-conversation-state - Show full conversation state"
+      );
       p.log.info("  /conversation-manager - Show manager state");
+      p.log.info("  /conversation-context - Show context snapshot");
       p.log.info("  /export - Export conversation to JSON");
       p.log.info("  /help - Show this help message");
       p.log.info("  exit/quit - End the conversation");
