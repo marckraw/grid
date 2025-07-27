@@ -1,5 +1,11 @@
 # docs
 
+## 0.4.0
+
+### Minor Changes
+
+- 5b28213: improve on conversation primitives, add more examples to terminal-agent
+
 ## 0.3.0
 
 ### Minor Changes
