@@ -95,6 +95,15 @@ export const createConversationHistory = (
   };
 
   /**
+   * Get the message history as XML
+   */
+  const getMessageHistoryAsXml = (): string => {
+    return messages
+      .map((m) => `<${m.role}>${m.content}</${m.role}>`)
+      .join("\n");
+  };
+
+  /**
    * Get messages without system prompts (useful for display)
    */
   const getNonSystemMessages = (): ChatMessage[] => {
@@ -174,6 +183,7 @@ export const createConversationHistory = (
     setMessages,
     addMessage,
     addMessages,
+    getMessageHistoryAsXml,
     getMessages,
     getNonSystemMessages,
     addToolResponse,
