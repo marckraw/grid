@@ -1,0 +1,7 @@
+{
+  "label": "Tools",
+  "position": 5,
+  "collapsible": true,
+  "collapsed": true,
+  "description": "API reference for tool creation utilities"
+}
