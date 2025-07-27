@@ -204,6 +204,14 @@ export async function deepSearch(): Promise<void> {
       continue;
     }
 
+    if (message.toLowerCase() === "/history-xml") {
+      const historyXml = conversation.manager.history.getMessageHistoryAsXml();
+      p.log.info("\n📊 Conversation History XML:");
+      console.log(historyXml);
+      console.log(""); // Empty line
+      continue;
+    }
+
     // Special commands
     if (message.toLowerCase() === "/conversation-state") {
       const conversationState = conversation.manager.getConversationState();
