@@ -162,6 +162,9 @@ importers:
       '@mrck-labs/grid-tools':
         specifier: workspace:*
         version: link:../../packages/tools
+      '@mrck-labs/grid-workflows':
+        specifier: workspace:*
+        version: link:../../packages/workflows
       ai:
         specifier: ^4.3.19
         version: 4.3.19(react@19.1.0)(zod@3.25.76)
@@ -283,6 +286,28 @@ importers:
       '@mendable/firecrawl-js':
         specifier: ^1.29.1
         version: 1.29.1
+      '@mrck-labs/grid-core':
+        specifier: workspace:*
+        version: link:../core
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
+    devDependencies:
+      '@biomejs/biome':
+        specifier: ^1.4.1
+        version: 1.9.4
+      typescript:
+        specifier: ^5.3.3
+        version: 5.6.3
+      vitest:
+        specifier: ^1.1.0
+        version: 1.6.1(@types/node@20.19.7)(terser@5.43.1)
+      zshy:
+        specifier: ^0.0.4
+        version: 0.0.4(typescript@5.6.3)
+
+  packages/workflows:
+    dependencies:
       '@mrck-labs/grid-core':
         specifier: workspace:*
         version: link:../core

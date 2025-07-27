@@ -1,0 +1,54 @@
+{
+  "name": "@mrck-labs/grid-workflows",
+  "version": "0.1.0",
+  "description": "Workflow patterns for Grid LLM orchestration",
+  "keywords": [
+    "llm",
+    "ai",
+    "workflows",
+    "agents",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "zshy": {
+    "exports": {
+      ".": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "zshy",
+    "dev": "zshy --watch",
+    "lint": "biome check src",
+    "test": "vitest"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.4.1",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0",
+    "zshy": "^0.0.4"
+  },
+  "dependencies": {
+    "zod": "^3.25.76"
+  },
+  "peerDependencies": {
+    "@mrck-labs/grid-core": "workspace:*"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.cts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.cts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  }
+}
