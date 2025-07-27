@@ -42,11 +42,11 @@ const sendUpdateOnProgress = async (message: any) => {
   }
 };
 
-export async function exploreAgentConversation(): Promise<void> {
-  p.intro(pc.cyan("🤖 Agent Conversation Mode"));
+export async function deepSearch(): Promise<void> {
+  p.intro(pc.cyan("🤖 Deep Search Mode"));
   p.log.info("Chat with an AI assistant. Type 'exit' to end the conversation.");
   p.log.info(
-    "The assistant can use tools like calculator, time checking, and image generation."
+    "The assistant can use tools like calculator, time checking, and image generation. It can also use tools to search the web."
   );
 
   // Multiselect for MCP clients
@@ -106,20 +106,17 @@ export async function exploreAgentConversation(): Promise<void> {
       langfuse: { enabled: true },
     }),
     config: {
-      id: "conversation-agent",
+      id: "deep-search-agent",
       type: "general",
       prompts: {
-        system: `You are a helpful, friendly assistant engaged in a conversation. 
-You have access to various tools including calculator, current time, and image generation.
-Remember context from our conversation and refer back to previous topics when relevant.
-Be concise but friendly in your responses.`,
+        system: `You are a helpful, friendly assistant engaged in a conversation.`,
       },
       version: "1.0.0",
       metadata: {
-        id: "conversation-agent",
+        id: "deep-search-agent",
         type: "general",
-        name: "Conversational Agent",
-        description: "An agent for interactive conversations",
+        name: "Deep Search Agent",
+        description: "An agent for deep search",
         capabilities: ["general"],
         icon: "💬",
         version: "1.0.0",
