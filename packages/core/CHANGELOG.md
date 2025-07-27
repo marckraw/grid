@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.15.0
+
+### Minor Changes
+
+- 5b28213: improve on conversation primitives, add more examples to terminal-agent
+
 ## 0.14.0
 
 ### Minor Changes
