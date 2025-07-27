@@ -81,6 +81,25 @@ Add multiple messages to the conversation history.
 **Parameters**:
 - `messages`: Array of ChatMessage objects
 
+#### setMessages
+```typescript
+setMessages(messages: ChatMessage[]): Promise<void>
+```
+Replace all messages in the conversation history.
+
+**Parameters**:
+- `messages`: Array of ChatMessage objects to set as the new history
+
+**Example**:
+```typescript
+// Replace entire conversation history
+await history.setMessages([
+  { role: "system", content: "You are a helpful assistant" },
+  { role: "user", content: "Hello" },
+  { role: "assistant", content: "Hi there!" }
+]);
+```
+
 #### addToolResponse
 ```typescript
 addToolResponse(
@@ -246,8 +265,8 @@ await history.addToolResponse(
 // { 
 //   role: "tool", 
 //   content: "4",
-//   toolCallId: "call_123",
-//   name: "calculator"
+//   tool_call_id: "call_123",
+//   tool_name: "calculator"
 // }
 ```
 

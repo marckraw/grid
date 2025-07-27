@@ -23,7 +23,7 @@ import { createConversationLoop } from "@mrck-labs/grid-core";
 ```typescript
 function createConversationLoop(
   options: ConversationLoopOptions
-): Promise<ConversationLoop>
+): ConversationLoop
 ```
 
 ## Parameters
@@ -33,12 +33,18 @@ function createConversationLoop(
 - **Required Properties**:
   - `agent`: The agent instance to use for conversations
 - **Optional Properties**:
-  - `systemPrompt`: Initial system prompt (overrides agent's prompt)
-  - `toolExecutor`: Tool executor service for handling tool calls
-  - `onProgress`: Progress callback for real-time updates
-    - **Type**: `(update: ProgressMessage) => void`
-  - `handlers`: Lifecycle event handlers
+  - `handlers`: Grouped handlers for all services
     - **Type**: `GroupedHandlers`
+  - `onMessage`: Callback for each agent response
+    - **Type**: `(response: AgentResponse) => Promise<void>`
+  - `onError`: Error handler
+    - **Type**: `(error: Error) => Promise<void>`
+  - `onComplete`: Completion handler
+    - **Type**: `(summary: any) => Promise<void>`
+  - `onProgress`: Progress callback for real-time updates
+    - **Type**: `(message: ProgressMessage) => Promise<void>`
+  - `maxTurns`: Optional limit on conversation turns
+    - **Type**: `number`
 
 ### GroupedHandlers
 
@@ -178,9 +184,8 @@ const agent = createConfigurableAgent({
 });
 
 // Create conversation loop
-const loop = await createConversationLoop({
-  agent,
-  systemPrompt: "You are a helpful assistant"
+const loop = createConversationLoop({
+  agent
 });
 
 // Send a message and get response
@@ -195,9 +200,8 @@ console.log(response2.content);
 ### With Tool Execution
 
 ```typescript
-const loop = await createConversationLoop({
+const loop = createConversationLoop({
   agent: agentWithTools,
-  toolExecutor: myToolExecutor,
   onProgress: (update) => {
     console.log(`[${update.type}] ${update.message}`);
   }
@@ -218,7 +222,7 @@ console.log(response.content); // "The weather in Paris is..."
 ### With Lifecycle Handlers
 
 ```typescript
-const loop = await createConversationLoop({
+const loop = createConversationLoop({
   agent,
   handlers: {
     loop: {
@@ -280,7 +284,7 @@ const loop = await createConversationLoop({
 ### Real-time Progress Updates
 
 ```typescript
-const loop = await createConversationLoop({
+const loop = createConversationLoop({
   agent,
   onProgress: (update) => {
     // Send to WebSocket for real-time UI updates
@@ -304,7 +308,7 @@ const loop = await createConversationLoop({
 ### State Management
 
 ```typescript
-const loop = await createConversationLoop({
+const loop = createConversationLoop({
   agent,
   handlers: {
     context: {
@@ -353,7 +357,7 @@ const response = await newLoop.sendMessage("What were we discussing?");
 ### Analytics and Monitoring
 
 ```typescript
-const loop = await createConversationLoop({ agent });
+const loop = createConversationLoop({ agent });
 
 // Have a conversation
 await loop.sendMessage("Hello!");

@@ -188,10 +188,10 @@ These services combine atomic services to provide higher-level functionality.
 Orchestrates history and context using the closure pattern:
 
 ```typescript
-export const createConversationManager = (systemPrompt?: string) => {
+export const createConversationManager = (options?: ConversationManagerOptions) => {
   // Compose atomic services
-  const history = createConversationHistory(systemPrompt);
-  const context = createConversationContext();
+  const history = createConversationHistory(options?.historyOptions);
+  const context = createConversationContext(options?.contextOptions);
   
   // Public API combining both services
   return {
@@ -253,7 +253,7 @@ Manages complete conversation lifecycles with agent integration:
 ```typescript
 export const createConversationLoop = (options: ConversationLoopOptions) => {
   // Private state
-  const manager = createConversationManager(options.systemPrompt);
+  const manager = createConversationManager(options.managerOptions);
   const agent = options.agent;
   let isActive = true;
   let turnCount = 0;

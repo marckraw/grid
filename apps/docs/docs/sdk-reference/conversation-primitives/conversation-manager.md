@@ -22,17 +22,11 @@ import { createConversationManager } from "@mrck-labs/grid-core";
 
 ```typescript
 function createConversationManager(
-  systemPrompt?: string,
   options?: ConversationManagerOptions
 ): ConversationManager
 ```
 
 ## Parameters
-
-### systemPrompt (optional)
-- **Type**: `string`
-- **Description**: Initial system prompt for the conversation
-- **Example**: `"You are a helpful assistant"`
 
 ### options (optional)
 - **Type**: `ConversationManagerOptions`
@@ -51,6 +45,16 @@ function createConversationManager(
       - `context` - Context-level handlers (see ConversationContext)
         - `onStateChanged`: `(key: string, value: any) => Promise<void>`
         - `onMetadataChanged`: `(key: string, value: any) => Promise<void>`
+  - `historyOptions` (optional) - Options for ConversationHistory
+    - **Type**: `ConversationHistoryOptions`
+    - **Properties**:
+      - `systemPrompt`: Initial system prompt
+      - `maxMessages`: Maximum message limit
+      - `handlers`: History event handlers
+  - `contextOptions` (optional) - Options for ConversationContext
+    - **Type**: `ConversationContextOptions`
+    - **Properties**:
+      - `handlers`: Context event handlers
 
 ## Return Type: ConversationManager
 
@@ -175,7 +179,15 @@ Direct access to the underlying ConversationContext instance.
 ### Basic Conversation Management
 
 ```typescript
-const manager = createConversationManager("You are a helpful assistant");
+// With system prompt
+const manager = createConversationManager({
+  historyOptions: {
+    systemPrompt: "You are a helpful assistant"
+  }
+});
+
+// Or without system prompt
+const manager = createConversationManager();
 
 // Add user message
 await manager.addUserMessage("What's the weather like?");
@@ -196,13 +208,16 @@ await manager.processAgentResponse({
 
 // Get conversation state
 const state = manager.getConversationState();
-console.log(state.messages.length); // 3 (system + user + assistant)
+console.log(state.messages.length); // 3 (system + user + assistant) if system prompt was provided
 ```
 
 ### With Event Handlers
 
 ```typescript
-const manager = createConversationManager("You are a helpful assistant", {
+const manager = createConversationManager({
+  historyOptions: {
+    systemPrompt: "You are a helpful assistant"
+  },
   handlers: {
     manager: {
       onUserMessageAdded: async (message) => {

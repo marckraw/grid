@@ -173,12 +173,16 @@ Combines history and context into a unified interface with grouped event handler
 ```typescript
 import { createConversationManager } from "@mrck-labs/grid-core";
 
-const manager = createConversationManager("You are a helpful assistant", {
-  // Grouped handlers for clean organization
-  manager: {
-    onUserMessageAdded: async (message) => {
-      await analytics.track("user_message", { message });
-    },
+const manager = createConversationManager({
+  historyOptions: {
+    systemPrompt: "You are a helpful assistant"
+  },
+  handlers: {
+    // Grouped handlers for clean organization
+    manager: {
+      onUserMessageAdded: async (message) => {
+        await analytics.track("user_message", { message });
+      },
     onAgentResponseProcessed: async (response) => {
       await analytics.track("agent_response", response);
     },
@@ -256,8 +260,6 @@ import { createConversationLoop } from "@mrck-labs/grid-core";
 
 const loop = createConversationLoop({
   agent: myAgent,
-  systemPrompt: "You are a helpful assistant",
-  toolExecutor: myToolExecutor,
   handlers: {
     // Lifecycle event handlers
     onConversationStarted: async ({ sessionId, userId, conversationId }) => {
