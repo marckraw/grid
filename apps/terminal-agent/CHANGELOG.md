@@ -1,5 +1,18 @@
 # terminal-agent
 
+## 0.6.0
+
+### Minor Changes
+
+- 5b28213: improve on conversation primitives, add more examples to terminal-agent
+
+### Patch Changes
+
+- Updated dependencies [5b28213]
+  - @mrck-labs/grid-core@0.15.0
+  - @mrck-labs/grid-agents@0.6.1
+  - @mrck-labs/grid-tools@7.0.0
+
 ## 0.5.0
 
 ### Minor Changes
