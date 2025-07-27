@@ -10,6 +10,8 @@ Creates a conversation history manager for storing and retrieving messages in a 
 
 `createConversationHistory` is an atomic primitive that manages the storage and retrieval of conversation messages. It provides methods for adding messages, retrieving messages by role, and managing tool responses. The history automatically preserves system messages when clearing.
 
+**Independence**: This primitive can be used completely on its own without any other Grid components. Perfect for simple message logging, chat history, or audit trails.
+
 ## Import
 
 ```typescript

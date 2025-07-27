@@ -10,6 +10,8 @@ Creates a context manager for storing conversation state, metadata, and metrics.
 
 `createConversationContext` is an atomic primitive that manages contextual information and metadata for conversations. It provides state management with nested key support, automatic metric tracking, and event handlers for persistence.
 
+**Independence**: This primitive stands alone - use it without any other Grid components for state management, user preferences, session tracking, or analytics. No conversation history or manager required.
+
 ## Import
 
 ```typescript

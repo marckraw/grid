@@ -10,6 +10,8 @@ Creates a unified conversation manager that combines history and context managem
 
 `createConversationManager` is a composed primitive that combines `createConversationHistory` and `createConversationContext` into a single, cohesive interface. It provides all the functionality of both primitives plus additional convenience methods for managing conversations.
 
+**Optional Convenience**: The manager is purely a convenience wrapper. You can achieve everything it does by using the atomic primitives directly. Use it when you want both history and context with a unified API, or skip it entirely and use the atomics for more control.
+
 ## Import
 
 ```typescript

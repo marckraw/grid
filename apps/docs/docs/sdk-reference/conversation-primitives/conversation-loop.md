@@ -10,6 +10,8 @@ Creates a complete conversation orchestration system with agent integration and 
 
 `createConversationLoop` is an organism-level primitive that provides full conversation flow management. It integrates an agent, handles tool execution automatically, tracks conversation analytics, and provides lifecycle event handlers. This is the highest-level conversation primitive, ideal for building complete conversational experiences.
 
+**Full Orchestration Option**: The loop provides complete agent integration and automation. However, you can build equivalent functionality using lower-level primitives if you need custom behavior. The loop is convenient but not mandatory - use it for standard flows or build your own for unique requirements.
+
 ## Import
 
 ```typescript
