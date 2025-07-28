@@ -8,6 +8,7 @@ import {
 import { type LLMService } from "../types/llm.types.js";
 import { type Tool, prepareToolsForSDK } from "../types/tool.types.js";
 import { type ToolExecutor } from "../services/tool-executor.service.js";
+import type { ProgressMessage } from "../types/progress.types.js";
 
 // Custom handler types for hooks
 export interface CustomHandlers {
@@ -61,12 +62,24 @@ export const createConfigurableAgent = ({
     // TODO: Adapt builtin and agent tools
   ];
 
+  let sendUpdate: ((data: ProgressMessage) => Promise<void>) | null = async (
+    data
+  ) => {
+    console.log("sendUpdate", data);
+  };
+  /**
+   * Set the global send function for streaming updates
+   */
+  const setSendUpdate = (sendFn: (data: ProgressMessage) => Promise<void>) => {
+    sendUpdate = sendFn;
+  };
+
   return {
     ...base,
     id: config.id,
     type: config.type,
+    setSendUpdate,
     availableTools: availableTools.map((t) => t.name),
-
     // Enhanced metadata with config info
     getMetadata: () => ({
       ...config.metadata,
@@ -261,11 +274,11 @@ export const createConfigurableAgent = ({
           }
 
           // Tracing handled by Langfuse integration
-          
+
           return response;
         } catch (error) {
           // Error tracking can be added to Langfuse if needed
-          
+
           // Final error handling
           if (attempt >= maxRetries) {
             // Hook: onError for final failure
@@ -296,7 +309,7 @@ export const createConfigurableAgent = ({
 
             // End trace on final error
             // Tracing handled by Langfuse integration
-            
+
             throw error;
           }
         }
@@ -304,7 +317,7 @@ export const createConfigurableAgent = ({
 
       // End trace if we somehow exit the loop
       // Tracing handled by Langfuse integration
-      
+
       // Should never reach here
       throw new Error("Unexpected end of retry loop");
     },
