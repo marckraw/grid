@@ -1,8 +1,5 @@
 import type { Agent } from "../types/agent.types.js";
-import type {
-  AgentFlowContext,
-  ChatMessage,
-} from "../types/index.js";
+import type { AgentFlowContext, ChatMessage } from "../types/index.js";
 import type { ProgressMessage } from "../types/progress.types.js";
 import type { ToolExecutor } from "./tool-executor.service.js";
 import type { ToolResult } from "../types/tool.types.js";
@@ -14,7 +11,6 @@ export const agentFlowService = () => {
   const getTestVariable = () => {
     return testVariable;
   };
-
   /**
    * Set the global send function for streaming updates
    */
@@ -74,34 +70,34 @@ export const agentFlowService = () => {
     const maxIterations = context.maxIterations || 10;
     let iterations = 0;
     let shouldContinue = true;
-    
+
     // Initialize conversation history
     const conversationHistory: ChatMessage[] = [];
-    
+
     // Initialize state
     const flowState = context.state || {};
-    
+
     // Add initial user message
     conversationHistory.push({
       role: "user",
       content: context.userMessage,
     });
-    
+
     await sendUpdate({
       type: "notification",
       content: `Starting autonomous flow with max ${maxIterations} iterations`,
       metadata: { maxIterations },
     });
-    
+
     while (shouldContinue && iterations < maxIterations) {
       iterations++;
-      
+
       await sendUpdate({
         type: "thinking",
         content: `Processing iteration ${iterations}/${maxIterations}`,
         metadata: { iteration: iterations, state: flowState },
       });
-      
+
       // Execute agent iteration with full context including state
       const response = await executeAgentIteration({
         messages: conversationHistory,
@@ -111,14 +107,14 @@ export const agentFlowService = () => {
           state: flowState,
         },
       });
-      
+
       // Add assistant response to history
       conversationHistory.push({
         role: "assistant",
         content: response.content,
         toolCalls: response.toolCalls,
       });
-      
+
       // Check if response has tool calls
       if (response.toolCalls && response.toolCalls.length > 0) {
         await sendUpdate({
@@ -126,7 +122,7 @@ export const agentFlowService = () => {
           content: `Agent requested ${response.toolCalls.length} tool call(s)`,
           metadata: { toolCalls: response.toolCalls },
         });
-        
+
         // If continueOnToolCalls is false, stop here
         if (!context.continueOnToolCalls) {
           shouldContinue = false;
@@ -137,14 +133,14 @@ export const agentFlowService = () => {
           });
           break;
         }
-        
+
         // Execute tool calls if tool executor is provided
         if (toolExecutor) {
           try {
             // Execute all tool calls (ensure args is always present)
-            const toolCallsWithArgs = response.toolCalls.map(tc => ({
+            const toolCallsWithArgs = response.toolCalls.map((tc) => ({
               ...tc,
-              args: tc.args ?? {}
+              args: tc.args ?? {},
             }));
             const toolResponses = await toolExecutor.executeToolCalls(
               toolCallsWithArgs,
@@ -152,7 +148,7 @@ export const agentFlowService = () => {
                 agentId: agent.id,
               }
             );
-            
+
             // Add tool responses to conversation history
             for (const toolResponse of toolResponses) {
               // Convert ToolResult to ChatMessage format
@@ -161,11 +157,11 @@ export const agentFlowService = () => {
                 content: JSON.stringify(toolResponse.result),
                 tool_call_id: toolResponse.toolCallId,
               });
-              
+
               await sendUpdate({
                 type: "tool_execution",
                 content: `Tool executed: ${toolResponse.toolName}`,
-                metadata: { 
+                metadata: {
                   toolCallId: toolResponse.toolCallId,
                   result: toolResponse.result,
                 },
@@ -174,10 +170,12 @@ export const agentFlowService = () => {
           } catch (toolError) {
             await sendUpdate({
               type: "error",
-              content: `Tool execution failed: ${toolError instanceof Error ? toolError.message : "Unknown error"}`,
+              content: `Tool execution failed: ${
+                toolError instanceof Error ? toolError.message : "Unknown error"
+              }`,
               metadata: { toolCalls: response.toolCalls },
             });
-            
+
             // Continue despite tool errors for now
             // In future, we might want configurable behavior here
           }
@@ -192,7 +190,7 @@ export const agentFlowService = () => {
           }
         }
       }
-      
+
       // Check response metadata for flow control
       const responseMetadata = (response as any).metadata;
       if (responseMetadata) {
@@ -202,27 +200,27 @@ export const agentFlowService = () => {
           await sendUpdate({
             type: "finished",
             content: "Task completed successfully",
-            metadata: { 
+            metadata: {
               iterations,
               finalResponse: response.content,
               state: flowState,
             },
           });
         }
-        
+
         // Check if user input is needed
         else if (responseMetadata.needsUserInput) {
           shouldContinue = false;
           await sendUpdate({
             type: "notification",
             content: "Agent requires user input",
-            metadata: { 
+            metadata: {
               question: response.content,
               state: flowState,
             },
           });
         }
-        
+
         // Update state if provided
         if (responseMetadata.stateUpdate) {
           Object.assign(flowState, responseMetadata.stateUpdate);
@@ -233,7 +231,7 @@ export const agentFlowService = () => {
           });
         }
       }
-      
+
       // Simple completion check - if no tool calls and no explicit continuation
       if (!response.toolCalls || response.toolCalls.length === 0) {
         // If the response doesn't indicate continuation, we might be done
@@ -243,19 +241,19 @@ export const agentFlowService = () => {
         }
       }
     }
-    
+
     // Check if we hit max iterations
     if (iterations >= maxIterations && shouldContinue) {
       await sendUpdate({
         type: "error",
         content: `Maximum iterations (${maxIterations}) reached`,
-        metadata: { 
+        metadata: {
           iterations,
           state: flowState,
         },
       });
     }
-    
+
     await sendUpdate({
       type: "finished",
       content: "Autonomous flow completed",

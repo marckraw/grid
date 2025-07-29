@@ -8,26 +8,46 @@ import {
 import { type LLMService } from "../types/llm.types.js";
 import { type Tool, prepareToolsForSDK } from "../types/tool.types.js";
 import { type ToolExecutor } from "../services/tool-executor.service.js";
+import type { ProgressMessage } from "../types/progress.types.js";
 
 // Custom handler types for hooks
 export interface CustomHandlers {
-  beforeAct?: (
-    input: AgentActInput,
-    config: AgentConfig
-  ) => Promise<AgentActInput>;
-  afterResponse?: (
-    response: AgentResponse,
-    input: AgentActInput
-  ) => Promise<AgentResponse>;
-  onError?: (
-    error: Error,
-    attempt: number
-  ) => Promise<void | { retry: boolean; modifiedInput?: AgentActInput }>;
-  validateResponse?: (
-    response: AgentResponse
-  ) => Promise<{ isValid: boolean; errors?: string[] }>;
-  transformInput?: (input: AgentActInput) => Promise<AgentActInput>;
-  transformOutput?: (output: AgentResponse) => Promise<AgentResponse>;
+  beforeAct?: ({
+    input,
+    config,
+  }: {
+    input: AgentActInput;
+    config: AgentConfig;
+  }) => Promise<AgentActInput>;
+  afterResponse?: ({
+    response,
+    input,
+  }: {
+    response: AgentResponse;
+    input: AgentActInput;
+  }) => Promise<AgentResponse>;
+  onError?: ({
+    error,
+    attempt,
+  }: {
+    error: Error;
+    attempt: number;
+  }) => Promise<void | { retry: boolean; modifiedInput?: AgentActInput }>;
+  validateResponse?: ({
+    response,
+  }: {
+    response: AgentResponse;
+  }) => Promise<{ isValid: boolean; errors?: string[] }>;
+  transformInput?: ({
+    input,
+  }: {
+    input: AgentActInput;
+  }) => Promise<AgentActInput>;
+  transformOutput?: ({
+    output,
+  }: {
+    output: AgentResponse;
+  }) => Promise<AgentResponse>;
 }
 
 export interface CreateConfigurableAgentOptions {
@@ -61,12 +81,24 @@ export const createConfigurableAgent = ({
     // TODO: Adapt builtin and agent tools
   ];
 
+  let sendUpdate: ((data: ProgressMessage) => Promise<void>) | null = async (
+    data
+  ) => {
+    console.log("sendUpdate", data);
+  };
+  /**
+   * Set the global send function for streaming updates
+   */
+  const setSendUpdate = (sendFn: (data: ProgressMessage) => Promise<void>) => {
+    sendUpdate = sendFn;
+  };
+
   return {
     ...base,
     id: config.id,
     type: config.type,
+    setSendUpdate,
     availableTools: availableTools.map((t) => t.name),
-
     // Enhanced metadata with config info
     getMetadata: () => ({
       ...config.metadata,
@@ -89,17 +121,17 @@ export const createConfigurableAgent = ({
         try {
           // Hook: transformInput
           if (customHandlers.transformInput) {
-            processedInput = await customHandlers.transformInput(
-              processedInput
-            );
+            processedInput = await customHandlers.transformInput({
+              input: processedInput,
+            });
           }
 
           // Hook: beforeAct
           if (customHandlers.beforeAct) {
-            processedInput = await customHandlers.beforeAct(
-              processedInput,
-              config
-            );
+            processedInput = await customHandlers.beforeAct({
+              input: processedInput,
+              config,
+            });
           }
 
           // Prepare initial messages with system prompt
@@ -132,10 +164,10 @@ export const createConfigurableAgent = ({
             } catch (llmError) {
               // Hook: onError for LLM errors
               if (customHandlers.onError) {
-                const errorResult = await customHandlers.onError(
-                  llmError as Error,
-                  attempt
-                );
+                const errorResult = await customHandlers.onError({
+                  error: llmError as Error,
+                  attempt,
+                });
                 if (errorResult && errorResult.retry && attempt < maxRetries) {
                   if (errorResult.modifiedInput) {
                     processedInput = errorResult.modifiedInput;
@@ -148,10 +180,10 @@ export const createConfigurableAgent = ({
 
             // Hook: afterResponse
             if (customHandlers.afterResponse) {
-              response = await customHandlers.afterResponse(
+              response = await customHandlers.afterResponse({
                 response,
-                processedInput
-              );
+                input: processedInput,
+              });
             }
 
             // If no tool calls, we're done
@@ -220,9 +252,9 @@ export const createConfigurableAgent = ({
             let validationResult;
 
             if (customHandlers.validateResponse) {
-              validationResult = await customHandlers.validateResponse(
-                response
-              );
+              validationResult = await customHandlers.validateResponse({
+                response,
+              });
             } else {
               // Default validation: ensure response has content
               validationResult = {
@@ -240,10 +272,10 @@ export const createConfigurableAgent = ({
 
               // Hook: onError for validation errors
               if (customHandlers.onError) {
-                const errorResult = await customHandlers.onError(
-                  validationError,
-                  attempt
-                );
+                const errorResult = await customHandlers.onError({
+                  error: validationError,
+                  attempt,
+                });
                 if (errorResult && errorResult.retry && attempt < maxRetries) {
                   if (errorResult.modifiedInput) {
                     processedInput = errorResult.modifiedInput;
@@ -257,20 +289,25 @@ export const createConfigurableAgent = ({
 
           // Hook: transformOutput
           if (customHandlers.transformOutput) {
-            response = await customHandlers.transformOutput(response);
+            response = await customHandlers.transformOutput({
+              output: response,
+            });
           }
 
           // Tracing handled by Langfuse integration
-          
+
           return response;
         } catch (error) {
           // Error tracking can be added to Langfuse if needed
-          
+
           // Final error handling
           if (attempt >= maxRetries) {
             // Hook: onError for final failure
             if (customHandlers.onError) {
-              await customHandlers.onError(error as Error, attempt);
+              await customHandlers.onError({
+                error: error as Error,
+                attempt,
+              });
             }
 
             // If we have a fallback prompt, try it
@@ -296,7 +333,7 @@ export const createConfigurableAgent = ({
 
             // End trace on final error
             // Tracing handled by Langfuse integration
-            
+
             throw error;
           }
         }
@@ -304,7 +341,7 @@ export const createConfigurableAgent = ({
 
       // End trace if we somehow exit the loop
       // Tracing handled by Langfuse integration
-      
+
       // Should never reach here
       throw new Error("Unexpected end of retry loop");
     },

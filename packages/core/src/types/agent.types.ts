@@ -1,5 +1,5 @@
 import z from "zod";
-import { AgentFlowContextSchema } from "./index.js";
+import { AgentFlowContextSchema, type ProgressMessage } from "./index.js";
 import { ChatMessageSchema } from "./llm.types.js";
 
 export const AgentTypeSchema = z.enum([
@@ -74,6 +74,10 @@ export interface Agent {
 
   // Required methods
   act: (input: AgentInput) => Promise<AgentResponse>;
+
+  setSendUpdate?: (
+    sendUpdate: (data: ProgressMessage) => Promise<void>
+  ) => void;
 
   // Optional methods for enhanced functionality
   getMetadata: () => AgentMetadata;
