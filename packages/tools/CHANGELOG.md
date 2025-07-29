@@ -1,5 +1,12 @@
 # @mrck-labs/grid-tools
 
+## 10.0.0
+
+### Patch Changes
+
+- Updated dependencies [0012aa5]
+  - @mrck-labs/grid-core@0.18.0
+
 ## 9.0.0
 
 ### Patch Changes
