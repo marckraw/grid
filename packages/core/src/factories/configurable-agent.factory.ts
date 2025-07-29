@@ -10,44 +10,49 @@ import { type Tool, prepareToolsForSDK } from "../types/tool.types.js";
 import { type ToolExecutor } from "../services/tool-executor.service.js";
 import type { ProgressMessage } from "../types/progress.types.js";
 
+interface BaseHandlerOptions {
+  sendUpdate: (data: ProgressMessage) => Promise<void>;
+}
+
+interface BeforeActOptions extends BaseHandlerOptions {
+  input: AgentActInput;
+  config: AgentConfig;
+}
+
+interface AfterResponseOptions extends BaseHandlerOptions {
+  response: AgentResponse;
+  input: AgentActInput;
+}
+
+interface OnErrorOptions extends BaseHandlerOptions {
+  error: Error;
+  attempt: number;
+}
+
+interface ValidateResponseOptions extends BaseHandlerOptions {
+  response: AgentResponse;
+}
+
+interface TransformInputOptions extends BaseHandlerOptions {
+  input: AgentActInput;
+}
+
+interface TransformOutputOptions extends BaseHandlerOptions {
+  output: AgentResponse;
+}
+
 // Custom handler types for hooks
 export interface CustomHandlers {
-  beforeAct?: ({
-    input,
-    config,
-  }: {
-    input: AgentActInput;
-    config: AgentConfig;
-  }) => Promise<AgentActInput>;
-  afterResponse?: ({
-    response,
-    input,
-  }: {
-    response: AgentResponse;
-    input: AgentActInput;
-  }) => Promise<AgentResponse>;
-  onError?: ({
-    error,
-    attempt,
-  }: {
-    error: Error;
-    attempt: number;
-  }) => Promise<void | { retry: boolean; modifiedInput?: AgentActInput }>;
-  validateResponse?: ({
-    response,
-  }: {
-    response: AgentResponse;
-  }) => Promise<{ isValid: boolean; errors?: string[] }>;
-  transformInput?: ({
-    input,
-  }: {
-    input: AgentActInput;
-  }) => Promise<AgentActInput>;
-  transformOutput?: ({
-    output,
-  }: {
-    output: AgentResponse;
-  }) => Promise<AgentResponse>;
+  beforeAct?: (options: BeforeActOptions) => Promise<AgentActInput>;
+  afterResponse?: (options: AfterResponseOptions) => Promise<AgentResponse>;
+  onError?: (
+    options: OnErrorOptions
+  ) => Promise<void | { retry: boolean; modifiedInput?: AgentActInput }>;
+  validateResponse?: (
+    options: ValidateResponseOptions
+  ) => Promise<{ isValid: boolean; errors?: string[] }>;
+  transformInput?: (options: TransformInputOptions) => Promise<AgentActInput>;
+  transformOutput?: (options: TransformOutputOptions) => Promise<AgentResponse>;
 }
 
 export interface CreateConfigurableAgentOptions {
@@ -81,9 +86,7 @@ export const createConfigurableAgent = ({
     // TODO: Adapt builtin and agent tools
   ];
 
-  let sendUpdate: ((data: ProgressMessage) => Promise<void>) | null = async (
-    data
-  ) => {
+  let sendUpdate: (data: ProgressMessage) => Promise<void> = async (data) => {
     console.log("sendUpdate", data);
   };
   /**
@@ -123,6 +126,7 @@ export const createConfigurableAgent = ({
           if (customHandlers.transformInput) {
             processedInput = await customHandlers.transformInput({
               input: processedInput,
+              sendUpdate,
             });
           }
 
@@ -131,6 +135,7 @@ export const createConfigurableAgent = ({
             processedInput = await customHandlers.beforeAct({
               input: processedInput,
               config,
+              sendUpdate,
             });
           }
 
@@ -167,6 +172,7 @@ export const createConfigurableAgent = ({
                 const errorResult = await customHandlers.onError({
                   error: llmError as Error,
                   attempt,
+                  sendUpdate,
                 });
                 if (errorResult && errorResult.retry && attempt < maxRetries) {
                   if (errorResult.modifiedInput) {
@@ -183,6 +189,7 @@ export const createConfigurableAgent = ({
               response = await customHandlers.afterResponse({
                 response,
                 input: processedInput,
+                sendUpdate,
               });
             }
 
@@ -254,6 +261,7 @@ export const createConfigurableAgent = ({
             if (customHandlers.validateResponse) {
               validationResult = await customHandlers.validateResponse({
                 response,
+                sendUpdate,
               });
             } else {
               // Default validation: ensure response has content
@@ -275,6 +283,7 @@ export const createConfigurableAgent = ({
                 const errorResult = await customHandlers.onError({
                   error: validationError,
                   attempt,
+                  sendUpdate,
                 });
                 if (errorResult && errorResult.retry && attempt < maxRetries) {
                   if (errorResult.modifiedInput) {
@@ -291,6 +300,7 @@ export const createConfigurableAgent = ({
           if (customHandlers.transformOutput) {
             response = await customHandlers.transformOutput({
               output: response,
+              sendUpdate,
             });
           }
 
@@ -307,6 +317,7 @@ export const createConfigurableAgent = ({
               await customHandlers.onError({
                 error: error as Error,
                 attempt,
+                sendUpdate,
               });
             }
 
