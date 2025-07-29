@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.18.0
+
+### Minor Changes
+
+- 0012aa5: improve CustomHandlers interface with structured options
+
 ## 0.17.0
 
 ### Minor Changes
