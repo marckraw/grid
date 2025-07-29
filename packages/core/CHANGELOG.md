@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.18.1
+
+### Patch Changes
+
+- ade6610: add getLastUserMessage util function
+
 ## 0.18.0
 
 ### Minor Changes
