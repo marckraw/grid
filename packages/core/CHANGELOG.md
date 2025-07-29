@@ -1,5 +1,12 @@
 # @mrck-labs/grid-core
 
+## 0.17.0
+
+### Minor Changes
+
+- 82dcbfa: Add sendUpdate funtction setter in agent
+- 0364f16: update custom handlers function argument passing to be object
+
 ## 0.16.0
 
 ### Minor Changes

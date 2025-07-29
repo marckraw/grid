@@ -1,5 +1,20 @@
 # terminal-agent
 
+## 0.8.0
+
+### Minor Changes
+
+- 0364f16: update custom handlers function argument passing to be object
+
+### Patch Changes
+
+- Updated dependencies [82dcbfa]
+- Updated dependencies [0364f16]
+  - @mrck-labs/grid-core@0.17.0
+  - @mrck-labs/grid-agents@0.6.3
+  - @mrck-labs/grid-tools@9.0.0
+  - @mrck-labs/grid-workflows@2.0.0
+
 ## 0.7.0
 
 ### Minor Changes
