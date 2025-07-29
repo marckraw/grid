@@ -5,7 +5,7 @@
 // Export agent-flow service and types
 export { agentFlowService } from "./services/agent-flow.service.js";
 export { createConfigurableAgent } from "./factories/configurable-agent.factory.js";
-export { transformMessagesForAI } from "./transformAIMessages.js";
+export { transformMessagesForAI, getLastUserMessage } from "./utils.js";
 export type {
   Agent,
   AgentFlowContext,
