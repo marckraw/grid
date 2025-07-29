@@ -155,6 +155,10 @@ export const createConfigurableAgent = ({
 
           while (toolRound < maxToolRounds) {
             toolRound++;
+            sendUpdate({
+              type: "thinking",
+              content: "Thinking",
+            });
 
             try {
               // Execute LLM call with tools
