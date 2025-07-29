@@ -105,5 +105,6 @@ export const transformMessagesForAI = (
 };
 
 export const getLastUserMessage = (conversationHistory: ChatMessage[]) => {
-  return conversationHistory.find((msg) => msg.role === "user");
+  const userMessages = conversationHistory.filter((msg) => msg.role === "user");
+  return userMessages[userMessages.length - 1];
 };
