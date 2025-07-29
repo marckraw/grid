@@ -103,3 +103,7 @@ export const transformMessagesForAI = (
   );
   return transformedMessages;
 };
+
+export const getLastUserMessage = (conversationHistory: ChatMessage[]) => {
+  return conversationHistory.find((msg) => msg.role === "user");
+};
