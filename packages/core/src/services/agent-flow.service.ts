@@ -11,8 +11,6 @@ export const agentFlowService = () => {
   const getTestVariable = () => {
     return testVariable;
   };
-
-  let sendFunction: ((data: ProgressMessage) => Promise<void>) | null = null;
   /**
    * Set the global send function for streaming updates
    */

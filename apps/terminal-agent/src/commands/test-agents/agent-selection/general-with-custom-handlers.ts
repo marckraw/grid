@@ -65,7 +65,7 @@ export const testGeneralAgentWithCustomHandlers = async () => {
     toolExecutor: toolExecutor,
     customHandlers: {
       // Called before processing the input
-      beforeAct: async (input, config) => {
+      beforeAct: async ({ input, config }) => {
         p.log.info(pc.blue("🔵 [beforeAct] Processing input..."));
         p.log.info(
           pc.dim(`   Input: ${JSON.stringify(input.messages[0].content)}`)
@@ -74,7 +74,7 @@ export const testGeneralAgentWithCustomHandlers = async () => {
       },
 
       // Called after receiving the response
-      afterResponse: async (response, input) => {
+      afterResponse: async ({ response, input }) => {
         p.log.info(pc.green("🟢 [afterResponse] Response received"));
         p.log.info(
           pc.dim(`   Response length: ${response.content?.length || 0} chars`)
@@ -83,7 +83,7 @@ export const testGeneralAgentWithCustomHandlers = async () => {
       },
 
       // Called when an error occurs
-      onError: async (error, attempt) => {
+      onError: async ({ error, attempt }) => {
         p.log.error(
           pc.red(`🔴 [onError] Error on attempt ${attempt}: ${error.message}`)
         );
@@ -92,7 +92,7 @@ export const testGeneralAgentWithCustomHandlers = async () => {
       },
 
       // Called to validate the response
-      validateResponse: async (response) => {
+      validateResponse: async ({ response }) => {
         p.log.info(pc.yellow("🟡 [validateResponse] Validating response..."));
         const isValid = response.content && response.content.length > 0;
         const result = {
@@ -104,14 +104,14 @@ export const testGeneralAgentWithCustomHandlers = async () => {
       },
 
       // Called to transform input before processing
-      transformInput: async (input) => {
+      transformInput: async ({ input }) => {
         p.log.info(pc.magenta("🟣 [transformInput] Transforming input..."));
         // Just log, don't actually transform
         return input;
       },
 
       // Called to transform output before returning
-      transformOutput: async (output) => {
+      transformOutput: async ({ output }) => {
         p.log.info(pc.cyan("🔵 [transformOutput] Transforming output..."));
         // Just log, don't actually transform
         return output;

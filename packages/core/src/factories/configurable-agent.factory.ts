@@ -12,23 +12,42 @@ import type { ProgressMessage } from "../types/progress.types.js";
 
 // Custom handler types for hooks
 export interface CustomHandlers {
-  beforeAct?: (
-    input: AgentActInput,
-    config: AgentConfig
-  ) => Promise<AgentActInput>;
-  afterResponse?: (
-    response: AgentResponse,
-    input: AgentActInput
-  ) => Promise<AgentResponse>;
-  onError?: (
-    error: Error,
-    attempt: number
-  ) => Promise<void | { retry: boolean; modifiedInput?: AgentActInput }>;
-  validateResponse?: (
-    response: AgentResponse
-  ) => Promise<{ isValid: boolean; errors?: string[] }>;
-  transformInput?: (input: AgentActInput) => Promise<AgentActInput>;
-  transformOutput?: (output: AgentResponse) => Promise<AgentResponse>;
+  beforeAct?: ({
+    input,
+    config,
+  }: {
+    input: AgentActInput;
+    config: AgentConfig;
+  }) => Promise<AgentActInput>;
+  afterResponse?: ({
+    response,
+    input,
+  }: {
+    response: AgentResponse;
+    input: AgentActInput;
+  }) => Promise<AgentResponse>;
+  onError?: ({
+    error,
+    attempt,
+  }: {
+    error: Error;
+    attempt: number;
+  }) => Promise<void | { retry: boolean; modifiedInput?: AgentActInput }>;
+  validateResponse?: ({
+    response,
+  }: {
+    response: AgentResponse;
+  }) => Promise<{ isValid: boolean; errors?: string[] }>;
+  transformInput?: ({
+    input,
+  }: {
+    input: AgentActInput;
+  }) => Promise<AgentActInput>;
+  transformOutput?: ({
+    output,
+  }: {
+    output: AgentResponse;
+  }) => Promise<AgentResponse>;
 }
 
 export interface CreateConfigurableAgentOptions {
@@ -102,17 +121,17 @@ export const createConfigurableAgent = ({
         try {
           // Hook: transformInput
           if (customHandlers.transformInput) {
-            processedInput = await customHandlers.transformInput(
-              processedInput
-            );
+            processedInput = await customHandlers.transformInput({
+              input: processedInput,
+            });
           }
 
           // Hook: beforeAct
           if (customHandlers.beforeAct) {
-            processedInput = await customHandlers.beforeAct(
-              processedInput,
-              config
-            );
+            processedInput = await customHandlers.beforeAct({
+              input: processedInput,
+              config,
+            });
           }
 
           // Prepare initial messages with system prompt
@@ -145,10 +164,10 @@ export const createConfigurableAgent = ({
             } catch (llmError) {
               // Hook: onError for LLM errors
               if (customHandlers.onError) {
-                const errorResult = await customHandlers.onError(
-                  llmError as Error,
-                  attempt
-                );
+                const errorResult = await customHandlers.onError({
+                  error: llmError as Error,
+                  attempt,
+                });
                 if (errorResult && errorResult.retry && attempt < maxRetries) {
                   if (errorResult.modifiedInput) {
                     processedInput = errorResult.modifiedInput;
@@ -161,10 +180,10 @@ export const createConfigurableAgent = ({
 
             // Hook: afterResponse
             if (customHandlers.afterResponse) {
-              response = await customHandlers.afterResponse(
+              response = await customHandlers.afterResponse({
                 response,
-                processedInput
-              );
+                input: processedInput,
+              });
             }
 
             // If no tool calls, we're done
@@ -233,9 +252,9 @@ export const createConfigurableAgent = ({
             let validationResult;
 
             if (customHandlers.validateResponse) {
-              validationResult = await customHandlers.validateResponse(
-                response
-              );
+              validationResult = await customHandlers.validateResponse({
+                response,
+              });
             } else {
               // Default validation: ensure response has content
               validationResult = {
@@ -253,10 +272,10 @@ export const createConfigurableAgent = ({
 
               // Hook: onError for validation errors
               if (customHandlers.onError) {
-                const errorResult = await customHandlers.onError(
-                  validationError,
-                  attempt
-                );
+                const errorResult = await customHandlers.onError({
+                  error: validationError,
+                  attempt,
+                });
                 if (errorResult && errorResult.retry && attempt < maxRetries) {
                   if (errorResult.modifiedInput) {
                     processedInput = errorResult.modifiedInput;
@@ -270,7 +289,9 @@ export const createConfigurableAgent = ({
 
           // Hook: transformOutput
           if (customHandlers.transformOutput) {
-            response = await customHandlers.transformOutput(response);
+            response = await customHandlers.transformOutput({
+              output: response,
+            });
           }
 
           // Tracing handled by Langfuse integration
@@ -283,7 +304,10 @@ export const createConfigurableAgent = ({
           if (attempt >= maxRetries) {
             // Hook: onError for final failure
             if (customHandlers.onError) {
-              await customHandlers.onError(error as Error, attempt);
+              await customHandlers.onError({
+                error: error as Error,
+                attempt,
+              });
             }
 
             // If we have a fallback prompt, try it
