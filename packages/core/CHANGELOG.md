@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.18.2
+
+### Patch Changes
+
+- f1e668f: add thinking update
+
 ## 0.18.1
 
 ### Patch Changes
