@@ -10,7 +10,10 @@ import type {
   AudioFormat,
 } from "../../types/voice.types.js";
 import { VoiceError } from "../../types/voice.types.js";
-import { baseVoiceService, type BaseVoiceServiceConfig } from "../base.voice.service.js";
+import {
+  baseVoiceService,
+  type BaseVoiceServiceConfig,
+} from "../base.voice.service.js";
 import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 
 export interface ElevenLabsVoiceServiceConfig extends BaseVoiceServiceConfig {
@@ -18,11 +21,17 @@ export interface ElevenLabsVoiceServiceConfig extends BaseVoiceServiceConfig {
   defaultVoiceId?: string;
   defaultModel?: string;
   // ElevenLabs specific options
-  outputFormat?: "mp3_44100_128" | "mp3_44100_64" | "mp3_44100_32" | 
-                 "pcm_16000" | "pcm_22050" | "pcm_24000" | "pcm_44100" | "ulaw_8000";
+  outputFormat?:
+    | "mp3_44100_128"
+    | "mp3_44100_64"
+    | "mp3_44100_32"
+    | "pcm_16000"
+    | "pcm_22050"
+    | "pcm_24000"
+    | "pcm_44100"
+    | "ulaw_8000";
   applyTextNormalization?: "auto" | "on" | "off";
 }
-
 
 /**
  * ElevenLabs implementation of VoiceService
@@ -30,16 +39,18 @@ export interface ElevenLabsVoiceServiceConfig extends BaseVoiceServiceConfig {
 export const elevenlabsVoiceService = (
   config: ElevenLabsVoiceServiceConfig
 ): VoiceService => {
-  const { 
-    apiKey, 
-    defaultVoiceId, 
+  const {
+    apiKey,
+    defaultVoiceId,
     defaultModel = "eleven_multilingual_v2",
     outputFormat = "mp3_44100_128",
-    applyTextNormalization = "auto"
+    applyTextNormalization = "auto",
   } = config;
 
   // Initialize ElevenLabs client
   const client = new ElevenLabsClient({ apiKey });
+
+  client.speechToText.convert;
 
   // Get utilities from base service
   const utils = baseVoiceService(config);
@@ -47,7 +58,10 @@ export const elevenlabsVoiceService = (
   /**
    * Synthesize text to speech using ElevenLabs API
    */
-  const synthesize = async (text: string, options?: VoiceOptions): Promise<AudioResult> => {
+  const synthesize = async (
+    text: string,
+    options?: VoiceOptions
+  ): Promise<AudioResult> => {
     await utils.rateLimit();
     utils.validateText(text);
 
@@ -55,7 +69,10 @@ export const elevenlabsVoiceService = (
     const voiceId = mergedOptions.voiceId || defaultVoiceId;
 
     if (!voiceId) {
-      throw new VoiceError("Voice ID is required for synthesis", "SYNTHESIS_FAILED");
+      throw new VoiceError(
+        "Voice ID is required for synthesis",
+        "SYNTHESIS_FAILED"
+      );
     }
 
     utils.emitProgress({
@@ -82,14 +99,16 @@ export const elevenlabsVoiceService = (
       for await (const chunk of audio) {
         chunks.push(chunk);
       }
-      
-      const audioData = new Uint8Array(chunks.reduce((acc, chunk) => acc + chunk.length, 0));
+
+      const audioData = new Uint8Array(
+        chunks.reduce((acc, chunk) => acc + chunk.length, 0)
+      );
       let offset = 0;
       for (const chunk of chunks) {
         audioData.set(chunk, offset);
         offset += chunk.length;
       }
-      
+
       utils.emitProgress({
         type: "synthesis_complete",
         timestamp: Date.now(),
@@ -98,7 +117,7 @@ export const elevenlabsVoiceService = (
 
       return {
         data: audioData,
-        format: outputFormat.startsWith("mp3") ? "mp3" : "pcm" as AudioFormat,
+        format: outputFormat.startsWith("mp3") ? "mp3" : ("pcm" as AudioFormat),
         size: audioData.byteLength,
         metadata: {
           voiceId,
@@ -131,7 +150,10 @@ export const elevenlabsVoiceService = (
     const voiceId = mergedOptions.voiceId || defaultVoiceId;
 
     if (!voiceId) {
-      throw new VoiceError("Voice ID is required for synthesis", "SYNTHESIS_FAILED");
+      throw new VoiceError(
+        "Voice ID is required for synthesis",
+        "SYNTHESIS_FAILED"
+      );
     }
 
     utils.emitProgress({
@@ -187,13 +209,67 @@ export const elevenlabsVoiceService = (
   };
 
   /**
-   * Transcribe audio to text (Note: ElevenLabs doesn't have STT, would need Whisper/other service)
+   * Transcribe audio to text using ElevenLabs Scribe v1 model
    */
-  const transcribe = async (audio: AudioInput, options?: TranscribeOptions): Promise<TranscriptionResult> => {
-    throw new VoiceError(
-      "ElevenLabs does not provide speech-to-text services. Consider using OpenAI Whisper or another STT provider.",
-      "SERVICE_UNAVAILABLE"
-    );
+  const transcribe = async (
+    audio: AudioInput,
+    options?: TranscribeOptions
+  ): Promise<TranscriptionResult> => {
+    await utils.rateLimit();
+    
+    utils.emitProgress({
+      type: "transcription_start",
+      timestamp: Date.now(),
+    });
+
+    try {
+      // Prepare audio data
+      const audioData = await utils.prepareAudioInput(audio);
+      
+      console.log("Audio input format:", audio.format, "size:", audioData.byteLength);
+      
+      // Convert audio data to Blob for the API
+      const audioBlob = new Blob([audioData], { type: `audio/${audio.format}` });
+
+      // Call ElevenLabs speech-to-text API
+      const response = await client.speechToText.convert({
+        file: audioBlob as any, // The API expects 'file' parameter
+        modelId: options?.model || "scribe_v1", // Default to scribe_v1 model
+      });
+
+      utils.emitProgress({
+        type: "transcription_complete",
+        timestamp: Date.now(),
+      });
+
+      // Format the response according to our TranscriptionResult interface
+      return {
+        text: response.text || "",
+        confidence: response.confidence,
+        language: response.language || options?.language,
+        duration: response.duration,
+        words: response.words?.map((word: any) => ({
+          word: word.text,
+          start: word.start_time || word.start,
+          end: word.end_time || word.end,
+          confidence: word.confidence,
+        })),
+        alternatives: response.alternatives?.map((alt: any) => ({
+          text: alt.text,
+          confidence: alt.confidence,
+        })),
+      };
+    } catch (error) {
+      if (error instanceof VoiceError) {
+        throw error;
+      }
+      console.error("ElevenLabs transcription error:", error);
+      throw new VoiceError(
+        `Failed to transcribe audio with ElevenLabs: ${error instanceof Error ? error.message : String(error)}`,
+        "TRANSCRIPTION_FAILED",
+        error
+      );
+    }
   };
 
   /**
@@ -204,7 +280,7 @@ export const elevenlabsVoiceService = (
 
     try {
       const response = await client.voices.getAll();
-      
+
       return response.voices.map((voice: any) => ({
         id: voice.voiceId || voice.voice_id,
         name: voice.name,
@@ -214,7 +290,8 @@ export const elevenlabsVoiceService = (
           ...voice.labels,
           category: voice.category,
         },
-        isCustom: voice.category === "cloned" || voice.category === "professional",
+        isCustom:
+          voice.category === "cloned" || voice.category === "professional",
       }));
     } catch (error) {
       if (error instanceof VoiceError) {
@@ -236,7 +313,7 @@ export const elevenlabsVoiceService = (
 
     try {
       const voice = await client.voices.get(voiceId);
-      
+
       return {
         id: voice.voiceId || (voice as any).voice_id,
         name: voice.name || "",
@@ -246,14 +323,15 @@ export const elevenlabsVoiceService = (
           ...voice.labels,
           category: voice.category,
         },
-        isCustom: voice.category === "cloned" || voice.category === "professional",
+        isCustom:
+          voice.category === "cloned" || voice.category === "professional",
       };
     } catch (error: any) {
       // Handle 404 as null return
       if (error?.statusCode === 404 || error?.response?.status === 404) {
         return null;
       }
-      
+
       if (error instanceof VoiceError) {
         throw error;
       }
@@ -268,9 +346,15 @@ export const elevenlabsVoiceService = (
   /**
    * Clone a voice (requires Pro subscription)
    */
-  const cloneVoice = async (name: string, samples: AudioInput[]): Promise<Voice> => {
+  const cloneVoice = async (
+    name: string,
+    samples: AudioInput[]
+  ): Promise<Voice> => {
     if (samples.length === 0) {
-      throw new VoiceError("At least one voice sample is required", "INVALID_AUDIO");
+      throw new VoiceError(
+        "At least one voice sample is required",
+        "INVALID_AUDIO"
+      );
     }
 
     await utils.rateLimit();
@@ -278,10 +362,12 @@ export const elevenlabsVoiceService = (
     try {
       // Process audio samples into File-like objects
       const files: File[] = [];
-      
+
       for (let i = 0; i < samples.length; i++) {
         const audioData = await utils.prepareAudioInput(samples[i]);
-        const blob = new Blob([audioData], { type: `audio/${samples[i].format}` });
+        const blob = new Blob([audioData], {
+          type: `audio/${samples[i].format}`,
+        });
         // Create a File-like object
         const file = new File([blob], `sample_${i}.${samples[i].format}`, {
           type: `audio/${samples[i].format}`,
@@ -291,23 +377,31 @@ export const elevenlabsVoiceService = (
 
       // The SDK might use a different method name for adding voices
       // Let's use the create method if available, otherwise fallback to add
-      const response = await (client.voices as any).create?.({
-        name,
-        files,
-      }) || await (client.voices as any).add?.({
-        name,
-        files,
-      });
+      const response =
+        (await (client.voices as any).create?.({
+          name,
+          files,
+        })) ||
+        (await (client.voices as any).add?.({
+          name,
+          files,
+        }));
 
       // Fetch the created voice details
       const voiceId = response.voiceId || (response as any).voice_id;
       if (!voiceId) {
-        throw new VoiceError("No voice ID returned from clone operation", "SERVICE_UNAVAILABLE");
+        throw new VoiceError(
+          "No voice ID returned from clone operation",
+          "SERVICE_UNAVAILABLE"
+        );
       }
-      
+
       const voice = await getVoice(voiceId);
       if (!voice) {
-        throw new VoiceError("Failed to fetch cloned voice details", "SERVICE_UNAVAILABLE");
+        throw new VoiceError(
+          "Failed to fetch cloned voice details",
+          "SERVICE_UNAVAILABLE"
+        );
       }
 
       return voice;
@@ -337,7 +431,7 @@ export const elevenlabsVoiceService = (
       if (error?.statusCode === 404 || error?.response?.status === 404) {
         return false;
       }
-      
+
       if (error instanceof VoiceError) {
         throw error;
       }
