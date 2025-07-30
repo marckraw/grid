@@ -3,3 +3,4 @@ export * from "./agent.types.js";
 export * from "./llm.types.js";
 export * from "./tool.types.js";
 export * from "./progress.types.js";
+export * from "./voice.types.js";

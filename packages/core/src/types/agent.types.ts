@@ -1,6 +1,7 @@
 import z from "zod";
 import { AgentFlowContextSchema, type ProgressMessage } from "./index.js";
 import { ChatMessageSchema } from "./llm.types.js";
+import type { VoiceConfig, VoiceService, AudioResult, TranscriptionResult, VoiceOptions, TranscribeOptions } from "./voice.types.js";
 
 export const AgentTypeSchema = z.enum([
   "general",
@@ -41,12 +42,27 @@ export const AgentMetadataSchema = z.object({
   author: z.string().optional(),
 });
 
+// Voice config schema
+export const VoiceConfigSchema = z.object({
+  enabled: z.boolean(),
+  voiceId: z.string().optional(),
+  defaultOptions: z.any().optional(), // Partial<VoiceOptions>
+  autoSpeak: z.boolean().optional(),
+  autoListen: z.boolean().optional(),
+  allowInterruption: z.boolean().optional(),
+  mixedModality: z.object({
+    enabled: z.boolean(),
+    mergeStrategy: z.enum(['temporal', 'contextual', 'append'])
+  }).optional(),
+});
+
 // Base agent config schema
 export const BaseAgentConfigSchema = z.object({
   id: z.string(),
   type: AgentTypeSchema,
   availableTools: z.array(z.any()).optional(),
   metadata: AgentMetadataSchema.partial().optional(),
+  voice: VoiceConfigSchema.optional(),
 });
 
 export type BaseAgentConfig = z.infer<typeof BaseAgentConfigSchema>;
@@ -87,6 +103,14 @@ export interface Agent {
 
   // Health check method
   isHealthy?: () => Promise<boolean>;
+
+  // Voice capabilities (optional)
+  voiceService?: VoiceService;
+  speak?: (text: string, options?: VoiceOptions) => Promise<AudioResult>;
+  listen?: (options?: TranscribeOptions) => Promise<TranscriptionResult>;
+  hasVoice?: () => boolean;
+  canSpeak?: () => boolean;
+  canListen?: () => boolean;
 }
 
 // Error types for better error handling

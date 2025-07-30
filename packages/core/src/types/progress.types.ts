@@ -19,6 +19,12 @@ export const ProgressMessageTypeEnum = z.enum([
   "evaluation",
   "state_update",
   "iteration",
+  // Voice-related progress types
+  "speaking_start",
+  "speaking_complete",
+  "listening_start",
+  "listening_complete",
+  "voice_error",
 ]);
 
 /**
