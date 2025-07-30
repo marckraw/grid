@@ -72,18 +72,143 @@ export const baseVoiceService = (config: BaseVoiceServiceConfig): VoiceService =
 };
 ```
 
-### Option C: Wrapper/Decorator Pattern
+### Option C: Service-Based Architecture (Recommended)
+Following the same pattern as LLMService, voice should be a first-class service that can be optionally provided to agents.
+
+#### Pattern 1: VoiceService as Optional Parameter
 ```typescript
-// Enhance existing agents with voice
-const voiceAgent = agent.withVoice({
-  voiceId: 'eleven-labs-voice-id',
-  voiceService: elevenlabsVoiceService,
-  features: {
-    allowInterruption: true,
-    detectEndOfSpeech: true,
-    mixedModalityMerge: true,
+const agent = createConfigurableAgent({
+  llmService: baseLLMService({ /* config */ }),
+  voiceService: baseVoiceService({ /* config */ }), // Optional, like llmService
+  config: {
+    // ... existing config
+    voice: {
+      enabled: true,  // Enable/disable even if service is provided
+      voiceId: 'eleven-labs-voice-id',
+      autoSpeak: true, // Automatically speak responses?
+      allowInterruption: true,
+    }
   }
 });
+
+// Agent automatically has voice capabilities if voiceService is provided
+if (agent.canSpeak()) {
+  await agent.speak("Hello!");
+}
+if (agent.canListen()) {
+  await agent.listen();
+}
+```
+
+#### Pattern 2: Services Container
+```typescript
+// All services in one place - future-proof for additional services
+const agent = createConfigurableAgent({
+  services: {
+    llm: baseLLMService({ /* config */ }),
+    voice: baseVoiceService({ /* config */ }),
+    // Future services:
+    // vision: baseVisionService({ /* config */ }),
+    // memory: baseMemoryService({ /* config */ }),
+  },
+  config: {
+    // Agent-specific configuration
+  }
+});
+```
+
+#### Why Service-Based Architecture?
+
+1. **Consistency with LLMService Pattern**
+   ```typescript
+   // All agents use the same pattern
+   const textAgent = createConfigurableAgent({
+     llmService,
+     // No voiceService = text-only agent
+   });
+
+   const voiceAgent = createConfigurableAgent({
+     llmService,
+     voiceService, // Same pattern, just add voice
+   });
+   ```
+
+2. **Provider Flexibility**
+   ```typescript
+   // Different voice services for different agents
+   const customerAgent = createConfigurableAgent({
+     llmService,
+     voiceService: elevenlabsVoiceService({
+       voiceId: 'friendly-support-voice'
+     }),
+   });
+
+   const developerAgent = createConfigurableAgent({
+     llmService,
+     voiceService: azureVoiceService({ // Different provider!
+       voice: 'technical-voice'
+     }),
+   });
+   ```
+
+3. **Graceful Degradation**
+   ```typescript
+   // Agent works with or without voice
+   const agent = createConfigurableAgent({
+     llmService,
+     voiceService, // Might be null/undefined
+     config: {
+       behavior: {
+         fallbackToText: true, // If voice fails, still work
+       }
+     }
+   });
+   ```
+
+### Option D: Voice-Aware Agent Factory
+```typescript
+// Extended factory implementation
+export const createConfigurableAgent = ({
+  config,
+  llmService,
+  voiceService, // New optional parameter
+  toolExecutor,
+  customHandlers,
+}: CreateConfigurableAgentOptions): Agent => {
+  
+  // Base agent creation...
+  
+  // Add voice methods if service provided
+  if (voiceService) {
+    agent.speak = async (text: string, options?: SpeakOptions) => {
+      sendUpdate({ type: 'speaking_start', content: text });
+      
+      const audio = await voiceService.synthesize(text, {
+        voiceId: config.voice?.voiceId,
+        ...options
+      });
+      
+      sendUpdate({ type: 'speaking_complete' });
+      return audio;
+    };
+    
+    agent.listen = async (options?: ListenOptions) => {
+      sendUpdate({ type: 'listening_start' });
+      
+      const transcript = await voiceService.transcribe(/* audio stream */);
+      
+      sendUpdate({ type: 'listening_complete', content: transcript.text });
+      return transcript;
+    };
+  }
+  
+  // Capability checks
+  agent.hasVoice = () => !!voiceService;
+  agent.canSpeak = () => !!voiceService?.synthesize;
+  agent.canListen = () => !!voiceService?.transcribe;
+  
+  return agent;
+};
 ```
 
 ## Mixed Modality Design
@@ -145,6 +270,123 @@ interface VoiceConversationState {
   wasInterrupted: boolean;
   interruptionPoint?: number;
 }
+```
+
+## Service Integration Benefits
+
+### Testability
+```typescript
+// Easy to mock for testing
+const mockVoiceService: VoiceService = {
+  synthesize: async (text) => new AudioBuffer(/* mock */),
+  transcribe: async (audio) => ({ text: "mock transcript" }),
+  listVoices: async () => [{ id: 'mock-voice', name: 'Mock Voice' }],
+};
+
+// Test agents without actual voice API calls
+const testAgent = createConfigurableAgent({
+  llmService: mockLLMService,
+  voiceService: mockVoiceService,
+  config: { /* ... */ }
+});
+```
+
+### Progressive Enhancement
+```typescript
+// Start with text-only agent
+let agent = createConfigurableAgent({ 
+  llmService,
+  config: { /* ... */ }
+});
+
+// Later add voice without changing any agent code
+agent = createConfigurableAgent({ 
+  llmService,
+  voiceService: baseVoiceService({ /* ... */ }), // Just add this!
+  config: { /* ... */ }
+});
+```
+
+### Automatic Voice Integration in Agent Lifecycle
+```typescript
+// In the agent's act method
+async act(input: AgentActInput) {
+  // Process with LLM as usual
+  const response = await this.llmService.runLLM(/* ... */);
+  
+  // Automatically speak if voice is enabled and configured
+  if (this.voiceService && this.config.voice?.autoSpeak) {
+    try {
+      await this.voiceService.synthesize(response.content, {
+        voiceId: this.config.voice.voiceId,
+        stream: true, // Stream audio while still generating
+      });
+    } catch (error) {
+      // Log but don't fail the response
+      console.warn('Voice synthesis failed:', error);
+    }
+  }
+  
+  return response;
+}
+```
+
+### Mixed Modality with Service Pattern
+```typescript
+// The conversation loop can detect and use voice capabilities
+const conversation = createConversationLoop({
+  agent, // Agent might or might not have voice
+  progressHandlers: {
+    onProgress: async (update) => {
+      // Handle both text and voice updates
+      if (update.type === 'voice_input') {
+        // Show voice visualization
+      }
+    }
+  },
+  modality: {
+    allowMixed: true,
+    preferred: agent.hasVoice() ? 'voice' : 'text',
+  }
+});
+
+// The loop automatically enables voice UI if available
+if (agent.hasVoice()) {
+  conversation.enableVoiceInput();
+}
+```
+
+### Configuration Inheritance
+```typescript
+// Global voice defaults
+const voiceDefaults = {
+  provider: 'elevenlabs',
+  apiKey: process.env.ELEVENLABS_API_KEY,
+  defaultSettings: {
+    stability: 0.75,
+    similarity_boost: 0.75,
+  }
+};
+
+// Create reusable voice service
+const sharedVoiceService = baseVoiceService(voiceDefaults);
+
+// Multiple agents can share the same voice service
+const agent1 = createConfigurableAgent({
+  llmService,
+  voiceService: sharedVoiceService,
+  config: {
+    voice: { voiceId: 'voice-1' } // Agent-specific voice
+  }
+});
+
+const agent2 = createConfigurableAgent({
+  llmService,
+  voiceService: sharedVoiceService,
+  config: {
+    voice: { voiceId: 'voice-2' } // Different voice, same service
+  }
+});
 ```
 
 ## Implementation Concepts
