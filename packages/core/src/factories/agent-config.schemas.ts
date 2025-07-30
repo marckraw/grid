@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AgentTypeSchema, AgentMetadataSchema } from "../types/agent.types.js";
+import { AgentTypeSchema, AgentMetadataSchema, VoiceConfigSchema } from "../types/agent.types.js";
 import type { Tool } from "../types/tool.types.js";
 
 // Tool source types
@@ -104,6 +104,9 @@ export const AgentConfigSchema = z.object({
 
   // Feature flags
   features: z.record(z.boolean()).optional(),
+
+  // Voice configuration
+  voice: VoiceConfigSchema.optional(),
 
   // Custom configuration (agent-specific)
   customConfig: z.record(z.any()).optional(),
