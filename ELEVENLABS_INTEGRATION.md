@@ -581,29 +581,118 @@ const phoneAgent = createPhoneAgent({
 
 ## Implementation Roadmap
 
-### Phase 1: Core Voice Service
-- [ ] Define VoiceService interface
-- [ ] Implement ElevenLabs adapter
-- [ ] Basic TTS functionality
-- [ ] Basic STT integration
+### Phase 1: Core Voice Service ✅ COMPLETED
+- [x] Define VoiceService interface
+- [x] Create base voice service utilities
+- [x] Implement ElevenLabs adapter
+- [x] Basic TTS functionality
+- [x] Basic STT integration (using ElevenLabs Scribe v1)
+- [x] Error handling and voice-specific exceptions
 
-### Phase 2: Agent Integration
-- [ ] Add voice methods to agents
-- [ ] Implement voice state management
-- [ ] Create voice-enabled conversation loop
-- [ ] Handle interruptions
+### Phase 2: Agent Integration ✅ COMPLETED
+- [x] Add voice methods to agents (speak, listen, canSpeak, canListen)
+- [x] Implement voice service as optional parameter in agent factory
+- [x] Create voice-enabled conversation loop
+- [x] Voice configuration in agent config
 
-### Phase 3: Mixed Modality
-- [ ] Implement merge strategies
-- [ ] Build unified message format
-- [ ] Create UI components
-- [ ] Test edge cases
+### Phase 3: Terminal Voice Experience ✅ COMPLETED
+- [x] Terminal audio I/O service (recording and playback)
+- [x] Cross-platform audio support (macOS, Linux, Windows)
+- [x] Voice conversation command with push-to-talk (SPACE key)
+- [x] Visual indicators for voice states (listening, speaking, processing)
+- [x] Voice selection from ElevenLabs voices
+- [x] Voice commands (/voice on|off|list)
+- [x] Mixed modality - type while assistant speaks
 
-### Phase 4: Advanced Features
-- [ ] Voice cloning support
-- [ ] Emotion detection
-- [ ] Multi-language handling
+### Phase 4: Enhanced Voice Features (PLANNED)
+- [ ] Real-time transcription display (show text as user speaks)
+- [ ] Voice interruption support (stop assistant mid-speech)
+- [ ] Audio level meter for microphone input
+- [ ] Voice activity detection (VAD) for automatic recording
+- [ ] Voice command shortcuts ("clear", "repeat", "slower")
+- [ ] Multiple language support with auto-detection
+- [ ] Voice-specific conversation memory and context
+- [ ] Seamless switching between voice and text modes
+
+### Phase 5: Voice-Enabled Workflows (PLANNED)
+- [ ] Voice-driven development features
+  - [ ] Code dictation with smart formatting
+  - [ ] Voice commands for dev tasks ("create React component")
+  - [ ] Voice-based code review ("explain this function")
+- [ ] Ambient mode with wake word detection
+- [ ] Background transcription of meetings
+- [ ] Multi-agent voice conversations
+- [ ] Voice-based agent orchestration
+
+### Phase 6: Advanced Integrations (FUTURE)
+- [ ] Voice + Tools integration
+  - [ ] Execute tools via voice commands
+  - [ ] Voice confirmation for dangerous operations
+  - [ ] Audio feedback for tool execution
+- [ ] Voice analytics and insights
+  - [ ] Sentiment analysis from voice tone
+  - [ ] Speaking pace and clarity feedback
+  - [ ] Conversation metrics
+- [ ] Accessibility features
+  - [ ] Screen reader integration
+  - [ ] Voice-guided navigation
+  - [ ] Customizable voice shortcuts
+
+### Phase 7: Production Features (FUTURE)
 - [ ] Performance optimization
+  - [ ] Local voice processing options (Whisper)
+  - [ ] Caching for common responses
+  - [ ] Audio streaming optimization
+- [ ] Security & Privacy
+  - [ ] Voice authentication
+  - [ ] Encrypted voice data
+  - [ ] Local-only mode option
+- [ ] Platform expansion
+  - [ ] Web voice interface
+  - [ ] Mobile app support
+  - [ ] Voice API endpoints
+
+## What We Accomplished
+
+### 🎯 Core Achievements
+1. **Full Voice Integration**: Successfully integrated ElevenLabs for both TTS and STT in Grid
+2. **Service-Based Architecture**: Voice is now a first-class service like LLMService
+3. **Agent Enhancement**: Agents can now speak and listen when provided with a voice service
+4. **Terminal Experience**: Complete voice conversation in the CLI with visual feedback
+5. **Mixed Modality**: Users can type and speak in the same conversation
+
+### 🛠️ Technical Implementation
+- **Voice Types**: Interface-agnostic types for voice operations
+- **Base Voice Service**: Reusable utilities for voice service implementations
+- **ElevenLabs Service**: Full implementation with streaming support
+- **Terminal Audio**: Cross-platform audio I/O using sox
+- **Voice Progress**: Beautiful ASCII animations for voice states
+- **Conversation Integration**: Seamless voice integration in conversation loops
+
+### 📦 Key Files Created
+- `packages/core/src/types/voice.types.ts` - Voice type definitions
+- `packages/core/src/services/base.voice.service.ts` - Base utilities
+- `packages/core/src/services/ElevenLabsService/elevenlabs.voice.service.ts` - ElevenLabs implementation
+- `apps/terminal-agent/src/services/terminal-voice.service.ts` - Terminal audio handling
+- `apps/terminal-agent/src/commands/voice-conversation.ts` - Voice conversation command
+- `apps/terminal-agent/src/utils/voice-progress.ts` - Visual indicators
+
+### 🚀 Usage
+```bash
+# Set your API key
+export ELEVENLABS_API_KEY=your-api-key
+
+# Install sox for audio recording
+brew install sox  # macOS
+# or
+sudo apt-get install sox libsox-fmt-all  # Linux
+
+# Run the terminal agent
+pnpm --filter terminal-agent dev
+
+# Select "🎙️ Voice Conversation" from menu
+# Press SPACE to talk, or type normally
+```
 
 ## Example Use Cases
 
