@@ -50,16 +50,22 @@ export default function Home(): ReactNode {
 
 // Create an intelligent agent
 const agent = createConfigurableAgent({
-  llmConfig: {
-    model: "gpt-4",
-    provider: "openai",
+  config: {
+    id: "math-tutor",
+    type: "general",
+    prompts: {
+      system: "You are a helpful math tutor.",
+    },
+    tools: {
+      custom: [calculatorTool],
+    },
   },
-  systemPrompt: "You are a helpful math tutor.",
-  tools: [calculatorTool],
 });
 
 // Use the agent
-const response = await agent.act("What's 15% of 200?");
+const response = await agent.act({ 
+  messages: [{ role: "user", content: "What's 15% of 200?" }] 
+});
 console.log(response.content);
 // "To calculate 15% of 200, I'll help you with that calculation..."
 // "15% of 200 is 30"`}
