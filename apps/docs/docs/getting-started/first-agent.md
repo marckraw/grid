@@ -165,6 +165,11 @@ export function createResearchAgent() {
     langfuse: { enabled: true }
   });
   const toolExecutor = createToolExecutor();
+  
+  // Register all tools with the executor
+  toolExecutor.registerTool(searchTool);
+  toolExecutor.registerTool(summarizeTool);
+  toolExecutor.registerTool(saveResultsTool);
 
   return createConfigurableAgent({
     llmService,

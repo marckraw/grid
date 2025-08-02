@@ -46,10 +46,19 @@ export default function Home(): ReactNode {
                 Get Started in Seconds
               </Heading>
               <CodeBlock language="typescript">
-{`import { createConfigurableAgent, calculatorTool } from "@mrck-labs/grid-core";
+{`import { 
+  createConfigurableAgent, 
+  calculatorTool,
+  createToolExecutor 
+} from "@mrck-labs/grid-core";
+
+// Create tool executor and register tools
+const toolExecutor = createToolExecutor();
+toolExecutor.registerTool(calculatorTool);
 
 // Create an intelligent agent
 const agent = createConfigurableAgent({
+  toolExecutor,
   config: {
     id: "math-tutor",
     type: "general",

@@ -135,9 +135,15 @@ const agent = createConfigurableAgent({
 Agents can use tools to extend their capabilities:
 
 ```typescript
+// Create tool executor and register tools
+const toolExecutor = createToolExecutor();
+toolExecutor.registerTool(searchTool);
+toolExecutor.registerTool(calculatorTool);
+toolExecutor.registerTool(emailTool);
+
 const agent = createConfigurableAgent({
   llmService: baseLLMService({ /* ... */ }),
-  toolExecutor: createToolExecutor(),
+  toolExecutor,
   config: {
     id: "tool-agent",
     type: "general",
@@ -289,9 +295,14 @@ const researcher = researchAgent;
 const calculator = mathDataAgent;
 
 // Or create custom specialized agents
+const toolExecutor = createToolExecutor();
+toolExecutor.registerTool(lookupOrder);
+toolExecutor.registerTool(checkInventory);
+toolExecutor.registerTool(createTicket);
+
 const supportAgent = createConfigurableAgent({
   llmService: baseLLMService({ langfuse: { enabled: true } }),
-  toolExecutor: createToolExecutor(),
+  toolExecutor,
   config: {
     id: "support-agent",
     type: "general",
@@ -362,9 +373,15 @@ async function handleQuery(query: string) {
 Create agents that can work independently:
 
 ```typescript
+const toolExecutor = createToolExecutor();
+toolExecutor.registerTool(search);
+toolExecutor.registerTool(analyze);
+toolExecutor.registerTool(summarize);
+toolExecutor.registerTool(save);
+
 const autonomousAgent = createConfigurableAgent({
   llmService: baseLLMService({ langfuse: { enabled: true } }),
-  toolExecutor: createToolExecutor(),
+  toolExecutor,
   config: {
     id: "autonomous-researcher",
     type: "general",

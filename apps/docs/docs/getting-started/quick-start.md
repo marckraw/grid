@@ -97,6 +97,9 @@ const llmService = baseLLMService({
 });
 const toolExecutor = createToolExecutor();
 
+// Register the tool with the executor
+toolExecutor.registerTool(weatherTool);
+
 // Create an agent with tools
 const agent = createConfigurableAgent({
   llmService,
@@ -239,6 +242,9 @@ const llmService = baseLLMService({
   langfuse: { enabled: false }
 });
 const toolExecutor = createToolExecutor();
+
+// Register the tool with the executor
+toolExecutor.registerTool(calculator);
 
 // Configure the agent
 const agent = createConfigurableAgent({
