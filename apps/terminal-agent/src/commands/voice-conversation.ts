@@ -63,6 +63,10 @@ export async function exploreVoiceConversation(): Promise<void> {
       readlineInitialized = true;
     }
     process.stdin.setRawMode(true);
+    
+    // Increase max listeners to handle @clack/prompts adding its own listeners
+    // This is expected behavior when using textWithCancel in a loop
+    process.stdin.setMaxListeners(20);
   }
 
   // Check for ElevenLabs API key
@@ -362,8 +366,11 @@ When speaking, use a conversational tone as if talking to someone in person.`,
   };
 
   if (process.stdin.isTTY && canRecord) {
-    // Remove any existing listeners to prevent duplicates
-    process.stdin.removeAllListeners("keypress");
+    // Store the current number of listeners before adding ours
+    const existingListenerCount = process.stdin.listenerCount("keypress");
+    
+    // Only add our listener if it's not already there
+    // This prevents duplicates while preserving other listeners
     process.stdin.on("keypress", handleKeypress);
   }
 
@@ -510,6 +517,9 @@ When speaking, use a conversational tone as if talking to someone in person.`,
     }
     // Restore original raw mode state
     process.stdin.setRawMode(wasRawMode || false);
+    
+    // Reset max listeners to default (10)
+    process.stdin.setMaxListeners(10);
   }
 
   voiceProgress.cleanup();
