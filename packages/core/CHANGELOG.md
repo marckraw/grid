@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.20.0
+
+### Minor Changes
+
+- 265bec3: add nextjs example, change voice service to use cheapest elevenlabs model
+
 ## 0.19.0
 
 ### Minor Changes
