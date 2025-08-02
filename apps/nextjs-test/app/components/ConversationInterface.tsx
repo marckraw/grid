@@ -3,6 +3,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ConversationMessage } from './ConversationMessage';
 import { ProgressIndicator } from './ProgressIndicator';
+import { VoiceRecorder } from './VoiceRecorder';
+import { VoiceIndicator, type VoiceState } from './VoiceIndicator';
+import { getAudioPlayer } from '../utils/webAudioPlayer';
 import type { ChatMessage, ProgressMessage } from '@mrck-labs/grid-core';
 
 export function ConversationInterface() {
@@ -11,7 +14,10 @@ export function ConversationInterface() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentProgress, setCurrentProgress] = useState<ProgressMessage | null>(null);
   const [sessionId] = useState(() => `session-${Date.now()}`);
+  const [voiceState, setVoiceState] = useState<VoiceState>('idle');
+  const [autoSpeak, setAutoSpeak] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const audioPlayer = useRef(getAudioPlayer());
 
   // Auto-scroll to bottom
   const scrollToBottom = () => {
@@ -22,16 +28,85 @@ export function ConversationInterface() {
     scrollToBottom();
   }, [messages, currentProgress]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputValue.trim() || isLoading) return;
+  const handleVoiceRecording = async (audioBlob: Blob) => {
+    setVoiceState('processing');
+    
+    try {
+      // Create FormData to send audio
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.webm');
+      
+      // Transcribe the audio
+      const response = await fetch('/api/voice/transcribe', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to transcribe audio');
+      }
+      
+      const { text } = await response.json();
+      
+      // Process the transcribed text as a message
+      if (text) {
+        setVoiceState('idle');
+        await sendMessage(text);
+      }
+    } catch (error) {
+      console.error('Voice recording error:', error);
+      setVoiceState('idle');
+    }
+  };
 
-    const userMessage = inputValue.trim();
+  const synthesizeAndPlay = async (text: string) => {
+    if (!autoSpeak) return;
+    
+    setVoiceState('speaking');
+    
+    try {
+      const response = await fetch('/api/voice/synthesize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to synthesize speech');
+      }
+      
+      const { audio, format } = await response.json();
+      
+      // Play the audio
+      await audioPlayer.current.playBase64(audio, `audio/${format}`);
+      setVoiceState('idle');
+    } catch (error) {
+      console.error('Speech synthesis error:', error);
+      setVoiceState('idle');
+    }
+  };
+
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || isLoading) return;
+    
     setInputValue('');
     setIsLoading(true);
-
+    
     // Add user message to UI
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setMessages(prev => [...prev, { role: 'user', content: text }]);
+    
+    // Send the message
+    await handleSendMessage(text);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await sendMessage(inputValue);
+  };
+
+  const handleSendMessage = async (userMessage: string) => {
 
     try {
       const response = await fetch('/api/conversation', {
@@ -74,6 +149,10 @@ export function ConversationInterface() {
                   case 'message':
                     setMessages(prev => [...prev, event.message]);
                     setCurrentProgress(null);
+                    // Auto-speak the assistant's response
+                    if (event.message.role === 'assistant' && event.message.content) {
+                      synthesizeAndPlay(event.message.content);
+                    }
                     break;
                   case 'error':
                     console.error('Error:', event.error);
@@ -152,7 +231,23 @@ export function ConversationInterface() {
         }}
       >
         <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Grid Conversation</h1>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontSize: '0.875rem',
+              color: '#666',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={autoSpeak}
+              onChange={(e) => setAutoSpeak(e.target.checked)}
+            />
+            Auto-speak responses
+          </label>
           <button
             onClick={handleExport}
             style={{
@@ -214,6 +309,8 @@ export function ConversationInterface() {
         ))}
 
         {currentProgress && <ProgressIndicator progress={currentProgress} />}
+        
+        {voiceState !== 'idle' && <VoiceIndicator state={voiceState} />}
 
         <div ref={messagesEndRef} />
       </div>
@@ -227,12 +324,18 @@ export function ConversationInterface() {
           backgroundColor: '#f8f9fa',
         }}
       >
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <VoiceRecorder
+            onRecordingComplete={handleVoiceRecording}
+            onRecordingStart={() => setVoiceState('listening')}
+            onRecordingStop={() => setVoiceState('processing')}
+            isDisabled={isLoading}
+          />
           <input
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Type your message..."
+            placeholder="Type your message or hold space to record..."
             disabled={isLoading}
             style={{
               flex: 1,
