@@ -1,0 +1,745 @@
+# ElevenLabs Voice Integration for Grid
+
+> A comprehensive exploration of adding voice capabilities to Grid's agent primitives using ElevenLabs API
+
+## Vision
+
+Imagine Grid agents that can:
+- **Listen** to voice input (speech-to-text)
+- **Think** using LLMs (existing capability)
+- **Speak** their responses (text-to-speech via ElevenLabs)
+- Have actual **conversations** with natural voice interactions
+- **Mix modalities** - seamlessly blend voice and text in the same conversation
+
+## Architecture Overview
+
+### Current Flow
+```
+User Input (text) → Agent → LLM → Response (text)
+```
+
+### With Voice Integration
+```
+Voice Input → STT → Agent → LLM → Response → TTS → Voice Output
+     ↓                  ↑                          ↑
+Text Input  ─────────────┘                        │
+     ↓                                            │
+Mixed Modality ──────────────────────────────────┘
+```
+
+## Integration Patterns
+
+### Option A: Agent-Level Integration
+```typescript
+// Voice capabilities directly on agents
+const agent = createConfigurableAgent({
+  // ... existing config
+  voice: {
+    enabled: true,
+    voiceId: 'eleven-labs-voice-id',
+    service: elevenlabsVoiceService
+  }
+});
+
+await agent.listen();   // Start listening
+await agent.speak(text); // Speak response
+```
+
+### Option B: Service Layer (Recommended)
+```typescript
+// Create VoiceService similar to LLMService
+interface VoiceService {
+  // Core capabilities
+  synthesize(text: string, options: VoiceOptions): Promise<AudioStream>;
+  transcribe(audio: AudioStream): Promise<TranscriptionResult>;
+  
+  // Streaming capabilities
+  streamSynthesize(text: string, options: VoiceOptions): AsyncGenerator<AudioChunk>;
+  streamTranscribe(audioStream: AudioStream): AsyncGenerator<TranscriptionChunk>;
+  
+  // Voice management
+  listVoices(): Promise<Voice[]>;
+  cloneVoice?(audioSamples: AudioData[]): Promise<Voice>;
+  
+  // Real-time features
+  detectSpeechEnd?(audio: AudioStream): Promise<boolean>;
+  detectInterruption?(audio: AudioStream): Promise<boolean>;
+}
+
+// Base implementation
+export const baseVoiceService = (config: BaseVoiceServiceConfig): VoiceService => {
+  // Implementation using ElevenLabs API
+};
+```
+
+### Option C: Service-Based Architecture (Recommended)
+Following the same pattern as LLMService, voice should be a first-class service that can be optionally provided to agents.
+
+#### Pattern 1: VoiceService as Optional Parameter
+```typescript
+const agent = createConfigurableAgent({
+  llmService: baseLLMService({ /* config */ }),
+  voiceService: baseVoiceService({ /* config */ }), // Optional, like llmService
+  config: {
+    // ... existing config
+    voice: {
+      enabled: true,  // Enable/disable even if service is provided
+      voiceId: 'eleven-labs-voice-id',
+      autoSpeak: true, // Automatically speak responses?
+      allowInterruption: true,
+    }
+  }
+});
+
+// Agent automatically has voice capabilities if voiceService is provided
+if (agent.canSpeak()) {
+  await agent.speak("Hello!");
+}
+if (agent.canListen()) {
+  await agent.listen();
+}
+```
+
+#### Pattern 2: Services Container
+```typescript
+// All services in one place - future-proof for additional services
+const agent = createConfigurableAgent({
+  services: {
+    llm: baseLLMService({ /* config */ }),
+    voice: baseVoiceService({ /* config */ }),
+    // Future services:
+    // vision: baseVisionService({ /* config */ }),
+    // memory: baseMemoryService({ /* config */ }),
+  },
+  config: {
+    // Agent-specific configuration
+  }
+});
+```
+
+#### Why Service-Based Architecture?
+
+1. **Consistency with LLMService Pattern**
+   ```typescript
+   // All agents use the same pattern
+   const textAgent = createConfigurableAgent({
+     llmService,
+     // No voiceService = text-only agent
+   });
+
+   const voiceAgent = createConfigurableAgent({
+     llmService,
+     voiceService, // Same pattern, just add voice
+   });
+   ```
+
+2. **Provider Flexibility**
+   ```typescript
+   // Different voice services for different agents
+   const customerAgent = createConfigurableAgent({
+     llmService,
+     voiceService: elevenlabsVoiceService({
+       voiceId: 'friendly-support-voice'
+     }),
+   });
+
+   const developerAgent = createConfigurableAgent({
+     llmService,
+     voiceService: azureVoiceService({ // Different provider!
+       voice: 'technical-voice'
+     }),
+   });
+   ```
+
+3. **Graceful Degradation**
+   ```typescript
+   // Agent works with or without voice
+   const agent = createConfigurableAgent({
+     llmService,
+     voiceService, // Might be null/undefined
+     config: {
+       behavior: {
+         fallbackToText: true, // If voice fails, still work
+       }
+     }
+   });
+   ```
+
+### Option D: Voice-Aware Agent Factory
+```typescript
+// Extended factory implementation
+export const createConfigurableAgent = ({
+  config,
+  llmService,
+  voiceService, // New optional parameter
+  toolExecutor,
+  customHandlers,
+}: CreateConfigurableAgentOptions): Agent => {
+  
+  // Base agent creation...
+  
+  // Add voice methods if service provided
+  if (voiceService) {
+    agent.speak = async (text: string, options?: SpeakOptions) => {
+      sendUpdate({ type: 'speaking_start', content: text });
+      
+      const audio = await voiceService.synthesize(text, {
+        voiceId: config.voice?.voiceId,
+        ...options
+      });
+      
+      sendUpdate({ type: 'speaking_complete' });
+      return audio;
+    };
+    
+    agent.listen = async (options?: ListenOptions) => {
+      sendUpdate({ type: 'listening_start' });
+      
+      const transcript = await voiceService.transcribe(/* audio stream */);
+      
+      sendUpdate({ type: 'listening_complete', content: transcript.text });
+      return transcript;
+    };
+  }
+  
+  // Capability checks
+  agent.hasVoice = () => !!voiceService;
+  agent.canSpeak = () => !!voiceService?.synthesize;
+  agent.canListen = () => !!voiceService?.transcribe;
+  
+  return agent;
+};
+```
+
+## Mixed Modality Design
+
+### The ElevenLabs Approach
+ElevenLabs brilliantly allows users to:
+1. Speak naturally for most content
+2. Type while speaking for URLs, technical terms, names
+3. Seamlessly merge both inputs into coherent messages
+
+### Message Structure for Mixed Modality
+```typescript
+interface MultiModalMessage {
+  role: 'user' | 'assistant';
+  content: string;           // The final merged content
+  modality: 'text' | 'voice' | 'mixed';
+  segments?: Array<{
+    type: 'text' | 'voice';
+    content: string;
+    timestamp: number;
+    confidence?: number;    // for voice transcription
+  }>;
+  audio?: {
+    url?: string;          // for playback
+    duration?: number;
+    voiceId?: string;
+  };
+}
+```
+
+### Example Mixed Modality Flow
+1. User starts speaking: "Can you help me debug this error on..."
+2. User types while speaking: "github.com/marckraw/grid"
+3. User continues speaking: "...in the agent flow service?"
+4. System merges: "Can you help me debug this error on github.com/marckraw/grid in the agent flow service?"
+
+## State Management
+
+```typescript
+interface VoiceConversationState {
+  // Voice state
+  isListening: boolean;
+  isSpeaking: boolean;
+  isTyping: boolean;
+  
+  // Current message composition
+  currentComposition: {
+    voiceBuffer: string;      // Current voice transcription
+    textBuffer: string;       // Current typed text
+    mergeStrategy: 'append' | 'replace' | 'smart';
+    lastActivityTime: number;
+  };
+  
+  // Audio state
+  audioQueue: AudioChunk[];
+  currentPlaybackPosition?: number;
+  
+  // Interruption handling
+  wasInterrupted: boolean;
+  interruptionPoint?: number;
+}
+```
+
+## Service Integration Benefits
+
+### Testability
+```typescript
+// Easy to mock for testing
+const mockVoiceService: VoiceService = {
+  synthesize: async (text) => new AudioBuffer(/* mock */),
+  transcribe: async (audio) => ({ text: "mock transcript" }),
+  listVoices: async () => [{ id: 'mock-voice', name: 'Mock Voice' }],
+};
+
+// Test agents without actual voice API calls
+const testAgent = createConfigurableAgent({
+  llmService: mockLLMService,
+  voiceService: mockVoiceService,
+  config: { /* ... */ }
+});
+```
+
+### Progressive Enhancement
+```typescript
+// Start with text-only agent
+let agent = createConfigurableAgent({ 
+  llmService,
+  config: { /* ... */ }
+});
+
+// Later add voice without changing any agent code
+agent = createConfigurableAgent({ 
+  llmService,
+  voiceService: baseVoiceService({ /* ... */ }), // Just add this!
+  config: { /* ... */ }
+});
+```
+
+### Automatic Voice Integration in Agent Lifecycle
+```typescript
+// In the agent's act method
+async act(input: AgentActInput) {
+  // Process with LLM as usual
+  const response = await this.llmService.runLLM(/* ... */);
+  
+  // Automatically speak if voice is enabled and configured
+  if (this.voiceService && this.config.voice?.autoSpeak) {
+    try {
+      await this.voiceService.synthesize(response.content, {
+        voiceId: this.config.voice.voiceId,
+        stream: true, // Stream audio while still generating
+      });
+    } catch (error) {
+      // Log but don't fail the response
+      console.warn('Voice synthesis failed:', error);
+    }
+  }
+  
+  return response;
+}
+```
+
+### Mixed Modality with Service Pattern
+```typescript
+// The conversation loop can detect and use voice capabilities
+const conversation = createConversationLoop({
+  agent, // Agent might or might not have voice
+  progressHandlers: {
+    onProgress: async (update) => {
+      // Handle both text and voice updates
+      if (update.type === 'voice_input') {
+        // Show voice visualization
+      }
+    }
+  },
+  modality: {
+    allowMixed: true,
+    preferred: agent.hasVoice() ? 'voice' : 'text',
+  }
+});
+
+// The loop automatically enables voice UI if available
+if (agent.hasVoice()) {
+  conversation.enableVoiceInput();
+}
+```
+
+### Configuration Inheritance
+```typescript
+// Global voice defaults
+const voiceDefaults = {
+  provider: 'elevenlabs',
+  apiKey: process.env.ELEVENLABS_API_KEY,
+  defaultSettings: {
+    stability: 0.75,
+    similarity_boost: 0.75,
+  }
+};
+
+// Create reusable voice service
+const sharedVoiceService = baseVoiceService(voiceDefaults);
+
+// Multiple agents can share the same voice service
+const agent1 = createConfigurableAgent({
+  llmService,
+  voiceService: sharedVoiceService,
+  config: {
+    voice: { voiceId: 'voice-1' } // Agent-specific voice
+  }
+});
+
+const agent2 = createConfigurableAgent({
+  llmService,
+  voiceService: sharedVoiceService,
+  config: {
+    voice: { voiceId: 'voice-2' } // Different voice, same service
+  }
+});
+```
+
+## Implementation Concepts
+
+### Voice-Enabled Conversation Loop
+```typescript
+const voiceConversation = createVoiceConversation({
+  agent,
+  voiceService: elevenlabsVoiceService,
+  voice: {
+    id: "eleven-labs-voice-id",
+    settings: {
+      stability: 0.7,
+      similarity_boost: 0.8,
+      style: 0.5,
+    }
+  },
+  stt: {
+    provider: "whisper", // or browser native
+    language: "en",
+  },
+  features: {
+    mixedModality: true,
+    allowInterruption: true,
+    autoDetectSpeechEnd: true,
+  }
+});
+
+// Start real-time conversation
+voiceConversation.start();
+
+// Events
+voiceConversation.on('userSpeaking', (transcript) => { });
+voiceConversation.on('userTyping', (text) => { });
+voiceConversation.on('agentSpeaking', (text) => { });
+voiceConversation.on('interrupted', (at) => { });
+```
+
+### Progress Updates for Voice
+```typescript
+// Enhanced progress updates
+sendUpdate({
+  type: 'listening',
+  content: 'Listening...',
+  audioLevel: 0.7,        // Current audio input level
+  voiceActivity: true,    // Is voice detected
+});
+
+sendUpdate({
+  type: 'transcribing',
+  content: 'Converting speech to text...',
+  partial: 'Can you help me with...',  // Partial transcription
+});
+
+sendUpdate({
+  type: 'speaking', 
+  content: 'Let me help you with that...',
+  progress: 0.45,         // How much has been spoken
+  wordTimings: [...],     // For visual highlighting
+  audioUrl: 'https://...', // For playback control
+});
+```
+
+## Smart Merging Strategies
+
+### Temporal Merging
+- Insert typed text at the current speech position
+- Maintain chronological order of inputs
+
+### Contextual Merging
+- Use AI to understand optimal placement
+- Consider grammar and sentence structure
+
+### Example Scenarios
+```typescript
+// Scenario 1: URL insertion
+Voice: "Check out the documentation at"
+Type: "docs.grid.ai/voice"
+Voice: "for more details"
+Result: "Check out the documentation at docs.grid.ai/voice for more details"
+
+// Scenario 2: Technical terms
+Voice: "The error is in the"
+Type: "createConfigurableAgent"
+Voice: "factory function"
+Result: "The error is in the createConfigurableAgent factory function"
+
+// Scenario 3: Mixed language
+Voice: "The German word"
+Type: "Schadenfreude"
+Voice: "means joy from others' misfortune"
+Result: "The German word Schadenfreude means joy from others' misfortune"
+```
+
+## Key Features & Possibilities
+
+### 1. Accessibility First
+- Voice for users with typing difficulties
+- Text for quiet environments or hearing impairments
+- Perfect hybrid for all users
+
+### 2. Enhanced Tool Calling
+```typescript
+// Voice + Text for complex tool calls
+Voice: "Calculate twenty-three times"
+Type: "47.5"
+Voice: "and round to nearest integer"
+
+// Agent understands: calculator({ expression: "23 * 47.5", round: true })
+```
+
+### 3. Emotional Context
+- Detect emotion/tone in voice
+- Adjust agent response style
+- More empathetic interactions
+
+### 4. Multi-language Support
+- Switch languages mid-conversation
+- Translate in real-time
+- Preserve voice characteristics across languages
+
+### 5. Voice Memory
+- Remember how things were said
+- Recognize speech patterns
+- Personalize responses based on voice data
+
+## Technical Considerations
+
+### Performance
+- **Latency**: Stream audio while generating
+- **Buffering**: Handle network fluctuations
+- **Caching**: Common phrases, voice profiles
+- **Compression**: Optimize audio data transfer
+
+### Privacy & Security
+- **Local vs Cloud**: Where does processing happen?
+- **Data Storage**: Voice samples and transcriptions
+- **User Consent**: Clear privacy policies
+- **Encryption**: Secure audio transmission
+
+### Error Handling
+```typescript
+// Graceful degradation
+if (voiceService.isAvailable()) {
+  await agent.speak(response);
+} else {
+  // Fallback to text
+  display(response);
+}
+
+// Network resilience
+try {
+  const audio = await voiceService.synthesize(text);
+} catch (error) {
+  if (error.code === 'NETWORK_ERROR') {
+    // Queue for later or use cached version
+  }
+}
+```
+
+### Browser Compatibility
+- WebRTC for real-time streaming
+- Web Audio API for playback control
+- MediaRecorder API for voice input
+- Fallbacks for older browsers
+
+## Future Enhancements
+
+### 1. Voice Cloning
+- Users can create custom voices
+- Brand-specific agent voices
+- Personalized interactions
+
+### 2. Ambient Sound Integration
+- Background music for context
+- Sound effects for actions
+- Spatial audio for immersion
+
+### 3. Voice-First Workflows
+```typescript
+const phoneAgent = createPhoneAgent({
+  agent: customerServiceAgent,
+  phoneNumber: '+1-555-GRID-AI',
+  voiceService: elevenlabsVoiceService,
+});
+```
+
+### 4. Real-time Translation
+- Speak in one language
+- Agent responds in another
+- Preserve voice characteristics
+
+## Implementation Roadmap
+
+### Phase 1: Core Voice Service ✅ COMPLETED
+- [x] Define VoiceService interface
+- [x] Create base voice service utilities
+- [x] Implement ElevenLabs adapter
+- [x] Basic TTS functionality
+- [x] Basic STT integration (using ElevenLabs Scribe v1)
+- [x] Error handling and voice-specific exceptions
+
+### Phase 2: Agent Integration ✅ COMPLETED
+- [x] Add voice methods to agents (speak, listen, canSpeak, canListen)
+- [x] Implement voice service as optional parameter in agent factory
+- [x] Create voice-enabled conversation loop
+- [x] Voice configuration in agent config
+
+### Phase 3: Terminal Voice Experience ✅ COMPLETED
+- [x] Terminal audio I/O service (recording and playback)
+- [x] Cross-platform audio support (macOS, Linux, Windows)
+- [x] Voice conversation command with push-to-talk (SPACE key)
+- [x] Visual indicators for voice states (listening, speaking, processing)
+- [x] Voice selection from ElevenLabs voices
+- [x] Voice commands (/voice on|off|list)
+- [x] Mixed modality - type while assistant speaks
+
+### Phase 4: Enhanced Voice Features (PLANNED)
+- [ ] Real-time transcription display (show text as user speaks)
+- [ ] Voice interruption support (stop assistant mid-speech)
+- [ ] Audio level meter for microphone input
+- [ ] Voice activity detection (VAD) for automatic recording
+- [ ] Voice command shortcuts ("clear", "repeat", "slower")
+- [ ] Multiple language support with auto-detection
+- [ ] Voice-specific conversation memory and context
+- [ ] Seamless switching between voice and text modes
+
+### Phase 5: Voice-Enabled Workflows (PLANNED)
+- [ ] Voice-driven development features
+  - [ ] Code dictation with smart formatting
+  - [ ] Voice commands for dev tasks ("create React component")
+  - [ ] Voice-based code review ("explain this function")
+- [ ] Ambient mode with wake word detection
+- [ ] Background transcription of meetings
+- [ ] Multi-agent voice conversations
+- [ ] Voice-based agent orchestration
+
+### Phase 6: Advanced Integrations (FUTURE)
+- [ ] Voice + Tools integration
+  - [ ] Execute tools via voice commands
+  - [ ] Voice confirmation for dangerous operations
+  - [ ] Audio feedback for tool execution
+- [ ] Voice analytics and insights
+  - [ ] Sentiment analysis from voice tone
+  - [ ] Speaking pace and clarity feedback
+  - [ ] Conversation metrics
+- [ ] Accessibility features
+  - [ ] Screen reader integration
+  - [ ] Voice-guided navigation
+  - [ ] Customizable voice shortcuts
+
+### Phase 7: Production Features (FUTURE)
+- [ ] Performance optimization
+  - [ ] Local voice processing options (Whisper)
+  - [ ] Caching for common responses
+  - [ ] Audio streaming optimization
+- [ ] Security & Privacy
+  - [ ] Voice authentication
+  - [ ] Encrypted voice data
+  - [ ] Local-only mode option
+- [ ] Platform expansion
+  - [ ] Web voice interface
+  - [ ] Mobile app support
+  - [ ] Voice API endpoints
+
+## What We Accomplished
+
+### 🎯 Core Achievements
+1. **Full Voice Integration**: Successfully integrated ElevenLabs for both TTS and STT in Grid
+2. **Service-Based Architecture**: Voice is now a first-class service like LLMService
+3. **Agent Enhancement**: Agents can now speak and listen when provided with a voice service
+4. **Terminal Experience**: Complete voice conversation in the CLI with visual feedback
+5. **Mixed Modality**: Users can type and speak in the same conversation
+
+### 🛠️ Technical Implementation
+- **Voice Types**: Interface-agnostic types for voice operations
+- **Base Voice Service**: Reusable utilities for voice service implementations
+- **ElevenLabs Service**: Full implementation with streaming support
+- **Terminal Audio**: Cross-platform audio I/O using sox
+- **Voice Progress**: Beautiful ASCII animations for voice states
+- **Conversation Integration**: Seamless voice integration in conversation loops
+
+### 📦 Key Files Created
+- `packages/core/src/types/voice.types.ts` - Voice type definitions
+- `packages/core/src/services/base.voice.service.ts` - Base utilities
+- `packages/core/src/services/ElevenLabsService/elevenlabs.voice.service.ts` - ElevenLabs implementation
+- `apps/terminal-agent/src/services/terminal-voice.service.ts` - Terminal audio handling
+- `apps/terminal-agent/src/commands/voice-conversation.ts` - Voice conversation command
+- `apps/terminal-agent/src/utils/voice-progress.ts` - Visual indicators
+
+### 🚀 Usage
+```bash
+# Set your API key
+export ELEVENLABS_API_KEY=your-api-key
+
+# Install sox for audio recording
+brew install sox  # macOS
+# or
+sudo apt-get install sox libsox-fmt-all  # Linux
+
+# Run the terminal agent
+pnpm --filter terminal-agent dev
+
+# Select "🎙️ Voice Conversation" from menu
+# Press SPACE to talk, or type normally
+```
+
+## Example Use Cases
+
+### Customer Support
+```typescript
+const supportAgent = createVoiceEnabledAgent({
+  // ... config
+  voice: {
+    personality: 'friendly',
+    pace: 'moderate',
+    emphasis: 'empathetic',
+  }
+});
+```
+
+### Educational Assistant
+```typescript
+const tutorAgent = createVoiceEnabledAgent({
+  // ... config
+  voice: {
+    personality: 'encouraging',
+    pace: 'slow',
+    pronunciation: 'clear',
+  }
+});
+```
+
+### Coding Assistant
+```typescript
+const codingAgent = createVoiceEnabledAgent({
+  // ... config
+  voice: {
+    personality: 'professional',
+    pace: 'dynamic', // Faster for code, slower for explanations
+    terminology: 'technical',
+  }
+});
+```
+
+## Conclusion
+
+Integrating ElevenLabs voice capabilities into Grid would transform agents from text-based assistants into truly conversational partners. The mixed modality approach, inspired by ElevenLabs' own interface, provides the best of both worlds - natural speech for fluid communication and text input for precision.
+
+This integration would make Grid agents more:
+- **Accessible**: Supporting users regardless of their preferred input method
+- **Natural**: Enabling human-like conversations with emotion and context
+- **Powerful**: Combining the strengths of voice and text interactions
+- **Flexible**: Adapting to different use cases and environments
+
+The future of agent interaction is multi-modal, and Grid is perfectly positioned to lead this evolution.

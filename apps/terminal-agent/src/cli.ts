@@ -15,6 +15,7 @@ import {
   viewEnvironment,
   deepSearch,
   exploreWorkflowExamples,
+  exploreVoiceConversation,
 } from "./commands/index.js";
 
 const menuOptions: MenuOption[] = [
@@ -22,6 +23,11 @@ const menuOptions: MenuOption[] = [
     value: "agent-conversation",
     label: "💬 Agent Conversation",
     hint: "Interactive conversation with tools",
+  },
+  {
+    value: "voice-conversation",
+    label: "🎙️ Voice Conversation",
+    hint: "Voice-enabled conversation with speech-to-text",
   },
   {
     value: "deep-search",
@@ -53,6 +59,7 @@ const menuOptions: MenuOption[] = [
 
 const commandHandlers: Record<string, () => Promise<void>> = {
   "agent-conversation": exploreAgentConversation,
+  "voice-conversation": exploreVoiceConversation,
   "test-agents": exploreTestAgents,
   "deep-search": deepSearch,
   "workflow-examples": exploreWorkflowExamples,

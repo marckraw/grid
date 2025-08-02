@@ -14,7 +14,20 @@ export type {
   ProgressMessageType,
   LLMService,
   LLMServiceOptions,
+  VoiceService,
+  VoiceConfig,
+  VoiceOptions,
+  TranscribeOptions,
+  AudioResult,
+  AudioInput,
+  TranscriptionResult,
+  Voice,
+  AudioChunk,
+  AudioFormat,
+  AudioData,
+  VoiceProgressEvent,
 } from "./types/index.js";
+export { VoiceError } from "./types/index.js";
 
 // Export tool types
 export type { Tool, ToolResult } from "./types/tool.types.js";
@@ -61,6 +74,12 @@ export type {
 
 export { baseLLMService } from "./services/base.llm.service.js";
 export type { BaseLLMServiceConfig } from "./services/base.llm.service.js";
+
+export { baseVoiceService } from "./services/base.voice.service.js";
+export type { BaseVoiceServiceConfig, VoiceServiceUtils } from "./services/base.voice.service.js";
+
+export { elevenlabsVoiceService } from "./services/ElevenLabsService/elevenlabs.voice.service.js";
+export type { ElevenLabsVoiceServiceConfig } from "./services/ElevenLabsService/elevenlabs.voice.service.js";
 
 export {
   createLangfuseService,

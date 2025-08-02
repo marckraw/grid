@@ -319,6 +319,77 @@ async function doResearch() {
 }
 ```
 
+## Voice-Enabled Agent (Optional)
+
+Add voice capabilities to make your agent speak:
+
+```typescript
+import { 
+  createConfigurableAgent,
+  baseLLMService,
+  createToolExecutor,
+  elevenlabsVoiceService
+} from "@mrck-labs/grid-core";
+
+// Create voice service
+const voiceService = elevenlabsVoiceService({
+  apiKey: process.env.ELEVENLABS_API_KEY,
+});
+
+// Create voice-enabled agent
+const voiceAssistant = createConfigurableAgent({
+  llmService: baseLLMService({ langfuse: { enabled: false } }),
+  toolExecutor: createToolExecutor(),
+  voiceService, // This enables voice!
+  config: {
+    id: "voice-assistant",
+    type: "general",
+    version: "1.0.0",
+    prompts: {
+      system: "You are a friendly voice assistant. Keep responses brief and conversational."
+    },
+    metadata: {
+      id: "voice-assistant",
+      type: "general",
+      name: "Voice Assistant",
+      description: "An agent that can speak",
+      capabilities: ["general", "voice"],
+      version: "1.0.0"
+    },
+    voice: {
+      enabled: true,
+      autoSpeak: true, // Automatically speak responses
+      voiceId: "21m00Tcm4TlvDq8ikWAM", // Rachel voice
+    },
+    tools: {
+      builtin: [],
+      custom: [],
+      mcp: []
+    },
+    behavior: {
+      maxRetries: 3,
+      responseFormat: "text"
+    }
+  }
+});
+
+// Have a voice conversation
+async function voiceDemo() {
+  // The response will be automatically spoken
+  const response = await voiceAssistant.act("Hello! Tell me a short joke.");
+  console.log("Assistant said:", response.content);
+  
+  // Or manually control speech
+  if (voiceAssistant.hasVoice()) {
+    await voiceAssistant.speak("Thanks for trying Grid with voice!");
+  }
+}
+
+voiceDemo();
+```
+
+For terminal voice interactions, see the [Voice Integration Guide](/docs/guides/voice-integration).
+
 ## What's Next?
 
 Congratulations! You've created your first Grid agent. To dive deeper:
@@ -326,4 +397,5 @@ Congratulations! You've created your first Grid agent. To dive deeper:
 - [Build a more complex agent](/docs/getting-started/first-agent)
 - [Learn about the core concepts](/docs/core-concepts/agents)
 - [Explore pre-built agents](/docs/getting-started/pre-built-agents)
+- [Add voice capabilities](/docs/guides/voice-integration)
 - [Set up observability](/docs/core-concepts/observability)

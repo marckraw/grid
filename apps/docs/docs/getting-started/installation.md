@@ -131,6 +131,44 @@ console.log("Grid is installed and ready!");
 console.log("Agent created:", agent.id);
 ```
 
+## Voice Dependencies (Optional)
+
+If you plan to use voice features, you'll need additional setup:
+
+### ElevenLabs API Key
+```bash
+export ELEVENLABS_API_KEY="your-elevenlabs-api-key"
+```
+
+Sign up at [elevenlabs.io](https://elevenlabs.io) to get an API key.
+
+### Audio Tools for Terminal Voice
+
+For terminal-based voice interactions, install system audio tools:
+
+#### macOS
+```bash
+brew install sox
+```
+
+#### Linux (Ubuntu/Debian)
+```bash
+sudo apt-get update
+sudo apt-get install sox libsox-fmt-all
+```
+
+#### Windows
+Download Sox from [sox.sourceforge.net](http://sox.sourceforge.net) and add it to your PATH.
+
+### Verify Audio Setup
+```bash
+# Test recording (creates test.wav)
+sox -d test.wav trim 0 2
+
+# Test playback
+sox test.wav -d
+```
+
 ## Environment Variables
 
 For production use, create a `.env` file in your project root:
@@ -143,6 +181,9 @@ ANTHROPIC_API_KEY=your-anthropic-key
 # Default Model Configuration
 DEFAULT_MODEL=gpt-4
 DEFAULT_PROVIDER=openai
+
+# Voice Provider Keys (Optional)
+ELEVENLABS_API_KEY=your-elevenlabs-key
 
 # Observability (Optional)
 LANGFUSE_PUBLIC_KEY=your-langfuse-public-key

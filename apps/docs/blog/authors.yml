@@ -23,3 +23,9 @@ slorber:
     linkedin: sebastienlorber
     github: slorber
     newsletter: https://thisweekinreact.com
+
+grid-team:
+  name: Grid Team
+  title: The team behind Grid
+  url: https://github.com/mrck-labs/grid
+  image_url: https://github.com/mrck-labs.png

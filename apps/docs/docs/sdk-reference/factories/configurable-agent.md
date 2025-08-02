@@ -31,6 +31,7 @@ function createConfigurableAgent(options: CreateConfigurableAgentOptions): Agent
   - `toolExecutor`: ToolExecutor instance (created with `createToolExecutor`)
   - `config`: Agent configuration object
 - **Optional Properties**:
+  - `voiceService`: VoiceService instance (enables voice capabilities)
   - `customHandlers`: Lifecycle hooks for customizing behavior
 
 ### config
@@ -61,6 +62,13 @@ function createConfigurableAgent(options: CreateConfigurableAgentOptions): Agent
   - `orchestration`: Orchestration settings
     - `mode`: "autonomous" | "guided" | "hybrid"
     - `maxIterations`: Max iterations for autonomous mode
+  - `voice`: Voice configuration (requires voiceService)
+    - `enabled`: Enable voice features
+    - `voiceId`: Default voice ID
+    - `autoSpeak`: Automatically speak responses
+    - `interruptible`: Allow speech interruption
+    - `autoListen`: Automatically listen after speaking
+    - `mixedModality`: Mixed voice/text configuration
   - `customConfig`: Additional custom configuration
 
 ### customHandlers
@@ -82,6 +90,14 @@ The created agent has these properties and methods:
 - `availableTools`: Array of tool names
 - `getMetadata()`: Get agent metadata
 - `act(input: AgentActInput)`: Execute agent with input
+
+### Voice Methods (when voiceService is provided)
+
+- `hasVoice()`: Check if voice is available
+- `canSpeak()`: Check if agent can synthesize speech
+- `canListen()`: Check if agent can transcribe speech
+- `speak(text: string, options?: VoiceOptions)`: Synthesize speech
+- `listen(options?: ListenOptions)`: Not implemented - throws error requiring application-level audio input
 
 ## Lifecycle Hooks
 
@@ -477,6 +493,106 @@ const autonomousAgent = createConfigurableAgent({
     }
   }
 });
+```
+
+### Voice-Enabled Agent
+
+```typescript
+import { elevenlabsVoiceService } from "@mrck-labs/grid-core";
+
+// Create voice service
+const voiceService = elevenlabsVoiceService({
+  apiKey: process.env.ELEVENLABS_API_KEY,
+  defaultVoiceId: "21m00Tcm4TlvDq8ikWAM", // Rachel voice
+});
+
+// Create voice-enabled agent
+const voiceAgent = createConfigurableAgent({
+  llmService,
+  toolExecutor,
+  voiceService, // This enables voice capabilities!
+  config: {
+    id: "voice-assistant",
+    type: "general",
+    version: "1.0.0",
+    prompts: {
+      system: `You are a friendly voice assistant. Guidelines:
+      - Keep responses brief and conversational
+      - Use natural speech patterns
+      - Avoid technical jargon unless necessary
+      - Add appropriate pauses with commas
+      - Be warm and personable`
+    },
+    metadata: {
+      id: "voice-assistant",
+      type: "general",
+      name: "Voice Assistant",
+      description: "Natural language voice assistant",
+      capabilities: ["general", "conversation", "voice"],
+      version: "1.0.0"
+    },
+    voice: {
+      enabled: true,
+      voiceId: "21m00Tcm4TlvDq8ikWAM",
+      autoSpeak: true, // Automatically speak responses
+      interruptible: true,
+      stability: 0.75,
+      similarityBoost: 0.75,
+      style: 0.5,
+      useSpeakerBoost: true
+    },
+    behavior: {
+      maxRetries: 2,
+      responseFormat: "text",
+      temperature: 0.8 // Slightly more creative for conversation
+    }
+  }
+});
+
+// Use voice features
+async function voiceInteraction() {
+  // Check voice availability
+  if (!voiceAgent.hasVoice()) {
+    console.log("Voice not available");
+    return;
+  }
+  
+  // Manual speech
+  await voiceAgent.speak("Hello! I'm your voice assistant.");
+  
+  // Note: listen() is not implemented at agent level
+  // You need to handle audio recording in your application
+  // Example with terminal voice service:
+  if (voiceAgent.canListen()) {
+    const terminalVoice = new TerminalVoiceService();
+    const recording = await terminalVoice.startRecording();
+    const audioInput = await recording.stop();
+    
+    // Use voice service directly for transcription
+    const transcript = await voiceService.transcribe(audioInput);
+    console.log("User said:", transcript.text);
+    
+    // Process with automatic speech
+    const response = await voiceAgent.act(transcript.text);
+    // Response is automatically spoken due to autoSpeak: true
+  }
+  
+  // Regular text input with voice output
+  const response = await voiceAgent.act("Tell me a fun fact");
+  // Response is spoken automatically
+  console.log("Assistant said:", response.content);
+}
+
+// Handle voice errors gracefully
+try {
+  await voiceInteraction();
+} catch (error) {
+  if (error.code === "VOICE_NOT_AVAILABLE") {
+    // Fall back to text-only mode
+    const response = await voiceAgent.act("Hello");
+    console.log(response.content);
+  }
+}
 ```
 
 ## Best Practices
