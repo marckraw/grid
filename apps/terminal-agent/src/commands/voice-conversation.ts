@@ -79,7 +79,9 @@ export async function exploreVoiceConversation(): Promise<void> {
   // Check if voice service is available
   const voiceAvailable = await voiceService.isAvailable();
   if (!voiceAvailable) {
-    p.log.error("ElevenLabs service is not available. Please check your API key.");
+    p.log.error(
+      "ElevenLabs service is not available. Please check your API key."
+    );
     return;
   }
 
@@ -94,7 +96,9 @@ export async function exploreVoiceConversation(): Promise<void> {
   ]);
 
   if (!canRecord) {
-    p.log.warning("Microphone recording not available. Install 'sox' for voice input.");
+    p.log.warning(
+      "Microphone recording not available. Install 'sox' for voice input."
+    );
     p.log.info("You can still use text input and hear voice responses.");
   }
 
@@ -109,7 +113,7 @@ export async function exploreVoiceConversation(): Promise<void> {
     if (voices.length > 0) {
       const voiceChoice = await p.select({
         message: "Select a voice for the assistant:",
-        options: voices.slice(0, 10).map(v => ({
+        options: voices.slice(0, 10).map((v) => ({
           value: v,
           label: `${v.name} ${v.labels?.accent ? `(${v.labels.accent})` : ""}`,
         })),
@@ -262,7 +266,12 @@ When speaking, use a conversational tone as if talking to someone in person.`,
         console.log(pc.green("\n🤖 Assistant:"), response.content);
 
         // Speak the response if voice is enabled
-        if (agent.canSpeak && agent.canSpeak() && voiceEnabled && selectedVoice) {
+        if (
+          agent.canSpeak &&
+          agent.canSpeak() &&
+          voiceEnabled &&
+          selectedVoice
+        ) {
           try {
             voiceProgress.setState("speaking");
             const audio = await agent.speak!(response.content, {
@@ -289,10 +298,19 @@ When speaking, use a conversational tone as if talking to someone in person.`,
   let isRecording = false;
   let recordingControl: any = null;
   let voiceEnabled = canPlay; // Track voice output state
+  let voiceMessageReceived = false;
+  let voiceMessage = "";
+  let isTyping = false; // Track if user has started typing
 
   // Setup keyboard handling for voice
   const handleKeypress = async (str: string, key: any) => {
-    if (key && key.name === "space" && canRecord) {
+    // Track any non-space character as typing
+    if (str && str !== " " && !key.ctrl && !key.meta) {
+      isTyping = true;
+    }
+    
+    // Only trigger voice on space if not typing
+    if (key && key.name === "space" && canRecord && !isTyping) {
       if (!isRecording) {
         // Start recording
         try {
@@ -312,21 +330,13 @@ When speaking, use a conversational tone as if talking to someone in person.`,
 
           // Transcribe the audio
           const transcription = await voiceService.transcribe(audioInput);
-          
+
           if (transcription.text) {
             voiceProgress.showSuccess(`Transcribed: "${transcription.text}"`);
-            
-            // Send the transcribed text to the agent
-            const spinner = p.spinner();
-            spinner.start("Processing...");
 
-            const result = await conversation.sendMessage(transcription.text);
-
-            spinner.stop();
-
-            if (result.error) {
-              p.log.error(`Failed to process message: ${result.error.message}`);
-            }
+            // Set voice message and flag to be processed by main loop
+            voiceMessage = transcription.text;
+            voiceMessageReceived = true;
           } else {
             voiceProgress.showError("No speech detected");
           }
@@ -367,39 +377,100 @@ When speaking, use a conversational tone as if talking to someone in person.`,
     }
   }
 
+  const waitForInput = async (): Promise<string | symbol> => {
+    // Reset typing flag for new input
+    isTyping = false;
+    
+    return new Promise(async (resolve) => {
+      // Check if we already have a voice message
+      if (voiceMessageReceived) {
+        const msg = voiceMessage;
+        voiceMessageReceived = false;
+        voiceMessage = "";
+        resolve(msg);
+        return;
+      }
+
+      // Set up voice message handler
+      const checkVoiceMessage = () => {
+        if (voiceMessageReceived) {
+          const msg = voiceMessage;
+          voiceMessageReceived = false;
+          voiceMessage = "";
+          resolve(msg);
+          return true;
+        }
+        return false;
+      };
+
+      // Poll for voice messages while waiting for text input
+      const voiceCheckInterval = setInterval(() => {
+        if (checkVoiceMessage()) {
+          clearInterval(voiceCheckInterval);
+        }
+      }, 100);
+
+      // Get text input
+      try {
+        const textInput = await textWithCancel(
+          pc.blue("You (type or press SPACE for voice): ")
+        );
+        clearInterval(voiceCheckInterval);
+
+        // Final check for voice message before resolving text
+        if (!checkVoiceMessage()) {
+          resolve(textInput);
+        }
+      } catch (error) {
+        clearInterval(voiceCheckInterval);
+        // If text input was cancelled, check for voice message one more time
+        if (checkVoiceMessage()) {
+          return;
+        }
+        // Otherwise, treat as cancellation
+        resolve(Symbol.for("cancel"));
+      }
+    });
+  };
+
   while (continueChat && conversation.isActive()) {
-    // Get user input (text)
-    const message = await textWithCancel(pc.blue("You (type): "));
+    // Wait for either text input or voice input
+    const message = await waitForInput();
 
     if (isCancel(message)) {
       continueChat = false;
       break;
     }
 
+    const messageStr = message as string;
+
     // Check for exit commands
-    if (message.toLowerCase() === "exit" || message.toLowerCase() === "quit") {
+    if (
+      messageStr.toLowerCase() === "exit" ||
+      messageStr.toLowerCase() === "quit"
+    ) {
       continueChat = false;
       break;
     }
 
     // Special voice commands
-    if (message.toLowerCase() === "/voice off") {
+    if (messageStr.toLowerCase() === "/voice off") {
       voiceEnabled = false;
       p.log.info("Voice output disabled");
       continue;
     }
 
-    if (message.toLowerCase() === "/voice on") {
+    if (messageStr.toLowerCase() === "/voice on") {
       voiceEnabled = true;
       p.log.info("Voice output enabled");
       continue;
     }
 
-    if (message.toLowerCase() === "/voice list") {
+    if (messageStr.toLowerCase() === "/voice list") {
       try {
         const voices = await voiceService.listVoices();
         p.log.info("Available voices:");
-        voices.slice(0, 20).forEach(v => {
+        voices.slice(0, 20).forEach((v) => {
           console.log(`  - ${v.name} (${v.id}) ${v.labels?.accent || ""}`);
         });
       } catch (error) {
@@ -412,7 +483,7 @@ When speaking, use a conversational tone as if talking to someone in person.`,
     const spinner = p.spinner();
     spinner.start("Thinking...");
 
-    const result = await conversation.sendMessage(message);
+    const result = await conversation.sendMessage(messageStr);
 
     spinner.stop();
 
