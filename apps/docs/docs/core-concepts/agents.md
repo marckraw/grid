@@ -405,32 +405,122 @@ const result = await loop.sendMessage(
 );
 ```
 
+## Voice Capabilities
+
+Agents can be enhanced with voice capabilities by providing a voice service:
+
+```typescript
+import { elevenlabsVoiceService } from "@mrck-labs/grid-core";
+
+// Create voice service
+const voiceService = elevenlabsVoiceService({
+  apiKey: process.env.ELEVENLABS_API_KEY,
+  defaultVoiceId: "21m00Tcm4TlvDq8ikWAM", // Rachel voice
+});
+
+// Create voice-enabled agent
+const voiceAgent = createConfigurableAgent({
+  llmService,
+  toolExecutor,
+  voiceService, // This enables voice capabilities!
+  config: {
+    id: "voice-assistant",
+    prompts: {
+      system: "You are a helpful voice assistant. Keep responses concise for speech."
+    },
+    voice: {
+      enabled: true,
+      autoSpeak: true, // Automatically speak responses
+      interruptible: true, // Allow interruption mid-speech
+    }
+  }
+});
+```
+
+### Voice Methods
+
+Voice-enabled agents gain additional methods:
+
+```typescript
+// Check voice availability
+if (voiceAgent.hasVoice()) {
+  // Speak text
+  await voiceAgent.speak("Hello! How can I help you?");
+  
+  // Note: listen() requires application-level audio input
+  // The base agent's listen() method throws an error
+  // Use terminal voice service or web audio API for actual recording
+  // Example with terminal voice:
+  // const terminalVoice = new TerminalVoiceService();
+  // const recording = await terminalVoice.startRecording();
+  // const audioInput = await recording.stop();
+  // const transcript = await voiceService.transcribe(audioInput);
+}
+
+// Voice is integrated into normal act flow
+const response = await voiceAgent.act({
+  messages: [{ role: "user", content: "What's the weather?" }]
+});
+// Response is automatically spoken if autoSpeak is true
+```
+
+### Voice Configuration
+
+Configure voice behavior at the agent level:
+
+```typescript
+const config = {
+  voice: {
+    enabled: true,              // Enable voice features
+    voiceId: "voice-id",       // Default voice
+    autoSpeak: true,           // Auto-speak responses
+    interruptible: true,       // Allow interruption
+    autoListen: false,         // Auto-listen after speaking
+    mixedModality: {           // Mixed voice/text config
+      enabled: true,
+      mergeStrategy: 'temporal'
+    }
+  }
+};
+```
+
 ## Best Practices
 
 ### 1. Clear System Prompts
 - Be specific about the agent's role
 - Define boundaries and limitations
 - Include examples when helpful
+- For voice agents, optimize for spoken language
 
 ### 2. Tool Selection
 - Only include necessary tools
 - Ensure tool descriptions are clear
 - Test tool combinations thoroughly
+- Consider voice-friendly tool responses
 
 ### 3. Error Handling
 - Always implement error handlers
 - Provide meaningful error messages
 - Log errors for debugging
+- Gracefully fall back from voice to text
 
 ### 4. Performance
 - Use appropriate models for tasks
 - Cache responses when possible
 - Monitor token usage
+- Use voice streaming for faster responses
 
 ### 5. Security
 - Validate all inputs
 - Limit tool permissions
 - Never expose sensitive data
+- Secure voice API keys
+
+### 6. Voice Optimization
+- Keep responses concise for speech
+- Use natural, conversational language
+- Test with different voices
+- Handle audio failures gracefully
 
 ## Next Steps
 

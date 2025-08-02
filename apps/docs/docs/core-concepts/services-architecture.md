@@ -21,10 +21,10 @@ Grid organizes services into three distinct layers:
 │      (ConversationManager)              │
 └─────────────────────────────────────────┘
                     ↑
-┌─────────────────────────────────────────┐
-│         Atomic Level Services           │
-│ (History, Context, ToolExecutor, LLM)   │
-└─────────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│            Atomic Level Services             │
+│ (History, Context, ToolExecutor, LLM, Voice) │
+└──────────────────────────────────────────────┘
 ```
 
 ## Atomic Level Services
@@ -178,6 +178,68 @@ Features:
 - Error boundaries
 - Tool discovery
 - Result formatting
+
+### baseVoiceService
+
+Provides voice capabilities for agents using the closure pattern:
+
+```typescript
+export const baseVoiceService = (implementation: VoiceServiceImplementation): VoiceService => {
+  // Private state
+  let defaultVoice: Voice | null = null;
+  const voiceCache = new Map<string, Voice>();
+  
+  // Private helper functions
+  const validateVoiceId = async (voiceId: string) => {
+    if (!voiceCache.has(voiceId)) {
+      const voice = await implementation.getVoice?.(voiceId);
+      if (voice) voiceCache.set(voiceId, voice);
+    }
+    return voiceCache.get(voiceId);
+  };
+  
+  // Public API
+  return {
+    synthesize: async (text: string, options?: VoiceOptions) => {
+      const voiceId = options?.voiceId || defaultVoice?.id;
+      if (!voiceId) throw new Error("No voice specified");
+      
+      return implementation.synthesize(text, options);
+    },
+    
+    transcribe: async (audio: AudioData) => {
+      return implementation.transcribe(audio);
+    },
+    
+    streamSynthesize: implementation.streamSynthesize || async function* (text, options) {
+      // Fallback to non-streaming
+      const result = await implementation.synthesize(text, options);
+      yield result.audio;
+    },
+    
+    listVoices: async () => {
+      const voices = await implementation.listVoices();
+      // Cache voices for quick lookup
+      voices.forEach(v => voiceCache.set(v.id, v));
+      return voices;
+    },
+    
+    getDefaultVoice: () => defaultVoice,
+    
+    setDefaultVoice: (voiceId: string) => {
+      const voice = voiceCache.get(voiceId);
+      if (voice) defaultVoice = voice;
+    },
+  };
+};
+```
+
+Features:
+- Text-to-speech synthesis
+- Speech-to-text transcription
+- Voice management and caching
+- Streaming support
+- Provider abstraction
 
 ## Composed Level Services
 
@@ -383,11 +445,15 @@ const llmService = baseLLMService({
   langfuse: { enabled: false }
 });
 const toolExecutor = createToolExecutor();
+const voiceService = elevenlabsVoiceService({
+  apiKey: process.env.ELEVENLABS_API_KEY,
+});
 
 // Create an agent
 const agent = createConfigurableAgent({
   llmService,
   toolExecutor,
+  voiceService, // Optional - enables voice capabilities
   config: {
     id: "example-agent",
     type: "general",
@@ -411,6 +477,11 @@ const agent = createConfigurableAgent({
     behavior: {
       maxRetries: 3,
       responseFormat: "text"
+    },
+    voice: {
+      enabled: true,
+      voiceId: "21m00Tcm4TlvDq8ikWAM",
+      autoSpeak: true,
     }
   }
 });
