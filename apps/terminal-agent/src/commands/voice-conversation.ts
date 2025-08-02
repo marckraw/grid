@@ -20,12 +20,6 @@ import {
 } from "./helpers/registerTestMcp.js";
 import readline from "readline";
 
-// Setup readline for key handling
-if (process.stdin.isTTY) {
-  readline.emitKeypressEvents(process.stdin);
-  process.stdin.setRawMode(true);
-}
-
 const sendUpdateOnProgress = async (message: any) => {
   // Handle different progress message types
   switch (message.type) {
@@ -53,10 +47,23 @@ const sendUpdateOnProgress = async (message: any) => {
   }
 };
 
+// Track if readline keypress events are already initialized
+let readlineInitialized = false;
+
 export async function exploreVoiceConversation(): Promise<void> {
   p.intro(pc.cyan("🎙️ Voice Conversation Mode"));
   p.log.info("Chat with an AI assistant using voice or text.");
   p.log.info("Press SPACE to start/stop recording, or type normally.");
+  
+  // Setup readline for key handling if not already done
+  const wasRawMode = process.stdin.isRaw;
+  if (process.stdin.isTTY) {
+    if (!readlineInitialized) {
+      readline.emitKeypressEvents(process.stdin);
+      readlineInitialized = true;
+    }
+    process.stdin.setRawMode(true);
+  }
 
   // Check for ElevenLabs API key
   if (!process.env.ELEVENLABS_API_KEY) {
@@ -355,6 +362,8 @@ When speaking, use a conversational tone as if talking to someone in person.`,
   };
 
   if (process.stdin.isTTY && canRecord) {
+    // Remove any existing listeners to prevent duplicates
+    process.stdin.removeAllListeners("keypress");
     process.stdin.on("keypress", handleKeypress);
   }
 
@@ -495,9 +504,12 @@ When speaking, use a conversational tone as if talking to someone in person.`,
   }
 
   // Cleanup
-  if (process.stdin.isTTY && canRecord) {
-    process.stdin.removeListener("keypress", handleKeypress);
-    process.stdin.setRawMode(false);
+  if (process.stdin.isTTY) {
+    if (canRecord) {
+      process.stdin.removeListener("keypress", handleKeypress);
+    }
+    // Restore original raw mode state
+    process.stdin.setRawMode(wasRawMode || false);
   }
 
   voiceProgress.cleanup();
