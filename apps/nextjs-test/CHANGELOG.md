@@ -1,5 +1,13 @@
 # nextjs-test
 
+## 0.4.10
+
+### Patch Changes
+
+- Updated dependencies [8c40dff]
+  - @mrck-labs/grid-core@0.19.0
+  - @mrck-labs/grid-agents@0.6.7
+
 ## 0.4.9
 
 ### Patch Changes

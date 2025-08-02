@@ -1,6 +1,6 @@
 {
   "name": "@mrck-labs/grid-tools",
-  "version": "10.0.2",
+  "version": "11.0.0",
   "description": "Ready-to-use tools for Grid LLM orchestration",
   "keywords": [
     "llm",

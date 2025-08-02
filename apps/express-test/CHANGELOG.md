@@ -1,5 +1,12 @@
 # express-test
 
+## 0.3.10
+
+### Patch Changes
+
+- Updated dependencies [8c40dff]
+  - @mrck-labs/grid-core@0.19.0
+
 ## 0.3.9
 
 ### Patch Changes
