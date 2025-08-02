@@ -1,5 +1,19 @@
 # terminal-agent
 
+## 0.9.0
+
+### Minor Changes
+
+- 8c40dff: integrate voice into agent
+
+### Patch Changes
+
+- Updated dependencies [8c40dff]
+  - @mrck-labs/grid-core@0.19.0
+  - @mrck-labs/grid-agents@0.6.7
+  - @mrck-labs/grid-tools@11.0.0
+  - @mrck-labs/grid-workflows@4.0.0
+
 ## 0.8.3
 
 ### Patch Changes

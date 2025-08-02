@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.19.0
+
+### Minor Changes
+
+- 8c40dff: integrate voice into agent
+
 ## 0.18.2
 
 ### Patch Changes
