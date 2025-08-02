@@ -1,5 +1,15 @@
 # terminal-agent
 
+## 0.9.1
+
+### Patch Changes
+
+- Updated dependencies [265bec3]
+  - @mrck-labs/grid-core@0.20.0
+  - @mrck-labs/grid-agents@0.6.8
+  - @mrck-labs/grid-tools@12.0.0
+  - @mrck-labs/grid-workflows@5.0.0
+
 ## 0.9.0
 
 ### Minor Changes
