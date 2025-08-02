@@ -6,6 +6,7 @@ import {
   type ConversationLoop,
   type ProgressMessage,
   baseLLMService,
+  elevenlabsVoiceService,
 } from "@mrck-labs/grid-core";
 import { calculatorTool } from "../../tools/calculator.tool";
 import { currentTimeTool } from "../../tools/current-time.tool";
@@ -28,9 +29,18 @@ function getConversation(
     toolExecutor.registerTool(calculatorTool);
     toolExecutor.registerTool(currentTimeTool);
 
+    // Initialize voice service if API key is available
+    const voiceService = process.env.ELEVENLABS_API_KEY
+      ? elevenlabsVoiceService({
+          apiKey: process.env.ELEVENLABS_API_KEY,
+          defaultVoiceId: "21m00Tcm4TlvDq8ikWAM", // Rachel voice
+        })
+      : undefined;
+
     // Create configurable agent
     const agent = createConfigurableAgent({
       llmService: baseLLMService({ toolExecutionMode: "custom" }),
+      voiceService,
       config: {
         id: "web-conversation-agent",
         type: "general",
@@ -63,6 +73,10 @@ Be concise but friendly in your responses.`,
           emitEvents: [],
         },
         orchestration: {},
+        voice: {
+          enabled: !!voiceService,
+          autoSpeak: false, // Don't auto-speak, let the UI control this
+        },
       },
       toolExecutor: toolExecutor,
     });
