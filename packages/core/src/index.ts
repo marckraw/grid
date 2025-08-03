@@ -97,3 +97,6 @@ export type {
   STMConfig, 
   MemoryEvent 
 } from "./services/memory/memory.types.js";
+
+// Export memory tools
+export { createMemoryTools, getMemoryToolsArray } from "./tools/memory.tools.js";

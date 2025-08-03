@@ -34,11 +34,15 @@ Implement a human-like memory system for Grid agents with three layers:
 - [x] Add `/memory responses` to show agent responses
 - [x] Add `/memory clear` to clear all memory
 
-#### Phase 0.4: Memory Tool
-- [ ] Create `remember_recent` tool using Vercel AI SDK format
-- [ ] Add tool to `conversation-with-memory` agent
-- [ ] Test by asking agent "what did we talk about earlier?"
-- [ ] Agent should be able to query its own memory
+#### Phase 0.4: Memory Tool ✅
+- [x] Create memory tools using Vercel AI SDK format
+  - [x] `search_recent_memory` - Search through recent events
+  - [x] `recall_conversation_history` - Recall previous messages
+  - [x] `get_memory_statistics` - Get memory usage stats
+  - [x] `search_memory_by_tags` - Search by tags
+- [x] Add tools to `conversation-with-memory` agent
+- [x] Test by asking agent "what did we talk about earlier?"
+- [x] Agent can now query its own memory!
 
 ### Phase 1: MTM Summarization
 
