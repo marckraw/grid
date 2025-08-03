@@ -25,13 +25,27 @@ export const createSimpleSTMService = (config?: STMConfig): STMService => {
   const readAllEvents = async (): Promise<MemoryEvent[]> => {
     try {
       const content = await fs.readFile(logPath, 'utf-8');
-      return content
+      const events: MemoryEvent[] = [];
+      
+      content
         .split('\n')
         .filter(line => line.trim())
-        .map(line => JSON.parse(line) as MemoryEvent);
-    } catch (error) {
+        .forEach(line => {
+          try {
+            events.push(JSON.parse(line) as MemoryEvent);
+          } catch (parseError) {
+            // Skip malformed lines
+            console.warn('Skipping malformed JSON line:', line.substring(0, 50) + '...');
+          }
+        });
+        
+      return events;
+    } catch (error: any) {
       // File doesn't exist yet
-      return [];
+      if (error.code === 'ENOENT') {
+        return [];
+      }
+      throw error;
     }
   };
   
@@ -55,8 +69,11 @@ export const createSimpleSTMService = (config?: STMConfig): STMService => {
   const clear = async () => {
     try {
       await fs.unlink(logPath);
-    } catch (error) {
+    } catch (error: any) {
       // Ignore if file doesn't exist
+      if (error.code !== 'ENOENT') {
+        throw error;
+      }
     }
   };
   
