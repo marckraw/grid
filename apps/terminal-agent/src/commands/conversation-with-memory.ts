@@ -291,12 +291,44 @@ Be proactive in using memory when it would enhance your responses.`,
       continue;
     }
     
+    // Toggle history mode
+    if (message.toLowerCase() === "/memory history-disable") {
+      conversation.setHistoryMode('none');
+      p.log.warn("\n⚠️  History disabled - Agent now has amnesia!");
+      p.log.info("The agent will only see your current message.");
+      p.log.info("It must use memory tools to recall context.");
+      console.log(""); // Empty line
+      continue;
+    }
+    
+    if (message.toLowerCase() === "/memory history-enable") {
+      conversation.setHistoryMode('full');
+      p.log.success("\n✅ History enabled - Normal mode restored");
+      p.log.info("The agent can now see the full conversation history.");
+      console.log(""); // Empty line
+      continue;
+    }
+    
+    if (message.toLowerCase() === "/memory history-status") {
+      const { mode, limit } = conversation.getHistoryMode();
+      p.log.info("\n📄 History Mode Status:");
+      p.log.info(`  Mode: ${mode}`);
+      if (mode === 'last-n') {
+        p.log.info(`  Limit: ${limit} messages`);
+      }
+      console.log(""); // Empty line
+      continue;
+    }
+    
     if (message.toLowerCase() === "/help") {
       p.log.info("\n📖 Available commands:");
       p.log.info("  /memory - Show memory statistics");
       p.log.info("  /memory recent - Show recent messages");
       p.log.info("  /memory responses - Show recent agent responses");
       p.log.info("  /memory clear - Clear all memory");
+      p.log.info("  /memory history-disable - Disable conversation history (amnesia mode)");
+      p.log.info("  /memory history-enable - Enable conversation history (normal mode)");
+      p.log.info("  /memory history-status - Show current history mode");
       p.log.info("  /help - Show this help message");
       p.log.info("  exit/quit - End the conversation");
       p.log.info(pc.dim("\n💾 Note: All messages are logged to memory/stm.jsonl"));

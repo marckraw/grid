@@ -70,6 +70,7 @@ export type {
   ConversationLoopOptions,
   GroupedHandlers,
   SendMessageResult,
+  HistoryMode,
 } from "./services/conversation-loop.service.js";
 
 export { baseLLMService } from "./services/base.llm.service.js";
