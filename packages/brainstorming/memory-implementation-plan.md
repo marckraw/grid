@@ -55,6 +55,10 @@ Implement a human-like memory system for Grid agents with three layers:
 - [x] Add `/memory summaries` to view available summaries
 - [x] Create `recall_facts` tool for agents to search extracted facts
 - [x] Support both pattern-based and LLM-based fact extraction
+- [x] **Hybrid Storage**: JSON for structured queries + Markdown for LLM context
+- [x] Add `getSummaryMarkdown()` method for retrieving human-readable summaries
+- [x] Add `/memory view [date]` command to display markdown summaries
+- [x] Implement `generateMarkdownSummary()` with conversation samples
 
 #### Phase 1.2: Memory-Aware Handlers
 - [ ] Create `createMemoryHandlers` with beforeAct/afterResponse
@@ -111,25 +115,26 @@ Implement a human-like memory system for Grid agents with three layers:
 packages/core/src/
 ├── services/
 │   ├── memory/
-│   │   ├── stm.service.ts         # Short-term memory
-│   │   ├── mtm.service.ts         # Mid-term memory  
-│   │   ├── ltm.service.ts         # Long-term memory
-│   │   ├── memory.primitive.ts    # Composed memory service
-│   │   └── memory.types.ts        # Shared types
-│   └── memory-handlers.ts         # Memory-aware handlers
+│   │   ├── stm.service.ts         # Short-term memory ✅
+│   │   ├── mtm.service.ts         # Mid-term memory ✅
+│   │   ├── ltm.service.ts         # Long-term memory (future)
+│   │   ├── memory.primitive.ts    # Composed memory service (future)
+│   │   └── memory.types.ts        # Shared types ✅
+│   └── memory-handlers.ts         # Memory-aware handlers (future)
 └── tools/
-    └── memory.tools.ts            # Memory tools for agents
+    └── memory.tools.ts            # Memory tools for agents ✅
 
 apps/terminal-agent/
 ├── src/
 │   ├── commands/
-│   │   └── conversation-with-memory.ts  # Our test command
+│   │   └── conversation-with-memory.ts  # Our test command ✅
 │   └── memory/                          # Memory storage (git-ignored)
 │       ├── stm.jsonl                    # Raw event stream
 │       ├── mtm/
-│       │   └── 2025-01-15.json         # Daily summaries
+│       │   ├── 2025-01-15.json         # Daily summary (JSON)
+│       │   └── 2025-01-15.md           # Daily summary (Markdown)
 │       └── ltm/
-│           └── patterns.json           # Learned patterns
+│           └── patterns.json           # Learned patterns (future)
 ```
 
 ## Terminal Agent Command Evolution
@@ -178,11 +183,42 @@ Learned patterns:
 4. **File Storage First**: Easy to debug and inspect
 5. **Real-World Testing**: Actual conversations, not unit tests
 
-## Next Steps
-1. Create memory services in core package
-2. Add `conversation-with-memory` command to terminal-agent
-3. Implement Phase 0.1 (simple STM logging)
-4. Have a test conversation and verify logging works
-5. Iterate through phases, enhancing the command each time
+## Important Implementation Details
 
-Ready to start building! 🚀
+### History Mode Feature ✅
+- Added `HistoryMode` type: `'full' | 'none' | 'last-n'`
+- Implemented `setHistoryMode()` and `getHistoryMode()` in ConversationLoop
+- `/memory history-disable` - Agent has amnesia, must use memory tools
+- `/memory history-enable` - Normal mode with full context
+- Critical for testing memory retrieval without conversation context
+
+### Fact Extraction Approaches
+1. **Pattern-based** (current): Hardcoded regex patterns for common facts
+2. **LLM-based** (current): Uses LLM to extract structured facts from transcript
+3. **Future Enhancement**: Event-driven semantic memory with:
+   - Dynamic fact schemas
+   - Confidence scoring
+   - Progressive enrichment
+   - Domain-specific extractors
+
+### Documentation Created ✅
+1. `docs/core-concepts/memory.md` - Architecture overview (with Beta warnings)
+2. `docs/guides/memory-integration.md` - Step-by-step implementation guide
+3. `docs/sdk-reference/services/memory/` - API references for STM, MTM, types
+4. `docs/sdk-reference/tools/memory-tools.md` - Memory tools documentation
+5. Updated existing docs to reference memory features
+
+## Current State Summary
+- **Completed**: Phases 0.1-0.4, Phase 1.1 (with hybrid storage enhancement)
+- **Next Up**: Phase 1.2 (Memory-aware handlers)
+- **Key Innovation**: Hybrid JSON+Markdown storage for optimal AI/human use
+- **Testing**: All via terminal-agent `conversation-with-memory` command
+
+## Next Development Steps
+1. Implement Phase 1.2: Memory-aware handlers for temporal detection
+2. Build Phase 2.1: Unified memory primitive combining STM+MTM
+3. Implement Phase 2.2: Cascading retrieval system (very important!)
+4. Integrate Phase 2.3: Memory-aware ConversationLoop
+5. Start Phase 3: LTM pattern detection
+
+Ready to continue! 🚀
