@@ -29,26 +29,58 @@ export const createMTMService = (deps: {
       relationships: {}
     };
     
-    // Extract user name
+    // Extract user name - prioritize explicit name introductions
+    let nameFound = false;
     events.forEach(event => {
-      if (event.type.includes('message') && event.data.message) {
+      if (event.type.includes('message') && event.data.message && !nameFound) {
         const message = event.data.message.toLowerCase();
         
-        // Extract name patterns
-        const namePatterns = [
+        // First check for explicit name introductions
+        const explicitNamePatterns = [
           /my name is (\w+)/i,
-          /i'?m (\w+)/i,
-          /i am (\w+)/i,
           /call me (\w+)/i
         ];
         
-        for (const pattern of namePatterns) {
+        for (const pattern of explicitNamePatterns) {
           const match = event.data.message.match(pattern);
           if (match && match[1]) {
             facts.userName = match[1].charAt(0).toUpperCase() + match[1].slice(1);
-            break;
+            nameFound = true;
+            return;
           }
         }
+      }
+    });
+    
+    // If no explicit name found, check for implicit patterns
+    if (!nameFound) {
+      events.forEach(event => {
+        if (event.type.includes('message') && event.data.message && !nameFound) {
+          const implicitPatterns = [
+            /i'?m (\w+)/i,
+            /i am (\w+)/i
+          ];
+          
+          for (const pattern of implicitPatterns) {
+            const match = event.data.message.match(pattern);
+            if (match && match[1]) {
+              // Skip common verbs that might follow "I am"
+              const commonVerbs = ['working', 'doing', 'going', 'making', 'trying', 'looking'];
+              if (!commonVerbs.includes(match[1].toLowerCase())) {
+                facts.userName = match[1].charAt(0).toUpperCase() + match[1].slice(1);
+                nameFound = true;
+                return;
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // Extract preferences and topics  
+    events.forEach(event => {
+      if (event.type.includes('message') && event.data.message) {
+        const message = event.data.message.toLowerCase();
         
         // Extract preferences (my favorite X is Y)
         const prefPattern = /my favorite (\w+) is ([^.!?]+)/gi;
@@ -178,7 +210,9 @@ Return only valid JSON, no explanations.`;
     }
     
     // Conversation Transcript Samples
-    const conversations = dayEvents.filter(e => e.type.includes('message'));
+    const conversations = dayEvents.filter(e => 
+      e.type.includes('message') || e.type.includes('response')
+    );
     if (conversations.length > 0) {
       markdown += `## Conversation Samples\n\n`;
       
