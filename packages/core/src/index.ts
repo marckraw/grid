@@ -89,3 +89,11 @@ export {
 
 // Prompts and prompts helpers
 export { currentDatePrompt } from "./prompts/current-date.js";
+
+// Export memory services
+export { createSimpleSTMService } from "./services/memory/stm.service.js";
+export type { 
+  STMService, 
+  STMConfig, 
+  MemoryEvent 
+} from "./services/memory/memory.types.js";

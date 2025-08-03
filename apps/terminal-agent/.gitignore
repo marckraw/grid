@@ -5,3 +5,6 @@ generated-images/
 
 # Conversation history
 conversation.json
+
+# Memory storage
+memory/

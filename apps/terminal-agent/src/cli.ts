@@ -17,12 +17,18 @@ import {
   exploreWorkflowExamples,
   exploreVoiceConversation,
 } from "./commands/index.js";
+import { conversationWithMemory } from "./commands/conversation-with-memory.js";
 
 const menuOptions: MenuOption[] = [
   {
     value: "agent-conversation",
     label: "💬 Agent Conversation",
     hint: "Interactive conversation with tools",
+  },
+  {
+    value: "conversation-with-memory",
+    label: "🧠 Conversation with Memory",
+    hint: "Chat with memory logging enabled",
   },
   {
     value: "voice-conversation",
@@ -59,6 +65,7 @@ const menuOptions: MenuOption[] = [
 
 const commandHandlers: Record<string, () => Promise<void>> = {
   "agent-conversation": exploreAgentConversation,
+  "conversation-with-memory": conversationWithMemory,
   "voice-conversation": exploreVoiceConversation,
   "test-agents": exploreTestAgents,
   "deep-search": deepSearch,
