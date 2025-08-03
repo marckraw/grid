@@ -18,17 +18,21 @@ Implement a human-like memory system for Grid agents with three layers:
 - [x] Add `conversation-with-memory` command to terminal-agent
 - [x] Test by having a conversation and checking the log file
 
-#### Phase 0.2: Hook into Existing System
-- [ ] Add STM logging to ConversationHistory handlers
-- [ ] Log all messages and tool calls automatically
-- [ ] Update `conversation-with-memory` command to use handlers
-- [ ] Verify events are being written during conversations
+#### Phase 0.2: Hook into Existing System ✅
+- [x] Add STM logging to ConversationHistory handlers
+- [x] Log all messages and tool calls automatically
+- [x] Update `conversation-with-memory` command to use handlers
+- [x] Verify events are being written during conversations
 
-#### Phase 0.3: Basic Retrieval
-- [ ] Add `getRecent(hours)` method to STM service
-- [ ] Filter events by timestamp
-- [ ] Add `clear()` method for testing
-- [ ] Update command to show memory stats at conversation end
+#### Phase 0.3: Basic Retrieval ✅
+- [x] Add `getRecent(hours)` method to STM service
+- [x] Add `getByType(type, limit)` method for filtering
+- [x] Filter events by timestamp
+- [x] Add `clear()` method for testing
+- [x] Update command to show memory stats with `/memory` command
+- [x] Add `/memory recent` to show recent messages
+- [x] Add `/memory responses` to show agent responses
+- [x] Add `/memory clear` to clear all memory
 
 #### Phase 0.4: Memory Tool
 - [ ] Create `remember_recent` tool using Vercel AI SDK format

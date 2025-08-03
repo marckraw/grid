@@ -22,8 +22,49 @@ export const createSimpleSTMService = (config?: STMConfig): STMService => {
     await fs.appendFile(logPath, line);
   };
   
+  const readAllEvents = async (): Promise<MemoryEvent[]> => {
+    try {
+      const content = await fs.readFile(logPath, 'utf-8');
+      return content
+        .split('\n')
+        .filter(line => line.trim())
+        .map(line => JSON.parse(line) as MemoryEvent);
+    } catch (error) {
+      // File doesn't exist yet
+      return [];
+    }
+  };
+  
+  const getRecent = async (hours = 24): Promise<MemoryEvent[]> => {
+    const events = await readAllEvents();
+    const cutoff = Date.now() - (hours * 60 * 60 * 1000);
+    
+    return events.filter(event => 
+      new Date(event.timestamp).getTime() > cutoff
+    );
+  };
+  
+  const getByType = async (type: string, limit = 100): Promise<MemoryEvent[]> => {
+    const events = await readAllEvents();
+    const filtered = events.filter(event => event.type === type);
+    
+    // Return the most recent events up to the limit
+    return filtered.slice(-limit);
+  };
+  
+  const clear = async () => {
+    try {
+      await fs.unlink(logPath);
+    } catch (error) {
+      // Ignore if file doesn't exist
+    }
+  };
+  
   return {
     log,
+    getRecent,
+    getByType,
+    clear,
     getLogPath: () => logPath
   };
 };

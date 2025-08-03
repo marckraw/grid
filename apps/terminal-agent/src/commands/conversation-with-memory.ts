@@ -70,31 +70,88 @@ Be friendly and remember details from our chat.`,
         onConversationStarted: async (context) => {
           await stm.log({
             type: 'conversation.started',
-            data: { timestamp: new Date().toISOString(), context }
+            data: { context },
+            metadata: {
+              source: 'conversation',
+              conversationId: context.conversationId,
+              agentId: 'memory-agent',
+              tags: ['conversation', 'start'],
+              priority: 2
+            }
           });
           return { initialMessages: [] };
         },
         onMessageSent: async (message, context) => {
           await stm.log({
-            type: 'user.message',
-            data: { message, timestamp: new Date().toISOString() }
+            type: 'conversation.user.message',
+            data: { message },
+            metadata: {
+              source: 'conversation',
+              conversationId: context?.conversationId,
+              userId: context?.userId,
+              tags: ['conversation', 'user-input'],
+              priority: 2
+            }
           });
         },
         onResponseReceived: async (response, context) => {
           await stm.log({
-            type: 'agent.response',
+            type: 'conversation.agent.response',
             data: { 
-              response: response.content,
-              toolCalls: response.toolCalls,
-              timestamp: new Date().toISOString()
+              content: response.content,
+              toolCalls: response.toolCalls
+            },
+            metadata: {
+              source: 'conversation',
+              conversationId: context?.conversationId,
+              agentId: 'memory-agent',
+              tags: ['conversation', 'agent-output'],
+              priority: 2
             }
           });
         },
         onConversationEnded: async (summary, context) => {
           await stm.log({
             type: 'conversation.ended',
-            data: { summary, timestamp: new Date().toISOString() }
+            data: { summary },
+            metadata: {
+              source: 'conversation',
+              conversationId: context?.conversationId,
+              agentId: 'memory-agent',
+              tags: ['conversation', 'end'],
+              priority: 2
+            }
           });
+        },
+      },
+      manager: {
+        onToolExecution: async (toolName, args, result) => {
+          await stm.log({
+            type: 'tool.execution',
+            data: { toolName, args, result },
+            metadata: {
+              source: 'conversation',
+              agentId: 'memory-agent',
+              tags: ['tool', 'execution', toolName],
+              priority: 3
+            }
+          });
+        },
+        onAgentResponseProcessed: async (response: any) => {
+          if (response.toolCalls && response.toolCalls.length > 0) {
+            await stm.log({
+              type: 'tool.calls.requested',
+              data: { 
+                toolCalls: response.toolCalls
+              },
+              metadata: {
+                source: 'conversation',
+                agentId: 'memory-agent',
+                tags: ['tool', 'request'],
+                priority: 3
+              }
+            });
+          }
         },
       },
     },
@@ -132,16 +189,81 @@ Be friendly and remember details from our chat.`,
     
     // Special command: show memory stats
     if (message.toLowerCase() === "/memory") {
-      p.log.info("\n📊 Memory Statistics:");
+      const recentEvents = await stm.getRecent(24);
+      const eventTypes = [...new Set(recentEvents.map(e => e.type))];
+      
+      p.log.info("\n📊 Memory Statistics (last 24h):");
+      p.log.info(`  Total events: ${recentEvents.length}`);
+      p.log.info(`  Event types: ${eventTypes.join(', ')}`);
       p.log.info(`  Log file: ${stm.getLogPath()}`);
-      p.log.info(pc.dim("  (Phase 0.3 will add memory retrieval capabilities)"));
+      
+      // Count by type
+      const typeCounts: Record<string, number> = {};
+      recentEvents.forEach(e => {
+        typeCounts[e.type] = (typeCounts[e.type] || 0) + 1;
+      });
+      
+      p.log.info("\n  Events by type:");
+      Object.entries(typeCounts).forEach(([type, count]) => {
+        p.log.info(`    ${type}: ${count}`);
+      });
+      
+      console.log(""); // Empty line
+      continue;
+    }
+    
+    // Show recent messages
+    if (message.toLowerCase() === "/memory recent") {
+      const recentMessages = await stm.getByType('conversation.user.message', 5);
+      
+      p.log.info("\n💬 Recent messages:");
+      recentMessages.forEach((event, idx) => {
+        const time = new Date(event.timestamp).toLocaleTimeString();
+        p.log.info(`  [${time}] ${event.data.message}`);
+      });
+      
+      console.log(""); // Empty line
+      continue;
+    }
+    
+    // Show recent responses
+    if (message.toLowerCase() === "/memory responses") {
+      const recentResponses = await stm.getByType('conversation.agent.response', 3);
+      
+      p.log.info("\n🤖 Recent agent responses:");
+      recentResponses.forEach((event, idx) => {
+        const time = new Date(event.timestamp).toLocaleTimeString();
+        const content = event.data.content || '[No content]';
+        const preview = content.length > 100 ? content.substring(0, 100) + '...' : content;
+        p.log.info(`  [${time}] ${preview}`);
+      });
+      
+      console.log(""); // Empty line
+      continue;
+    }
+    
+    // Clear memory
+    if (message.toLowerCase() === "/memory clear") {
+      const confirm = await p.confirm({
+        message: "Are you sure you want to clear all memory?",
+        initialValue: false,
+      });
+      
+      if (confirm && !p.isCancel(confirm)) {
+        await stm.clear();
+        p.log.success("Memory cleared!");
+      }
+      
       console.log(""); // Empty line
       continue;
     }
     
     if (message.toLowerCase() === "/help") {
       p.log.info("\n📖 Available commands:");
-      p.log.info("  /memory - Show memory information");
+      p.log.info("  /memory - Show memory statistics");
+      p.log.info("  /memory recent - Show recent messages");
+      p.log.info("  /memory responses - Show recent agent responses");
+      p.log.info("  /memory clear - Clear all memory");
       p.log.info("  /help - Show this help message");
       p.log.info("  exit/quit - End the conversation");
       p.log.info(pc.dim("\n💾 Note: All messages are logged to memory/stm.jsonl"));
