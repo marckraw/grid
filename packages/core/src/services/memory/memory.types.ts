@@ -29,3 +29,41 @@ export interface STMService {
 export interface STMConfig {
   logPath?: string;
 }
+
+/**
+ * Mid-Term Memory Summary - Daily condensed memory
+ */
+export interface MTMSummary {
+  date: string; // YYYY-MM-DD
+  extractedFacts: {
+    userName?: string;
+    userPreferences?: string[];
+    keyTopics?: string[];
+    importantEvents?: string[];
+    relationships?: Record<string, string>; // e.g., { "project": "grid", "role": "developer" }
+    [key: string]: any; // Extensible for domain-specific facts
+  };
+  conversations: {
+    count: number;
+    totalMessages: number;
+    avgLength: number;
+    topics: string[];
+  };
+  eventStatistics: Record<string, number>; // Event type counts
+  highlights: string[]; // Key moments from the day
+  createdAt: string;
+}
+
+export interface MTMService {
+  summarizeDay: (date?: Date) => Promise<MTMSummary>;
+  getSummary: (date: Date) => Promise<MTMSummary | null>;
+  getSummaryMarkdown: (date: Date) => Promise<string | null>;
+  listSummaries: () => Promise<string[]>; // List of dates
+  searchFacts: (query: string) => Promise<MTMSummary[]>;
+  getStoragePath: () => string;
+}
+
+export interface MTMConfig {
+  storagePath?: string;
+  llmService?: any; // For AI-powered summarization
+}

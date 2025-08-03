@@ -2,6 +2,7 @@ import * as p from "@clack/prompts";
 import {
   createConfigurableAgent,
   createSimpleSTMService,
+  createMTMService,
   createConversationLoop,
   baseLLMService,
   createMemoryTools,
@@ -24,11 +25,19 @@ export async function conversationWithMemory(): Promise<void> {
     logPath: './memory/stm.jsonl'
   });
   
-  p.log.info(pc.dim(`Memory will be saved to: ${stm.getLogPath()}`));
-  p.log.info(pc.dim("Agent can now query its own memory using tools!\n"));
+  // Initialize MTM service
+  const mtm = createMTMService({
+    stm,
+    llmService: baseLLMService(),
+    config: { storagePath: './memory/mtm' }
+  });
   
-  // Create memory tools
-  const memoryTools = createMemoryTools(stm);
+  p.log.info(pc.dim(`Memory will be saved to: ${stm.getLogPath()}`));
+  p.log.info(pc.dim(`Daily summaries will be saved to: ${mtm.getStoragePath()}`));
+  p.log.info(pc.dim("Agent can now query both recent events AND extracted facts!\n"));
+  
+  // Create memory tools with both STM and MTM
+  const memoryTools = createMemoryTools({ stm, mtm });
   
   // Create tool executor and register memory tools
   const toolExecutor = createToolExecutor();
@@ -53,9 +62,13 @@ You have access to memory tools that let you:
 - recall_conversation_history: Recall previous messages from conversations
 - get_memory_statistics: Get statistics about memory usage
 - search_memory_by_tags: Search memory by tags
+- recall_facts: Search for important facts like names, preferences, and key information
 
 When users ask about "what we discussed", "earlier", "before", or reference previous conversations, 
 use your memory tools to provide accurate responses.
+
+When users ask about facts like "my name", "my preferences", or personal information,
+use the recall_facts tool first as it searches through summarized knowledge.
 
 Be proactive in using memory when it would enhance your responses.`,
       },
@@ -291,6 +304,91 @@ Be proactive in using memory when it would enhance your responses.`,
       continue;
     }
     
+    // Trigger daily summarization
+    if (message.toLowerCase() === "/memory summarize") {
+      const spinner = createSpinner();
+      spinner.start("Creating daily summary...");
+      
+      try {
+        const summary = await mtm.summarizeDay();
+        spinner.stop();
+        
+        p.log.success("\n✅ Daily summary created!");
+        p.log.info(`Date: ${summary.date}`);
+        
+        if (summary.extractedFacts.userName) {
+          p.log.info(`User name: ${summary.extractedFacts.userName}`);
+        }
+        
+        if (summary.extractedFacts.userPreferences?.length) {
+          p.log.info(`Preferences: ${summary.extractedFacts.userPreferences.join(', ')}`);
+        }
+        
+        p.log.info(`Conversations: ${summary.conversations.count}`);
+        p.log.info(`Total messages: ${summary.conversations.totalMessages}`);
+        
+        if (summary.highlights.length > 0) {
+          p.log.info("\nHighlights:");
+          summary.highlights.forEach(h => p.log.info(`  • ${h}`));
+        }
+      } catch (error) {
+        spinner.stop();
+        p.log.error("Failed to create summary");
+      }
+      
+      console.log(""); // Empty line
+      continue;
+    }
+    
+    // View summaries
+    if (message.toLowerCase() === "/memory summaries") {
+      const summaries = await mtm.listSummaries();
+      
+      if (summaries.length === 0) {
+        p.log.info("\n📅 No summaries yet. Use '/memory summarize' to create one.");
+      } else {
+        p.log.info(`\n📅 Available summaries (${summaries.length}):`);
+        summaries.slice(-7).forEach(date => {
+          p.log.info(`  • ${date}`);
+        });
+      }
+      
+      console.log(""); // Empty line
+      continue;
+    }
+    
+    // View markdown summary
+    if (message.toLowerCase().startsWith("/memory view")) {
+      const parts = message.split(" ");
+      let targetDate = new Date();
+      
+      // Check if date was provided
+      if (parts.length > 2) {
+        const dateStr = parts.slice(2).join(" ");
+        const parsed = new Date(dateStr);
+        if (!isNaN(parsed.getTime())) {
+          targetDate = parsed;
+        } else {
+          p.log.error(`Invalid date format. Use: /memory view YYYY-MM-DD`);
+          console.log("");
+          continue;
+        }
+      }
+      
+      const markdown = await mtm.getSummaryMarkdown(targetDate);
+      
+      if (markdown) {
+        console.log("\n" + pc.cyan("=".repeat(60)));
+        console.log(markdown);
+        console.log(pc.cyan("=".repeat(60)) + "\n");
+      } else {
+        p.log.warn(`No summary found for ${targetDate.toISOString().split('T')[0]}`);
+      }
+      
+      console.log(""); // Empty line
+      continue;
+    }
+    
     // Toggle history mode
     if (message.toLowerCase() === "/memory history-disable") {
       conversation.setHistoryMode('none');
@@ -325,13 +423,17 @@ Be proactive in using memory when it would enhance your responses.`,
       p.log.info("  /memory - Show memory statistics");
       p.log.info("  /memory recent - Show recent messages");
       p.log.info("  /memory responses - Show recent agent responses");
+      p.log.info("  /memory summarize - Create daily summary (MTM)");
+      p.log.info("  /memory summaries - View available summaries");
+      p.log.info("  /memory view [date] - View markdown summary (default: today)");
       p.log.info("  /memory clear - Clear all memory");
       p.log.info("  /memory history-disable - Disable conversation history (amnesia mode)");
       p.log.info("  /memory history-enable - Enable conversation history (normal mode)");
       p.log.info("  /memory history-status - Show current history mode");
       p.log.info("  /help - Show this help message");
       p.log.info("  exit/quit - End the conversation");
-      p.log.info(pc.dim("\n💾 Note: All messages are logged to memory/stm.jsonl"));
+      p.log.info(pc.dim("\n💾 STM: memory/stm.jsonl"));
+      p.log.info(pc.dim("📅 MTM: memory/mtm/ (JSON + Markdown)"));
       console.log(""); // Empty line
       continue;
     }

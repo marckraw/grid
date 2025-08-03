@@ -46,11 +46,15 @@ Implement a human-like memory system for Grid agents with three layers:
 
 ### Phase 1: MTM Summarization
 
-#### Phase 1.1: Daily Summaries
-- [ ] Create `createMTMService` with `summarizeDay()` method
-- [ ] Count events by type and create summaries
-- [ ] Save summaries to `./memory/mtm/YYYY-MM-DD.json`
-- [ ] Add `--summarize` flag to command to trigger summarization
+#### Phase 1.1: Daily Summaries ✅
+- [x] Create `createMTMService` with `summarizeDay()` method
+- [x] Extract facts from conversations (name, preferences, topics)
+- [x] Count events by type and create summaries
+- [x] Save summaries to `./memory/mtm/YYYY-MM-DD.json`
+- [x] Add `/memory summarize` command to trigger summarization
+- [x] Add `/memory summaries` to view available summaries
+- [x] Create `recall_facts` tool for agents to search extracted facts
+- [x] Support both pattern-based and LLM-based fact extraction
 
 #### Phase 1.2: Memory-Aware Handlers
 - [ ] Create `createMemoryHandlers` with beforeAct/afterResponse
@@ -66,7 +70,23 @@ Implement a human-like memory system for Grid agents with three layers:
 - [ ] Update terminal-agent command to use memory primitive
 - [ ] Add `--search <query>` flag to search memories
 
-#### Phase 2.2: ConversationLoop Integration
+#### Phase 2.2: Cascading Memory Retrieval
+- [ ] Implement hierarchical search strategy:
+  - Start with LTM (when available) for patterns/knowledge
+  - Fall back to MTM for recent facts and summaries
+  - Extend to STM for detailed context when needed
+- [ ] Create `searchWithFallback()` method that:
+  - Returns quick results from efficient layers
+  - Optionally enriches with deeper context
+  - Tracks which layers were searched
+- [ ] Add confidence scoring for memory results
+- [ ] Implement progressive enrichment:
+  - Quick answer first (e.g., "User's name is Marcin")
+  - Then add context (e.g., "They introduced themselves 3 days ago")
+  - Optional deep dive (e.g., exact conversation transcript)
+- [ ] Test: Memory tools should use cascading search automatically
+
+#### Phase 2.3: ConversationLoop Integration
 - [ ] Create `createMemoryAwareConversationLoop`
 - [ ] Load memories on conversation start
 - [ ] Show "Loading X memories..." message

@@ -1,11 +1,15 @@
 import { z } from 'zod';
 import { createNamedTool } from '../types/tool.types.js';
-import type { STMService } from '../services/memory/memory.types.js';
+import type { STMService, MTMService } from '../services/memory/memory.types.js';
 
 /**
  * Creates memory tools that agents can use to query their own memory
  */
-export const createMemoryTools = (stm: STMService) => {
+export const createMemoryTools = (deps: {
+  stm: STMService;
+  mtm?: MTMService;
+}) => {
+  const { stm, mtm } = deps;
   const searchRecentMemory = createNamedTool({
     name: 'search_recent_memory',
     description: 'Search through recent memory events from the last N hours. Useful for recalling recent conversations, events, or activities.',
@@ -174,18 +178,77 @@ export const createMemoryTools = (stm: STMService) => {
     }
   });
 
+  const recallFacts = createNamedTool({
+    name: 'recall_facts',
+    description: 'Recall important facts like user name, preferences, and key information from memory summaries.',
+    parameters: z.object({
+      query: z.string()
+        .describe('What fact to search for (e.g., "user name", "favorite color", "preferences")')
+    }),
+    execute: async ({ query }) => {
+      if (!mtm) {
+        return {
+          error: 'Mid-term memory not available',
+          suggestion: 'Try using search_recent_memory instead'
+        };
+      }
+      
+      // First check today's summary
+      const today = await mtm.getSummary(new Date());
+      
+      // Then search historical summaries if needed
+      const historicalResults = await mtm.searchFacts(query);
+      
+      // Compile facts
+      const facts: any = {};
+      
+      // Priority: today's facts first
+      if (today?.extractedFacts) {
+        Object.assign(facts, today.extractedFacts);
+      }
+      
+      // Then historical facts
+      historicalResults.forEach(summary => {
+        if (summary.extractedFacts.userName && !facts.userName) {
+          facts.userName = summary.extractedFacts.userName;
+        }
+        if (summary.extractedFacts.userPreferences) {
+          facts.userPreferences = [
+            ...(facts.userPreferences || []),
+            ...summary.extractedFacts.userPreferences
+          ];
+        }
+      });
+      
+      // Deduplicate preferences
+      if (facts.userPreferences) {
+        facts.userPreferences = [...new Set(facts.userPreferences)];
+      }
+      
+      return {
+        query,
+        foundFacts: facts,
+        sourceDates: [
+          today?.date,
+          ...historicalResults.map(s => s.date)
+        ].filter(Boolean)
+      };
+    }
+  });
+
   return {
     searchRecentMemory,
     recallConversationHistory,
     getMemoryStatistics,
-    searchMemoryByTags
+    searchMemoryByTags,
+    recallFacts
   };
 };
 
 /**
  * All memory tools as an array for easy registration
  */
-export const getMemoryToolsArray = (stm: STMService) => {
-  const tools = createMemoryTools(stm);
+export const getMemoryToolsArray = (deps: { stm: STMService; mtm?: MTMService }) => {
+  const tools = createMemoryTools(deps);
   return Object.values(tools);
 };
