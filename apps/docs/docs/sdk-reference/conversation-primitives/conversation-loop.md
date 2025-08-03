@@ -433,6 +433,9 @@ loop.setHistoryMode('none');
 await loop.sendMessage("What's my name?");
 // Agent won't know unless it uses memory tools!
 
+// This is useful for testing memory systems (Beta)
+// See: /docs/guides/memory-integration
+
 // Switch to last-n mode
 loop.setHistoryMode('last-n', 3);
 await loop.sendMessage("What have we discussed?");
@@ -521,6 +524,7 @@ The `onProgress` callback receives messages with these types:
 3. **Monitor progress** - Use onProgress for real-time user feedback
 4. **Export long conversations** - Periodically export for recovery
 5. **End conversations properly** - Call endConversation() for cleanup
+6. **Consider memory integration (Beta)** - For agents that need to remember across sessions, see the [memory integration guide](/docs/guides/memory-integration)
 
 ## TypeScript Types
 
