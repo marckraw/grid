@@ -6,6 +6,7 @@
 export { agentFlowService } from "./services/agent-flow.service.js";
 export { createConfigurableAgent } from "./factories/configurable-agent.factory.js";
 export { transformMessagesForAI, getLastUserMessage } from "./utils.js";
+export type * from "./types/index.js";
 export * from "./types/index.js";
 
 // Export tool types
