@@ -6,28 +6,7 @@
 export { agentFlowService } from "./services/agent-flow.service.js";
 export { createConfigurableAgent } from "./factories/configurable-agent.factory.js";
 export { transformMessagesForAI, getLastUserMessage } from "./utils.js";
-export type {
-  Agent,
-  AgentFlowContext,
-  ChatMessage,
-  ProgressMessage,
-  ProgressMessageType,
-  LLMService,
-  LLMServiceOptions,
-  VoiceService,
-  VoiceConfig,
-  VoiceOptions,
-  TranscribeOptions,
-  AudioResult,
-  AudioInput,
-  TranscriptionResult,
-  Voice,
-  AudioChunk,
-  AudioFormat,
-  AudioData,
-  VoiceProgressEvent,
-} from "./types/index.js";
-export { VoiceError } from "./types/index.js";
+export * from "./types/index.js";
 
 // Export tool types
 export type { Tool, ToolResult } from "./types/tool.types.js";
@@ -77,7 +56,10 @@ export { baseLLMService } from "./services/base.llm.service.js";
 export type { BaseLLMServiceConfig } from "./services/base.llm.service.js";
 
 export { baseVoiceService } from "./services/base.voice.service.js";
-export type { BaseVoiceServiceConfig, VoiceServiceUtils } from "./services/base.voice.service.js";
+export type {
+  BaseVoiceServiceConfig,
+  VoiceServiceUtils,
+} from "./services/base.voice.service.js";
 
 export { elevenlabsVoiceService } from "./services/ElevenLabsService/elevenlabs.voice.service.js";
 export type { ElevenLabsVoiceServiceConfig } from "./services/ElevenLabsService/elevenlabs.voice.service.js";
@@ -94,14 +76,17 @@ export { currentDatePrompt } from "./prompts/current-date.js";
 // Export memory services
 export { createSimpleSTMService } from "./services/memory/stm.service.js";
 export { createMTMService } from "./services/memory/mtm.service.js";
-export type { 
-  STMService, 
-  STMConfig, 
+export type {
+  STMService,
+  STMConfig,
   MemoryEvent,
   MTMService,
   MTMConfig,
-  MTMSummary
+  MTMSummary,
 } from "./services/memory/memory.types.js";
 
 // Export memory tools
-export { createMemoryTools, getMemoryToolsArray } from "./tools/memory.tools.js";
+export {
+  createMemoryTools,
+  getMemoryToolsArray,
+} from "./tools/memory.tools.js";
