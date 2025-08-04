@@ -1,5 +1,13 @@
 # @mrck-labs/grid-examples
 
+## 0.7.7
+
+### Patch Changes
+
+- Updated dependencies [ca3b130]
+  - @mrck-labs/grid-core@0.21.0
+  - @mrck-labs/grid-agents@0.6.9
+
 ## 0.7.6
 
 ### Patch Changes

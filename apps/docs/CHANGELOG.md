@@ -1,5 +1,11 @@
 # docs
 
+## 0.6.0
+
+### Minor Changes
+
+- ca3b130: introduced simple memory system architecture
+
 ## 0.5.0
 
 ### Minor Changes

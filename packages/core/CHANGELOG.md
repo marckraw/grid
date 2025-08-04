@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.21.0
+
+### Minor Changes
+
+- ca3b130: introduced simple memory system architecture
+
 ## 0.20.0
 
 ### Minor Changes
