@@ -1,7 +1,14 @@
 import z from "zod";
 import { AgentFlowContextSchema, type ProgressMessage } from "./index.js";
 import { ChatMessageSchema } from "./llm.types.js";
-import type { VoiceConfig, VoiceService, AudioResult, TranscriptionResult, VoiceOptions, TranscribeOptions } from "./voice.types.js";
+import type {
+  VoiceConfig,
+  VoiceService,
+  AudioResult,
+  TranscriptionResult,
+  VoiceOptions,
+  TranscribeOptions,
+} from "./voice.types.js";
 
 export const AgentTypeSchema = z.enum([
   "general",
@@ -29,6 +36,43 @@ export const AgentCapabilitySchema = z.enum([
   "decision-maker",
   "orchestrator",
   "site-builder",
+  "web_search",
+  "image_generation",
+  "file_analysis",
+  "planning",
+  "memory_search",
+  "writing",
+  "summarizing",
+  "content_creation",
+  "text_refinement",
+  "text_rephrasing",
+  "clarity_improvement",
+  "design_analysis",
+  "figma_integration",
+  "ui_ux_feedback",
+  "storyblok_components",
+  "cms_management",
+  "content_structure",
+  "layout_design",
+  "architecture_planning",
+  "design_systems",
+  "storyblok_editing",
+  "irf_transformation",
+  "content_validation",
+  "openrouter_models",
+  "experimental_features",
+  "model_testing",
+  "design_to_code",
+  "component_generation",
+  "message_analysis",
+  "action_planning",
+  "memory_management",
+  "workflow_routing",
+  "task_analysis",
+  "agent_coordination",
+  "parallel_execution",
+  "pipeline_execution",
+  "result_synthesis",
 ]);
 
 export const AgentMetadataSchema = z.object({
@@ -50,10 +94,12 @@ export const VoiceConfigSchema = z.object({
   autoSpeak: z.boolean().optional(),
   autoListen: z.boolean().optional(),
   allowInterruption: z.boolean().optional(),
-  mixedModality: z.object({
-    enabled: z.boolean(),
-    mergeStrategy: z.enum(['temporal', 'contextual', 'append'])
-  }).optional(),
+  mixedModality: z
+    .object({
+      enabled: z.boolean(),
+      mergeStrategy: z.enum(["temporal", "contextual", "append"]),
+    })
+    .optional(),
 });
 
 // Base agent config schema
