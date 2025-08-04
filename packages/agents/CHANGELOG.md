@@ -1,5 +1,14 @@
 # @mrck-labs/grid-agents
 
+## 0.7.3
+
+### Patch Changes
+
+- 3fd82e0: unify with hq part 2
+- Updated dependencies [3fd82e0]
+  - @mrck-labs/grid-tools@14.0.3
+  - @mrck-labs/grid-core@0.22.3
+
 ## 0.7.2
 
 ### Patch Changes
