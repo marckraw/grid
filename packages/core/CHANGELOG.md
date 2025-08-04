@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.22.1
+
+### Patch Changes
+
+- 02ed981: export without type prefix
+
 ## 0.22.0
 
 ### Minor Changes
