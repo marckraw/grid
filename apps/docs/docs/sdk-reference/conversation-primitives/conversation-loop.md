@@ -45,6 +45,12 @@ function createConversationLoop(
     - **Type**: `(message: ProgressMessage) => Promise<void>`
   - `maxTurns`: Optional limit on conversation turns
     - **Type**: `number`
+  - `historyMode`: How to handle message history when sending to agent
+    - **Type**: `HistoryMode` - `'full' | 'none' | 'last-n'`
+    - **Default**: `'full'`
+  - `historyLimit`: Number of messages to include in 'last-n' mode
+    - **Type**: `number`
+    - **Default**: `5`
 
 ### GroupedHandlers
 
@@ -170,6 +176,34 @@ Reset the conversation to start fresh.
 - Clears all messages except system prompt
 - Resets state and metrics
 - Allows new conversation to begin
+
+#### setHistoryMode
+```typescript
+setHistoryMode(mode: HistoryMode, limit?: number): void
+```
+Set how message history is passed to the agent.
+
+**Parameters**:
+- `mode`: History mode to use
+  - `'full'`: Send complete conversation history (default)
+  - `'none'`: Send only the current message (amnesia mode)
+  - `'last-n'`: Send only the last N messages
+- `limit`: Number of messages for 'last-n' mode (optional)
+
+**Use Cases**:
+- Testing memory retrieval tools
+- Reducing context size for long conversations
+- Forcing agents to use external memory systems
+
+#### getHistoryMode
+```typescript
+getHistoryMode(): { mode: HistoryMode; limit: number }
+```
+Get the current history mode configuration.
+
+**Returns**: Object containing:
+- `mode`: Current history mode
+- `limit`: Current limit for 'last-n' mode
 
 ## Examples
 
@@ -382,6 +416,96 @@ console.log(analytics);
 await loop.endConversation();
 ```
 
+### History Mode Management
+
+```typescript
+const loop = createConversationLoop({
+  agent,
+  historyMode: 'full' // Default behavior
+});
+
+// Have a conversation
+await loop.sendMessage("My name is Alice");
+await loop.sendMessage("I'm interested in quantum computing");
+
+// Switch to amnesia mode - agent won't see previous messages
+loop.setHistoryMode('none');
+await loop.sendMessage("What's my name?");
+// Agent won't know unless it uses memory tools!
+
+// This is useful for testing memory systems (Beta)
+// See: /docs/guides/memory-integration
+
+// Switch to last-n mode
+loop.setHistoryMode('last-n', 3);
+await loop.sendMessage("What have we discussed?");
+// Agent only sees last 3 messages
+
+// Check current mode
+const { mode, limit } = loop.getHistoryMode();
+console.log(`History mode: ${mode}, limit: ${limit}`);
+
+// Restore full history
+loop.setHistoryMode('full');
+```
+
+### Testing Memory Tools with History Mode
+
+```typescript
+import { createMemoryTools } from "@mrck-labs/grid-core";
+
+// Create agent with memory tools
+const memoryTools = createMemoryTools(memoryService);
+const agent = createConfigurableAgent({
+  tools: Object.values(memoryTools),
+  // ... other config
+});
+
+const loop = createConversationLoop({
+  agent,
+  onProgress: (update) => {
+    // Log when memory tools are used
+    if (update.type === 'tool_execution' && update.metadata?.toolName?.includes('memory')) {
+      console.log('Agent is using memory tools!');
+    }
+  }
+});
+
+// Normal conversation
+await loop.sendMessage("Remember that my favorite color is blue");
+
+// Disable history to test memory retrieval
+loop.setHistoryMode('none');
+await loop.sendMessage("What's my favorite color?");
+// Agent must use memory tools to answer correctly
+```
+
+## History Modes
+
+### Full Mode (Default)
+The agent receives the complete conversation history on each turn. This is the standard behavior that provides full context.
+
+**Use when**:
+- You want normal conversational flow
+- Context is important for responses
+- The conversation is not too long
+
+### None Mode (Amnesia)
+The agent receives only the current user message, no history. Forces the agent to rely on external memory systems or tools.
+
+**Use when**:
+- Testing memory retrieval systems
+- Simulating stateless interactions
+- Forcing tool usage for context
+
+### Last-N Mode
+The agent receives only the last N messages from the conversation.
+
+**Use when**:
+- Limiting context size for long conversations
+- Balancing context and performance
+- Implementing sliding window context
+
 ## Progress Message Types
 
 The `onProgress` callback receives messages with these types:
@@ -400,10 +524,25 @@ The `onProgress` callback receives messages with these types:
 3. **Monitor progress** - Use onProgress for real-time user feedback
 4. **Export long conversations** - Periodically export for recovery
 5. **End conversations properly** - Call endConversation() for cleanup
+6. **Consider memory integration (Beta)** - For agents that need to remember across sessions, see the [memory integration guide](/docs/guides/memory-integration)
 
 ## TypeScript Types
 
 ```typescript
+type HistoryMode = 'full' | 'none' | 'last-n';
+
+interface ConversationLoopOptions {
+  agent: Agent;
+  handlers?: GroupedHandlers;
+  onMessage?: (response: AgentResponse) => Promise<void>;
+  onError?: (error: Error) => Promise<void>;
+  onComplete?: (summary: any) => Promise<void>;
+  onProgress?: (message: ProgressMessage) => Promise<void>;
+  maxTurns?: number;
+  historyMode?: HistoryMode;
+  historyLimit?: number;
+}
+
 interface ConversationAnalytics {
   messageCount: number;
   userMessageCount: number;

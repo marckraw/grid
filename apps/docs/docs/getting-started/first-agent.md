@@ -378,9 +378,10 @@ You've built a complete research assistant! To enhance it further:
 
 1. **Add Real APIs**: Integrate actual search APIs like Serper or Bing
 2. **Enhance Tools**: Add more tools for data analysis, visualization, or API calls
-3. **Add Persistence**: Store research history in a database
-4. **Create a Web Interface**: Use the Next.js integration to build a UI
-5. **Enable Observability**: Set up Langfuse to monitor your agent's performance
+3. **Add Memory (Beta)**: Enable your agent to remember past research with the [memory system](/docs/guides/memory-integration)
+4. **Add Persistence**: Store research history in a database
+5. **Create a Web Interface**: Use the Next.js integration to build a UI
+6. **Enable Observability**: Set up Langfuse to monitor your agent's performance
 
 Continue learning:
 - [Explore core concepts](/docs/core-concepts/agents)

@@ -17,6 +17,7 @@ Grid provides a comprehensive framework for orchestrating Large Language Model (
 - 🚀 **Stream progress** in real-time for responsive user experiences
 - 💾 **Persist conversations** with event-based hooks for any database
 - 🔄 **Build workflows** with deterministic multi-step processes and AI integration
+- 🧠 **Remember context** with multi-layered memory system (Beta)
 
 ## Key Features
 
@@ -60,6 +61,14 @@ Monitor your AI applications with comprehensive tracing:
 - Error tracking and debugging
 - Session grouping and visualization
 
+### 🧠 Memory System (Beta)
+Enable agents to remember and learn from interactions:
+
+- **STM (Short-Term Memory)**: Raw event logging with high fidelity
+- **MTM (Mid-Term Memory)**: Daily summaries with fact extraction
+- **Memory Tools**: Built-in tools for agents to query their own memory
+- **Hybrid Storage**: JSON for queries, Markdown for context
+
 ## Why Grid?
 
 Grid is designed for developers who need:
@@ -72,6 +81,7 @@ Grid is designed for developers who need:
 6. **Event-driven architecture** for seamless database integration
 7. **Pre-built components** for rapid development
 8. **Workflow orchestration** for complex multi-step processes
+9. **Persistent memory** for agents that remember and learn (Beta)
 
 ## Quick Example
 

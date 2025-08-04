@@ -247,6 +247,32 @@ const smartSearchTool = createNamedTool({
 });
 ```
 
+### Memory Tools 🚧
+
+:::info Beta Feature
+Grid now includes a comprehensive memory system with pre-built tools. Learn more in the [Memory Integration Guide](/docs/guides/memory-integration).
+:::
+
+Grid provides built-in memory tools for persistent agent memory:
+
+```typescript
+import { createMemoryTools, createSimpleSTMService, createMTMService } from "@mrck-labs/grid-core";
+
+// Create memory services
+const stm = createSimpleSTMService({ logPath: './memory/stm.jsonl' });
+const mtm = createMTMService({ stm, llmService: baseLLMService() });
+
+// Create memory tools
+const memoryTools = createMemoryTools({ stm, mtm });
+
+// Available tools:
+// - search_recent_memory: Search through recent events
+// - recall_conversation_history: Recall previous messages
+// - get_memory_statistics: Analyze memory patterns
+// - search_memory_by_tags: Find categorized memories
+// - recall_facts: Remember important information
+```
+
 ### Stateful Tools
 
 Tools that maintain state across calls:
@@ -495,6 +521,8 @@ describe("Weather Tool", () => {
 
 ## Next Steps
 
+- [Memory System](/docs/core-concepts/memory) - Learn about the memory system and tools
+- [Memory Integration Guide](/docs/guides/memory-integration) - Add memory to your agents
 - [Services Architecture](/docs/core-concepts/services-architecture) - Understand how tools integrate with services
 - [Building Custom Tools](/docs/guides/building-custom-tools) - Deep dive into tool creation
 - [MCP Integration](/docs/guides/mcp-integration) - Use Model Context Protocol tools

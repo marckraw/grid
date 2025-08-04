@@ -70,6 +70,7 @@ export type {
   ConversationLoopOptions,
   GroupedHandlers,
   SendMessageResult,
+  HistoryMode,
 } from "./services/conversation-loop.service.js";
 
 export { baseLLMService } from "./services/base.llm.service.js";
@@ -89,3 +90,18 @@ export {
 
 // Prompts and prompts helpers
 export { currentDatePrompt } from "./prompts/current-date.js";
+
+// Export memory services
+export { createSimpleSTMService } from "./services/memory/stm.service.js";
+export { createMTMService } from "./services/memory/mtm.service.js";
+export type { 
+  STMService, 
+  STMConfig, 
+  MemoryEvent,
+  MTMService,
+  MTMConfig,
+  MTMSummary
+} from "./services/memory/memory.types.js";
+
+// Export memory tools
+export { createMemoryTools, getMemoryToolsArray } from "./tools/memory.tools.js";
