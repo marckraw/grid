@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.22.0
+
+### Minor Changes
+
+- adbcb6a: align the types and release and export all types and stuff from index types
+
 ## 0.21.0
 
 ### Minor Changes

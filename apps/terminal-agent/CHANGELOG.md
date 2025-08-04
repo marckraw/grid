@@ -1,5 +1,19 @@
 # terminal-agent
 
+## 0.11.0
+
+### Minor Changes
+
+- adbcb6a: align the types and release and export all types and stuff from index types
+
+### Patch Changes
+
+- Updated dependencies [adbcb6a]
+  - @mrck-labs/grid-workflows@7.0.0
+  - @mrck-labs/grid-agents@0.7.0
+  - @mrck-labs/grid-tools@14.0.0
+  - @mrck-labs/grid-core@0.22.0
+
 ## 0.10.0
 
 ### Minor Changes
