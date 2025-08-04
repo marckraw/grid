@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.22.2
+
+### Patch Changes
+
+- e74b9d7: add some agent related types and export some functions to unify with hq
+
 ## 0.22.1
 
 ### Patch Changes
