@@ -6,7 +6,6 @@ import { z } from "zod";
 export const ProgressMessageTypeEnum = z.enum([
   "user_message",
   "agent_thought",
-  "error",
   "finished",
   "connection",
   "tool_execution",
@@ -25,6 +24,9 @@ export const ProgressMessageTypeEnum = z.enum([
   "listening_start",
   "listening_complete",
   "voice_error",
+  "warning",
+  "error",
+  "success",
 ]);
 
 /**

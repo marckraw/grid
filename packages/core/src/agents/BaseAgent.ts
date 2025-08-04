@@ -7,7 +7,7 @@ import {
 import { type LLMService } from "../types/llm.types.js";
 import { baseLLMService } from "../services/base.llm.service.js";
 
-export interface BaseAgent extends Omit<Agent, "act"> {
+export interface BaseAgent extends Omit<Agent, "act" | "sendUpdate"> {
   availableTools: any[];
   llmService: LLMService;
 }
