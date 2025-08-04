@@ -1,5 +1,19 @@
 # terminal-agent
 
+## 0.10.0
+
+### Minor Changes
+
+- ca3b130: introduced simple memory system architecture
+
+### Patch Changes
+
+- Updated dependencies [ca3b130]
+  - @mrck-labs/grid-core@0.21.0
+  - @mrck-labs/grid-agents@0.6.9
+  - @mrck-labs/grid-tools@13.0.0
+  - @mrck-labs/grid-workflows@6.0.0
+
 ## 0.9.1
 
 ### Patch Changes
