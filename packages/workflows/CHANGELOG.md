@@ -1,5 +1,13 @@
 # @mrck-labs/grid-workflows
 
+## 7.0.3
+
+### Patch Changes
+
+- 3fd82e0: unify with hq part 2
+- Updated dependencies [3fd82e0]
+  - @mrck-labs/grid-core@0.22.3
+
 ## 7.0.2
 
 ### Patch Changes
