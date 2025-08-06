@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.23.0
+
+### Minor Changes
+
+- 1ed0b27: createImage tool exposed, update langfuse service with comatibility to HQ
+
 ## 0.22.3
 
 ### Patch Changes
