@@ -56,6 +56,7 @@ export type {
 
 export { baseLLMService } from "./services/base.llm.service.js";
 export type { BaseLLMServiceConfig } from "./services/base.llm.service.js";
+export type { LLMService } from "./types/llm.types.js";
 
 export { baseVoiceService } from "./services/base.voice.service.js";
 export type {
