@@ -7,7 +7,11 @@ import {
 } from "@mrck-labs/grid-core";
 import { textWithCancel, isCancel } from "../utils/prompts.js";
 import { createSpinner } from "../utils/spinners.js";
-import { calculatorTool, currentTimeTool } from "@mrck-labs/grid-tools";
+import {
+  calculatorTool,
+  currentTimeTool,
+  createImageTool,
+} from "@mrck-labs/grid-tools";
 import pc from "picocolors";
 import { saveConversation } from "./helpers/conversation.helper.js";
 import {
@@ -89,6 +93,7 @@ export async function exploreAgentConversation(): Promise<void> {
   // Register local tools
   toolExecutor.registerTool(calculatorTool);
   toolExecutor.registerTool(currentTimeTool);
+  toolExecutor.registerTool(createImageTool);
 
   // Register MCP tools if available
   for (const tool in transformerMcpTools) {
@@ -126,7 +131,7 @@ Be concise but friendly in your responses.`,
       },
       tools: {
         builtin: [],
-        custom: [calculatorTool, currentTimeTool],
+        custom: [calculatorTool, currentTimeTool, createImageTool],
         mcp: [...transformerMcpTools, ...transformedLinearMcpTools],
         agents: [],
       },

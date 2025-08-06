@@ -13,6 +13,7 @@ export { systemInfoTool } from "./tools/system-info.tool";
 export { delayTool } from "./tools/delay.tool";
 export { hashTool } from "./tools/hash.tool";
 export { dataConverterTool } from "./tools/data-converter.tool";
+export { createImageTool } from "./tools/create-image.tool";
 
 // Export all tools as a collection for convenience
 import { calculatorTool } from "./tools/calculator.tool";
@@ -25,6 +26,7 @@ import { systemInfoTool } from "./tools/system-info.tool";
 import { delayTool } from "./tools/delay.tool";
 import { hashTool } from "./tools/hash.tool";
 import { dataConverterTool } from "./tools/data-converter.tool";
+import { createImageTool } from "./tools/create-image.tool";
 
 export const allTools = {
   calculator: calculatorTool,
@@ -37,4 +39,5 @@ export const allTools = {
   delay: delayTool,
   hash: hashTool,
   dataConverter: dataConverterTool,
+  createImage: createImageTool,
 };
