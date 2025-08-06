@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.23.1
+
+### Patch Changes
+
+- 99aa7e8: expose llmservice type
+
 ## 0.23.0
 
 ### Minor Changes
