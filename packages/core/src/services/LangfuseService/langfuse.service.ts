@@ -1,39 +1,64 @@
 import { Langfuse } from "langfuse";
-import type {
-  CreateLangfuseServiceConfig,
-  LangfuseGenerationOptions,
-  LangfuseGenerationUpdate,
-  LangfuseTraceOptions,
-} from "./langfuse.types.js";
 
-export const createLangfuseService = (
-  config: CreateLangfuseServiceConfig = {}
-) => {
-  // Default configuration
+export interface LangfuseTraceOptions {
+  name?: string;
+  sessionId?: string;
+  userId?: string;
+  conversationId?: number;
+  agentType?: string;
+  metadata?: Record<string, any>;
+  tags?: string[];
+}
+
+export interface LangfuseGenerationOptions {
+  name: string;
+  model: string;
+  input: any;
+  metadata?: Record<string, any>;
+  tags?: string[];
+}
+
+export interface LangfuseGenerationUpdate {
+  output?: any;
+  usage?: {
+    input?: number;
+    output?: number;
+    total?: number;
+  };
+  cost?: {
+    input?: number;
+    output?: number;
+    total?: number;
+  };
+  error?: Error | string;
+}
+
+export interface CreateLangfuseServiceConfig {
+  env?: {
+    LANGFUSE_ENABLED: boolean;
+    LANGFUSE_SECRET_KEY: string;
+    LANGFUSE_PUBLIC_KEY: string;
+    LANGFUSE_BASE_URL: string;
+    LANGFUSE_FLUSH_AT: number;
+    LANGFUSE_FLUSH_INTERVAL: number;
+  };
+}
+
+const createLangfuseService = (config: CreateLangfuseServiceConfig = {}) => {
   const defaultEnv = {
     LANGFUSE_ENABLED: process.env.LANGFUSE_ENABLED === "true",
     LANGFUSE_SECRET_KEY: process.env.LANGFUSE_SECRET_KEY || "",
     LANGFUSE_PUBLIC_KEY: process.env.LANGFUSE_PUBLIC_KEY || "",
     LANGFUSE_BASE_URL: process.env.LANGFUSE_BASE_URL || "",
     LANGFUSE_FLUSH_AT: Number(process.env.LANGFUSE_FLUSH_AT) || 1,
-    LANGFUSE_FLUSH_INTERVAL:
-      Number(process.env.LANGFUSE_FLUSH_INTERVAL) || 1000,
-  };
-
-  const defaultLogs = {
-    onInfo: (message: string, data?: unknown) => console.info(message, data),
-    onDebug: (message: string, data?: unknown) => console.debug(message, data),
-    onWarn: (message: string, data?: unknown) => console.warn(message, data),
-    onError: (message: string, data?: unknown) => console.error(message, data),
+    LANGFUSE_FLUSH_INTERVAL: Number(process.env.LANGFUSE_FLUSH_INTERVAL) || 1000,
   };
 
   // Merge with provided config
   const mergedConfig = {
     env: { ...defaultEnv, ...config.env },
-    logs: { ...defaultLogs, ...config.logs },
   };
 
-  const { env, logs } = mergedConfig;
   // === SESSION & TRACE MANAGEMENT ===
   // In-memory storage for session-based tracing
   const sessionTraces = new Map<string, any>(); // sessionToken -> current trace
@@ -41,36 +66,34 @@ export const createLangfuseService = (
 
   // Initialize Langfuse client with proper configuration
   const langfuse = (() => {
-    if (!env.LANGFUSE_ENABLED) {
-      logs.onInfo("🔍 Langfuse tracing is disabled");
+    if (!mergedConfig.env.LANGFUSE_ENABLED) {
+      console.info("🔍 Langfuse tracing is disabled");
       return null;
     }
 
-    if (!env.LANGFUSE_SECRET_KEY || !env.LANGFUSE_PUBLIC_KEY) {
-      logs.onWarn(
-        "⚠️ Langfuse API keys not configured. Tracing will be disabled."
-      );
+    if (!mergedConfig.env.LANGFUSE_SECRET_KEY || !mergedConfig.env.LANGFUSE_PUBLIC_KEY) {
+      console.warn("⚠️ Langfuse API keys not configured. Tracing will be disabled.");
       return null;
     }
 
     try {
       const client = new Langfuse({
-        secretKey: env.LANGFUSE_SECRET_KEY!,
-        publicKey: env.LANGFUSE_PUBLIC_KEY!,
-        baseUrl: env.LANGFUSE_BASE_URL,
-        flushAt: env.LANGFUSE_FLUSH_AT,
-        flushInterval: env.LANGFUSE_FLUSH_INTERVAL,
+        secretKey: mergedConfig.env.LANGFUSE_SECRET_KEY!,
+        publicKey: mergedConfig.env.LANGFUSE_PUBLIC_KEY!,
+        baseUrl: mergedConfig.env.LANGFUSE_BASE_URL,
+        flushAt: mergedConfig.env.LANGFUSE_FLUSH_AT,
+        flushInterval: mergedConfig.env.LANGFUSE_FLUSH_INTERVAL,
       });
 
-      logs.onInfo("🔍 Langfuse tracing initialized successfully", {
-        baseUrl: env.LANGFUSE_BASE_URL,
-        flushAt: env.LANGFUSE_FLUSH_AT,
-        flushInterval: env.LANGFUSE_FLUSH_INTERVAL,
+      console.info("🔍 Langfuse tracing initialized successfully", {
+        baseUrl: mergedConfig.env.LANGFUSE_BASE_URL,
+        flushAt: mergedConfig.env.LANGFUSE_FLUSH_AT,
+        flushInterval: mergedConfig.env.LANGFUSE_FLUSH_INTERVAL,
       });
 
       return client;
     } catch (error) {
-      logs.onError("❌ Failed to initialize Langfuse:", error);
+      console.error("❌ Failed to initialize Langfuse:", error);
       return null;
     }
   })();
@@ -79,7 +102,7 @@ export const createLangfuseService = (
    * Check if Langfuse is available and enabled
    */
   const isEnabled = (): boolean => {
-    return langfuse !== null && env.LANGFUSE_ENABLED;
+    return langfuse !== null && mergedConfig.env.LANGFUSE_ENABLED;
   };
 
   /**
@@ -124,15 +147,12 @@ export const createLangfuseService = (
 
                 if (update.error) {
                   endParams.level = "ERROR";
-                  endParams.statusMessage =
-                    typeof update.error === "string"
-                      ? update.error
-                      : update.error.message;
+                  endParams.statusMessage = typeof update.error === "string" ? update.error : update.error.message;
                 }
 
                 generation.end(endParams);
               } catch (error) {
-                logs.onError("Failed to end Langfuse generation:", error);
+                console.error("Failed to end Langfuse generation:", error);
               }
             },
             update: (update: Partial<LangfuseGenerationUpdate>) => {
@@ -142,7 +162,7 @@ export const createLangfuseService = (
                   usage: update.usage,
                 });
               } catch (error) {
-                logs.onError("Failed to update Langfuse generation:", error);
+                console.error("Failed to update Langfuse generation:", error);
               }
             },
           };
@@ -163,13 +183,12 @@ export const createLangfuseService = (
 
                 if (error) {
                   endParams.level = "ERROR";
-                  endParams.statusMessage =
-                    typeof error === "string" ? error : error.message;
+                  endParams.statusMessage = typeof error === "string" ? error : error.message;
                 }
 
                 span.end(endParams);
               } catch (err) {
-                logs.onError("Failed to end Langfuse span:", err);
+                console.error("Failed to end Langfuse span:", err);
               }
             },
           };
@@ -180,12 +199,12 @@ export const createLangfuseService = (
               output,
             });
           } catch (error) {
-            logs.onError("Failed to end Langfuse trace:", error);
+            console.error("Failed to end Langfuse trace:", error);
           }
         },
       };
     } catch (error) {
-      logs.onError("Failed to create Langfuse trace:", error);
+      console.error("Failed to create Langfuse trace:", error);
       return createNoOpTrace();
     }
   };
@@ -248,7 +267,7 @@ export const createLangfuseService = (
     try {
       await langfuse!.flushAsync();
     } catch (error) {
-      logs.onError("Failed to flush Langfuse events:", error);
+      console.error("Failed to flush Langfuse events:", error);
     }
   };
 
@@ -261,7 +280,7 @@ export const createLangfuseService = (
     try {
       await langfuse!.shutdownAsync();
     } catch (error) {
-      logs.onError("Failed to shutdown Langfuse:", error);
+      console.error("Failed to shutdown Langfuse:", error);
     }
   };
 
@@ -287,7 +306,7 @@ export const createLangfuseService = (
         comment: options.comment,
       });
     } catch (error) {
-      logs.onError("Failed to create Langfuse score:", error);
+      console.error("Failed to create Langfuse score:", error);
     }
   };
 
@@ -333,7 +352,7 @@ export const createLangfuseService = (
       // Store current trace for this session
       sessionTraces.set(sessionToken, trace);
 
-      logs.onInfo(`🔍 Created execution trace: ${traceName}`, {
+      console.info(`🔍 Created execution trace: ${traceName}`, {
         sessionToken,
         agentType,
         conversationId,
@@ -346,7 +365,7 @@ export const createLangfuseService = (
         executionNumber: newCount,
       };
     } catch (error) {
-      logs.onError("Failed to create execution trace:", error);
+      console.error("Failed to create execution trace:", error);
       return createNoOpTrace();
     }
   };
@@ -369,7 +388,7 @@ export const createLangfuseService = (
   ) => {
     const trace = getCurrentTrace(sessionToken);
     if (!trace) {
-      logs.onWarn(`No active trace found for session: ${sessionToken}`);
+      console.warn(`No active trace found for session: ${sessionToken}`);
       return null;
     }
 
@@ -384,13 +403,13 @@ export const createLangfuseService = (
         input,
       });
 
-      logs.onDebug(`🔍 Created span: ${spanName}`, {
+      console.debug(`🔍 Created span: ${spanName}`, {
         sessionToken,
       });
 
       return span;
     } catch (error) {
-      logs.onError("Failed to create span:", error);
+      console.error("Failed to create span:", error);
       return null;
     }
   };
@@ -398,13 +417,10 @@ export const createLangfuseService = (
   /**
    * Create a generation within the current trace for a session
    */
-  const createGenerationForSession = (
-    sessionToken: string,
-    options: LangfuseGenerationOptions
-  ) => {
+  const createGenerationForSession = (sessionToken: string, options: LangfuseGenerationOptions) => {
     const trace = getCurrentTrace(sessionToken);
     if (!trace) {
-      logs.onWarn(`No active trace found for session: ${sessionToken}`);
+      console.warn(`No active trace found for session: ${sessionToken}`);
       return null;
     }
 
@@ -420,14 +436,14 @@ export const createLangfuseService = (
         },
       });
 
-      logs.onDebug(`🔍 Created generation: ${options.name}`, {
+      console.debug(`🔍 Created generation: ${options.name}`, {
         sessionToken,
         model: options.model,
       });
 
       return generation;
     } catch (error) {
-      logs.onError("Failed to create generation:", error);
+      console.error("Failed to create generation:", error);
       return null;
     }
   };
@@ -435,14 +451,10 @@ export const createLangfuseService = (
   /**
    * Add an event to the current trace for a session
    */
-  const addEventToSession = (
-    sessionToken: string,
-    eventName: string,
-    properties?: Record<string, any>
-  ) => {
+  const addEventToSession = (sessionToken: string, eventName: string, properties?: Record<string, any>) => {
     const trace = getCurrentTrace(sessionToken);
     if (!trace) {
-      logs.onWarn(`No active trace found for session: ${sessionToken}`);
+      console.warn(`No active trace found for session: ${sessionToken}`);
       return;
     }
 
@@ -456,25 +468,21 @@ export const createLangfuseService = (
         },
       });
 
-      logs.onDebug(`🔍 Added event: ${eventName}`, {
+      console.debug(`🔍 Added event: ${eventName}`, {
         sessionToken,
       });
     } catch (error) {
-      logs.onError("Failed to add event:", error);
+      console.error("Failed to add event:", error);
     }
   };
 
   /**
    * End the current execution trace for a session
    */
-  const endExecutionTrace = (
-    sessionToken: string,
-    output?: any,
-    error?: Error | string
-  ) => {
+  const endExecutionTrace = (sessionToken: string, output?: any, error?: Error | string) => {
     const trace = getCurrentTrace(sessionToken);
     if (!trace) {
-      logs.onWarn(`No active trace found for session: ${sessionToken}`);
+      console.warn(`No active trace found for session: ${sessionToken}`);
       return;
     }
 
@@ -488,17 +496,16 @@ export const createLangfuseService = (
 
       if (error) {
         endParams.level = "ERROR";
-        endParams.statusMessage =
-          typeof error === "string" ? error : error.message;
+        endParams.statusMessage = typeof error === "string" ? error : error.message;
       }
 
       trace.update(endParams);
 
-      logs.onInfo(`🔍 Ended execution trace for session: ${sessionToken}`, {
+      console.info(`🔍 Ended execution trace for session: ${sessionToken}`, {
         hasError: !!error,
       });
     } catch (err) {
-      logs.onError("Failed to end execution trace:", err);
+      console.error("Failed to end execution trace:", err);
     } finally {
       // Clean up current trace reference
       sessionTraces.delete(sessionToken);
@@ -518,7 +525,7 @@ export const createLangfuseService = (
     // Clean up counters
     traceCounters.delete(sessionToken);
 
-    logs.onInfo(`🔍 Cleaned up session: ${sessionToken}`);
+    console.info(`🔍 Cleaned up session: ${sessionToken}`);
   };
 
   /**
@@ -527,10 +534,7 @@ export const createLangfuseService = (
   const getSessionStats = () => {
     return {
       activeSessions: sessionTraces.size,
-      totalExecutions: Array.from(traceCounters.values()).reduce(
-        (sum, count) => sum + count,
-        0
-      ),
+      totalExecutions: Array.from(traceCounters.values()).reduce((sum, count) => sum + count, 0),
       sessionTokens: Array.from(sessionTraces.keys()),
     };
   };
@@ -557,3 +561,16 @@ export const createLangfuseService = (
 
 export const langfuseService = createLangfuseService();
 export type LangfuseService = typeof langfuseService;
+
+// Additional interfaces for session-based tracing
+export interface ExecutionTraceResult {
+  trace: any;
+  traceName: string;
+  executionNumber: number;
+}
+
+export interface SessionStats {
+  activeSessions: number;
+  totalExecutions: number;
+  sessionTokens: string[];
+}
