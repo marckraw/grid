@@ -44,14 +44,17 @@ export interface CreateLangfuseServiceConfig {
   };
 }
 
-const createLangfuseService = (config: CreateLangfuseServiceConfig = {}) => {
+export const createLangfuseService = (
+  config: CreateLangfuseServiceConfig = {}
+) => {
   const defaultEnv = {
     LANGFUSE_ENABLED: process.env.LANGFUSE_ENABLED === "true",
     LANGFUSE_SECRET_KEY: process.env.LANGFUSE_SECRET_KEY || "",
     LANGFUSE_PUBLIC_KEY: process.env.LANGFUSE_PUBLIC_KEY || "",
     LANGFUSE_BASE_URL: process.env.LANGFUSE_BASE_URL || "",
     LANGFUSE_FLUSH_AT: Number(process.env.LANGFUSE_FLUSH_AT) || 1,
-    LANGFUSE_FLUSH_INTERVAL: Number(process.env.LANGFUSE_FLUSH_INTERVAL) || 1000,
+    LANGFUSE_FLUSH_INTERVAL:
+      Number(process.env.LANGFUSE_FLUSH_INTERVAL) || 1000,
   };
 
   // Merge with provided config
@@ -71,8 +74,13 @@ const createLangfuseService = (config: CreateLangfuseServiceConfig = {}) => {
       return null;
     }
 
-    if (!mergedConfig.env.LANGFUSE_SECRET_KEY || !mergedConfig.env.LANGFUSE_PUBLIC_KEY) {
-      console.warn("⚠️ Langfuse API keys not configured. Tracing will be disabled.");
+    if (
+      !mergedConfig.env.LANGFUSE_SECRET_KEY ||
+      !mergedConfig.env.LANGFUSE_PUBLIC_KEY
+    ) {
+      console.warn(
+        "⚠️ Langfuse API keys not configured. Tracing will be disabled."
+      );
       return null;
     }
 
@@ -147,7 +155,10 @@ const createLangfuseService = (config: CreateLangfuseServiceConfig = {}) => {
 
                 if (update.error) {
                   endParams.level = "ERROR";
-                  endParams.statusMessage = typeof update.error === "string" ? update.error : update.error.message;
+                  endParams.statusMessage =
+                    typeof update.error === "string"
+                      ? update.error
+                      : update.error.message;
                 }
 
                 generation.end(endParams);
@@ -183,7 +194,8 @@ const createLangfuseService = (config: CreateLangfuseServiceConfig = {}) => {
 
                 if (error) {
                   endParams.level = "ERROR";
-                  endParams.statusMessage = typeof error === "string" ? error : error.message;
+                  endParams.statusMessage =
+                    typeof error === "string" ? error : error.message;
                 }
 
                 span.end(endParams);
@@ -417,7 +429,10 @@ const createLangfuseService = (config: CreateLangfuseServiceConfig = {}) => {
   /**
    * Create a generation within the current trace for a session
    */
-  const createGenerationForSession = (sessionToken: string, options: LangfuseGenerationOptions) => {
+  const createGenerationForSession = (
+    sessionToken: string,
+    options: LangfuseGenerationOptions
+  ) => {
     const trace = getCurrentTrace(sessionToken);
     if (!trace) {
       console.warn(`No active trace found for session: ${sessionToken}`);
@@ -451,7 +466,11 @@ const createLangfuseService = (config: CreateLangfuseServiceConfig = {}) => {
   /**
    * Add an event to the current trace for a session
    */
-  const addEventToSession = (sessionToken: string, eventName: string, properties?: Record<string, any>) => {
+  const addEventToSession = (
+    sessionToken: string,
+    eventName: string,
+    properties?: Record<string, any>
+  ) => {
     const trace = getCurrentTrace(sessionToken);
     if (!trace) {
       console.warn(`No active trace found for session: ${sessionToken}`);
@@ -479,7 +498,11 @@ const createLangfuseService = (config: CreateLangfuseServiceConfig = {}) => {
   /**
    * End the current execution trace for a session
    */
-  const endExecutionTrace = (sessionToken: string, output?: any, error?: Error | string) => {
+  const endExecutionTrace = (
+    sessionToken: string,
+    output?: any,
+    error?: Error | string
+  ) => {
     const trace = getCurrentTrace(sessionToken);
     if (!trace) {
       console.warn(`No active trace found for session: ${sessionToken}`);
@@ -496,7 +519,8 @@ const createLangfuseService = (config: CreateLangfuseServiceConfig = {}) => {
 
       if (error) {
         endParams.level = "ERROR";
-        endParams.statusMessage = typeof error === "string" ? error : error.message;
+        endParams.statusMessage =
+          typeof error === "string" ? error : error.message;
       }
 
       trace.update(endParams);
@@ -534,7 +558,10 @@ const createLangfuseService = (config: CreateLangfuseServiceConfig = {}) => {
   const getSessionStats = () => {
     return {
       activeSessions: sessionTraces.size,
-      totalExecutions: Array.from(traceCounters.values()).reduce((sum, count) => sum + count, 0),
+      totalExecutions: Array.from(traceCounters.values()).reduce(
+        (sum, count) => sum + count,
+        0
+      ),
       sessionTokens: Array.from(sessionTraces.keys()),
     };
   };
