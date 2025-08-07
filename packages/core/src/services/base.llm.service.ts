@@ -7,12 +7,15 @@ import type {
 import { generateText, generateObject, streamText } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { anthropic } from "@ai-sdk/anthropic";
+import {
+  langfuseService,
+  type LangfuseService,
+} from "./LangfuseService/langfuse.service.js";
 
 export interface BaseLLMServiceConfig {
   toolExecutionMode?: "vercel-native" | "custom" | "none";
   defaultModel?: string;
-  langfuse?: any;
-  // langfuse?: LangfuseService;
+  langfuse?: LangfuseService;
 }
 
 export const baseLLMService = (
@@ -21,7 +24,7 @@ export const baseLLMService = (
   const {
     toolExecutionMode = "custom", // Default to custom execution
     defaultModel = "gpt-4.1-mini",
-    langfuse,
+    langfuse = langfuseService,
   } = config;
 
   const runLLM = async (options: LLMServiceOptions): Promise<ChatMessage> => {
@@ -32,6 +35,7 @@ export const baseLLMService = (
       temperature = 0.1,
       maxTokens,
       responseFormat,
+      traceContext,
     } = options;
 
     console.log("[baseLLMService:runLLM] model used", model);
@@ -91,6 +95,25 @@ export const baseLLMService = (
         ? anthropic(model)
         : openai(model);
 
+      let generation;
+      if (traceContext && traceContext.sessionId) {
+        generation = langfuse.createGenerationForSession(
+          traceContext.sessionId,
+          {
+            name: `llm-${model}`,
+            model,
+            input: {
+              messages: formattedMessages,
+              tools: formattedTools,
+              temperature,
+            },
+            metadata: {
+              ...traceContext.metadata,
+            },
+          }
+        );
+      }
+
       const result = await generateText({
         model: modelInstance,
         messages: formattedMessages,
@@ -100,6 +123,25 @@ export const baseLLMService = (
         maxTokens,
         maxSteps: toolExecutionMode === "vercel-native" ? 3 : 1, // Enable multi-step for vercel-native
       });
+
+      const usage = result.usage;
+      const cost = langfuse.calculateCost(model, {
+        input: usage?.promptTokens,
+        output: usage?.completionTokens,
+        total: usage?.totalTokens,
+      });
+
+      if (generation) {
+        generation.end({
+          output: result.text,
+          usage: {
+            input: usage?.promptTokens,
+            output: usage?.completionTokens,
+            total: usage?.totalTokens,
+          },
+          cost,
+        });
+      }
 
       // Log what we got from Vercel
       if (toolExecutionMode === "vercel-native") {
@@ -144,6 +186,7 @@ export const baseLLMService = (
       messages,
       temperature = 0.1,
       maxTokens,
+      traceContext,
     } = options;
 
     // Convert messages to Vercel AI SDK format
@@ -173,12 +216,38 @@ export const baseLLMService = (
         ? anthropic(model)
         : openai(model);
 
+      let generation;
+      if (traceContext && traceContext.sessionId) {
+        generation = langfuse.createGenerationForSession(
+          traceContext.sessionId,
+          {
+            name: `llm-${model}`,
+            model,
+            input: {
+              messages: messagesWithJsonInstruction,
+              temperature,
+            },
+          }
+        );
+      }
+
       const result = await generateText({
         model: modelInstance,
         messages: messagesWithJsonInstruction,
         temperature,
         maxTokens,
       });
+
+      if (generation) {
+        generation.end({
+          output: result.text,
+          usage: {
+            input: result.usage?.promptTokens,
+            output: result.usage?.completionTokens,
+            total: result.usage?.totalTokens,
+          },
+        });
+      }
 
       return {
         role: "assistant",
