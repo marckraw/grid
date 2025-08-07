@@ -7,6 +7,7 @@ import {
   elevenlabsVoiceService,
   type Voice,
   type AudioResult,
+  langfuseService,
 } from "@mrck-labs/grid-core";
 import { textWithCancel, isCancel } from "../utils/prompts.js";
 import { VoiceProgressIndicator } from "../utils/voice-progress.js";
@@ -54,7 +55,7 @@ export async function exploreVoiceConversation(): Promise<void> {
   p.intro(pc.cyan("🎙️ Voice Conversation Mode"));
   p.log.info("Chat with an AI assistant using voice or text.");
   p.log.info("Press SPACE to start/stop recording, or type normally.");
-  
+
   // Setup readline for key handling if not already done
   const wasRawMode = process.stdin.isRaw;
   if (process.stdin.isTTY) {
@@ -63,7 +64,7 @@ export async function exploreVoiceConversation(): Promise<void> {
       readlineInitialized = true;
     }
     process.stdin.setRawMode(true);
-    
+
     // Increase max listeners to handle @clack/prompts adding its own listeners
     // This is expected behavior when using textWithCancel in a loop
     process.stdin.setMaxListeners(20);
@@ -199,7 +200,7 @@ export async function exploreVoiceConversation(): Promise<void> {
   const agent = createConfigurableAgent({
     llmService: baseLLMService({
       toolExecutionMode: "custom",
-      langfuse: { enabled: true },
+      langfuse: langfuseService,
     }),
     voiceService: voiceService,
     config: {
@@ -319,7 +320,7 @@ When speaking, use a conversational tone as if talking to someone in person.`,
     if (str && str !== " " && !key.ctrl && !key.meta) {
       isTyping = true;
     }
-    
+
     // Only trigger voice on space if not typing
     if (key && key.name === "space" && canRecord && !isTyping) {
       if (!isRecording) {
@@ -368,7 +369,7 @@ When speaking, use a conversational tone as if talking to someone in person.`,
   if (process.stdin.isTTY && canRecord) {
     // Store the current number of listeners before adding ours
     const existingListenerCount = process.stdin.listenerCount("keypress");
-    
+
     // Only add our listener if it's not already there
     // This prevents duplicates while preserving other listeners
     process.stdin.on("keypress", handleKeypress);
@@ -396,7 +397,7 @@ When speaking, use a conversational tone as if talking to someone in person.`,
   const waitForInput = async (): Promise<string | symbol> => {
     // Reset typing flag for new input
     isTyping = false;
-    
+
     return new Promise(async (resolve) => {
       // Check if we already have a voice message
       if (voiceMessageReceived) {
@@ -517,7 +518,7 @@ When speaking, use a conversational tone as if talking to someone in person.`,
     }
     // Restore original raw mode state
     process.stdin.setRawMode(wasRawMode || false);
-    
+
     // Reset max listeners to default (10)
     process.stdin.setMaxListeners(10);
   }
