@@ -16,13 +16,13 @@
         "typescript": "^5.3.3"
     },
     "dependencies": {
-        "@ai-sdk/openai": "^1.3.23",
+        "@ai-sdk/openai": "^2.0.4",
         "@clack/prompts": "^0.11.0",
         "@mrck-labs/grid-agents": "workspace:*",
         "@mrck-labs/grid-core": "workspace:*",
         "@mrck-labs/grid-tools": "workspace:*",
         "@mrck-labs/grid-workflows": "workspace:*",
-        "ai": "^4.3.19",
+        "ai": "^5.0.7",
         "dotenv": "^17.2.0",
         "node-mic-record": "^0.0.1",
         "picocolors": "^1.1.1",
