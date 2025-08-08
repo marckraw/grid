@@ -8,7 +8,7 @@ import { createHash } from "crypto";
 export const hashTool = createNamedTool({
   name: "hash",
   description: "Generate various hash digests of text (MD5, SHA1, SHA256, SHA512)",
-  parameters: z.object({
+  inputSchema: z.object({
     text: z.string().describe("Text to hash"),
     algorithm: z
       .enum(["md5", "sha1", "sha256", "sha512"])

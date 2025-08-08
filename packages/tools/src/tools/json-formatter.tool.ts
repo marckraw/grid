@@ -7,7 +7,7 @@ import { createNamedTool } from "@mrck-labs/grid-core";
 export const jsonFormatterTool = createNamedTool({
   name: "jsonFormatter",
   description: "Format, validate, or minify JSON strings",
-  parameters: z.object({
+  inputSchema: z.object({
     operation: z.enum(["format", "minify", "validate"]).describe("The operation to perform on the JSON"),
     json: z.string().describe("The JSON string to process"),
     indent: z.number().optional().default(2).describe("Number of spaces for indentation when formatting")

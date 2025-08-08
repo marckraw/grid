@@ -7,7 +7,7 @@ import { createNamedTool } from "@mrck-labs/grid-core";
 export const stringUtilsTool = createNamedTool({
   name: "stringUtils",
   description: "Perform various string operations like reverse, count words/chars, or base64 encoding",
-  parameters: z.object({
+  inputSchema: z.object({
     operation: z.enum([
       "reverse",
       "count_words",

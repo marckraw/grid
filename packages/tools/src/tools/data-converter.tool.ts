@@ -7,7 +7,7 @@ import { createNamedTool } from "@mrck-labs/grid-core";
 export const dataConverterTool = createNamedTool({
   name: "dataConverter",
   description: "Convert between different data formats (JSON, CSV, TSV)",
-  parameters: z.object({
+  inputSchema: z.object({
     from: z.enum(["json", "csv", "tsv"]).describe("Source format"),
     to: z.enum(["json", "csv", "tsv"]).describe("Target format"),
     data: z.string().describe("Data to convert"),

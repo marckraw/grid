@@ -252,7 +252,7 @@ export const elevenlabsVoiceService = (
 
       // Format the response according to our TranscriptionResult interface
       return {
-        text: response.text || "",
+        text: response.text.text || "",
         confidence: response.confidence,
         language: response.language || options?.language,
         duration: response.duration,

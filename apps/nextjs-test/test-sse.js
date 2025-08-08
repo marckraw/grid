@@ -16,7 +16,7 @@ async function testSSE() {
 
     if (!response.ok) {
       console.error('Error:', response.status, response.statusText);
-      const text = await response.text();
+      const text = await response.text.text();
       console.error('Response:', text);
       return;
     }

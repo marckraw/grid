@@ -33,7 +33,7 @@ export const baseLLMService = (
       messages,
       tools = [],
       temperature = 0.1,
-      maxTokens,
+      maxOutputTokens,
       responseFormat,
       traceContext,
     } = options;
@@ -120,23 +120,23 @@ export const baseLLMService = (
         tools: formattedTools,
         toolChoice: "auto", // Let model decide when to use tools
         temperature,
-        maxTokens,
+        maxOutputTokens,
         maxSteps: toolExecutionMode === "vercel-native" ? 3 : 1, // Enable multi-step for vercel-native
       });
 
       const usage = result.usage;
       const cost = langfuse.calculateCost(model, {
-        input: usage?.promptTokens,
-        output: usage?.completionTokens,
+        input: usage?.inputTokens,
+        output: usage?.outputTokens,
         total: usage?.totalTokens,
       });
 
       if (generation) {
         generation.end({
-          output: result.text,
+          output: result.text.text,
           usage: {
-            input: usage?.promptTokens,
-            output: usage?.completionTokens,
+            input: usage?.inputTokens,
+            output: usage?.outputTokens,
             total: usage?.totalTokens,
           },
           cost,
@@ -146,7 +146,7 @@ export const baseLLMService = (
       // Log what we got from Vercel
       if (toolExecutionMode === "vercel-native") {
         console.log("[baseLLMService] Vercel result:", {
-          text: result.text,
+          text: result.text.text,
           toolCalls: result.toolCalls,
           toolResults: result.toolResults,
           finishReason: result.finishReason,
@@ -156,7 +156,7 @@ export const baseLLMService = (
       // Convert response back to our ChatMessage format
       const response: ChatMessage = {
         role: "assistant",
-        content: result.text || null,
+        content: result.text.text || null,
       };
 
       // Handle tool calls if present
@@ -185,7 +185,7 @@ export const baseLLMService = (
       model = defaultModel,
       messages,
       temperature = 0.1,
-      maxTokens,
+      maxOutputTokens,
       traceContext,
     } = options;
 
@@ -235,15 +235,15 @@ export const baseLLMService = (
         model: modelInstance,
         messages: messagesWithJsonInstruction,
         temperature,
-        maxTokens,
+        maxOutputTokens,
       });
 
       if (generation) {
         generation.end({
-          output: result.text,
+          output: result.text.text,
           usage: {
-            input: result.usage?.promptTokens,
-            output: result.usage?.completionTokens,
+            input: result.usage?.inputTokens,
+            output: result.usage?.outputTokens,
             total: result.usage?.totalTokens,
           },
         });
@@ -251,7 +251,7 @@ export const baseLLMService = (
 
       return {
         role: "assistant",
-        content: result.text,
+        content: result.text.text,
       };
     } catch (error) {
       console.error("Error calling Vercel AI SDK for JSON response:", error);
@@ -271,10 +271,10 @@ export const baseLLMService = (
           acc[name] = toolWithoutName;
         } else {
           // Remove execute function for custom execution
-          const { execute, ...toolWithoutExecute } = toolWithoutName;
+          const { execute, ...toolWithoutExecute } = toolWithoutName as any;
           acc[name] = {
             description: toolWithoutExecute.description,
-            parameters: toolWithoutExecute.parameters,
+            inputSchema: toolWithoutExecute.inputSchema,
           };
         }
       }
@@ -292,8 +292,13 @@ export const baseLLMService = (
 
       await generateText({
         model: testModel,
-        messages: [{ role: "user", content: "test" }],
-        maxTokens: 1,
+        messages: [
+          {
+            role: "user",
+            content: "test",
+          },
+        ],
+        maxOutputTokens: 1,
       });
       return true;
     } catch {

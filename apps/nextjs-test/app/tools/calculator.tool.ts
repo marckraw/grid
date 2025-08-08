@@ -7,7 +7,7 @@ import { createNamedTool } from "@mrck-labs/grid-core";
 export const calculatorTool = createNamedTool({
   name: "calculator",
   description: "Perform basic math calculations",
-  parameters: z.object({
+  inputSchema: z.object({
     operation: z
       .enum(["add", "subtract", "multiply", "divide"])
       .describe("The math operation to perform"),

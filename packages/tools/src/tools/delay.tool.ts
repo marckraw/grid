@@ -7,7 +7,7 @@ import { createNamedTool } from "@mrck-labs/grid-core";
 export const delayTool = createNamedTool({
   name: "delay",
   description: "Wait for a specified amount of time (useful for timing operations or rate limiting)",
-  parameters: z.object({
+  inputSchema: z.object({
     milliseconds: z
       .number()
       .min(0)

@@ -7,8 +7,8 @@ import { createNamedTool } from "@mrck-labs/grid-core";
 export const createImageTool = createNamedTool({
   name: "create_image",
   description: "use this to create/generate an image.",
-  parameters: z.object({
-    reasoning: z
+  inputSchema: z.object({
+    reasoningText: z
       .string()
       .describe("Why did you pick this tool to generate the image?"),
     prompt: z
@@ -26,7 +26,7 @@ export const createImageTool = createNamedTool({
       .optional()
       .describe("Optional tags to associate with the generated image"),
   }),
-  execute: async ({ reasoning, prompt, whichModelToUse, tags }) => {
+  execute: async ({ reasoningText, prompt, whichModelToUse, tags }) => {
     // This is a demo tool - in a real implementation, you would integrate with actual image generation services
     const timestamp = new Date().toISOString();
     const imageTags = tags || ["ai-generated", whichModelToUse, "demo"];
@@ -35,7 +35,7 @@ export const createImageTool = createNamedTool({
       return {
         message: `Image would be generated using OpenAI with prompt: "${prompt}"`,
         model: "dall-e-3",
-        reasoning,
+        reasoningText,
         prompt,
         tags: imageTags,
         timestamp,
@@ -46,7 +46,7 @@ export const createImageTool = createNamedTool({
       return {
         message: `Image would be generated using Leonardo AI with prompt: "${prompt}"`,
         model: "leonardo-diffusion",
-        reasoning,
+        reasoningText,
         prompt,
         tags: imageTags,
         timestamp,

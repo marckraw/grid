@@ -7,7 +7,7 @@ import { createNamedTool } from "@mrck-labs/grid-core";
 export const randomNumberTool = createNamedTool({
   name: "randomNumber",
   description: "Generate a random number within a specified range",
-  parameters: z.object({
+  inputSchema: z.object({
     min: z.number().describe("Minimum value (inclusive)"),
     max: z.number().describe("Maximum value (inclusive)"),
     integer: z.boolean().optional().describe("Whether to return an integer (default: false)")

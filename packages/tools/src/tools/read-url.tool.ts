@@ -17,15 +17,15 @@ export const createReadUrlTool = (config?: { firecrawlApiKey?: string }) => {
   return createNamedTool({
     name: "readUrl",
     description: "Read the content of a url",
-    parameters: z.object({
-      reasoning: z.string().describe("why did you pick this tool?"),
+    inputSchema: z.object({
+      reasoningText: z.string().describe("why did you pick this tool?"),
       url: z
         .string()
         .describe(
           "The url to read. The LLM will return a response that will be used to answer the user's message."
         ),
     }),
-    execute: async ({ reasoning, url }) => {
+    execute: async ({ reasoningText, url }) => {
       try {
         const result = await firecrawl.scrapeUrl(url);
 

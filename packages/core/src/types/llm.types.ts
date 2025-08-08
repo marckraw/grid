@@ -37,7 +37,7 @@ export interface LLMServiceOptions {
   tools?: any[];
   model?: string;
   temperature?: number;
-  maxTokens?: number;
+  maxOutputTokens?: number;
   responseFormat?: any;
   traceContext?: LLMTraceContext;
   [key: string]: any; // Allow additional provider-specific options

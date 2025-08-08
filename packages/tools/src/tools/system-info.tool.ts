@@ -8,7 +8,7 @@ import { platform, arch, cpus, totalmem, freemem, homedir } from "os";
 export const systemInfoTool = createNamedTool({
   name: "systemInfo",
   description: "Get system and environment information",
-  parameters: z.object({
+  inputSchema: z.object({
     info: z.enum([
       "os",
       "memory",

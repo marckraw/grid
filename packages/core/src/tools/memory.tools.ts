@@ -13,7 +13,7 @@ export const createMemoryTools = (deps: {
   const searchRecentMemory = createNamedTool({
     name: 'search_recent_memory',
     description: 'Search through recent memory events from the last N hours. Useful for recalling recent conversations, events, or activities.',
-    parameters: z.object({
+    inputSchema: z.object({
       hours: z.number()
         .default(24)
         .describe('How many hours back to search (default: 24)'),
@@ -63,7 +63,7 @@ export const createMemoryTools = (deps: {
   const recallConversationHistory = createNamedTool({
     name: 'recall_conversation_history',
     description: 'Recall previous messages from this or recent conversations. Useful when user refers to "earlier", "before", "what we discussed".',
-    parameters: z.object({
+    inputSchema: z.object({
       limit: z.number()
         .default(10)
         .describe('Maximum number of messages to recall'),
@@ -99,7 +99,7 @@ export const createMemoryTools = (deps: {
   const getMemoryStatistics = createNamedTool({
     name: 'get_memory_statistics',
     description: 'Get statistics about memory usage, event types, and patterns.',
-    parameters: z.object({
+    inputSchema: z.object({
       hours: z.number()
         .default(24)
         .describe('Time window for statistics')
@@ -143,7 +143,7 @@ export const createMemoryTools = (deps: {
   const searchMemoryByTags = createNamedTool({
     name: 'search_memory_by_tags',
     description: 'Search memory events by their tags. Useful for finding related events across different categories.',
-    parameters: z.object({
+    inputSchema: z.object({
       tags: z.array(z.string())
         .describe('Tags to search for (e.g., ["work", "meeting"])'),
       matchAll: z.boolean()
@@ -181,7 +181,7 @@ export const createMemoryTools = (deps: {
   const recallFacts = createNamedTool({
     name: 'recall_facts',
     description: 'Recall important facts like user name, preferences, and key information from memory summaries.',
-    parameters: z.object({
+    inputSchema: z.object({
       query: z.string()
         .describe('What fact to search for (e.g., "user name", "favorite color", "preferences")')
     }),
