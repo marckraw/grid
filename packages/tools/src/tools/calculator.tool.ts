@@ -1,10 +1,11 @@
 import { z } from "zod";
-import { createNamedTool } from "@mrck-labs/grid-core";
+import { tool } from "ai";
+import { GridTool } from "../types";
 
 /**
  * Calculator tool for basic math operations
  */
-export const calculatorTool = createNamedTool({
+export const toolDefinition = {
   name: "calculator",
   description: "Perform basic math calculations",
   inputSchema: z.object({
@@ -14,6 +15,12 @@ export const calculatorTool = createNamedTool({
     a: z.number().describe("First number"),
     b: z.number().describe("Second number"),
   }),
+};
+
+export const calculatorToolWithoutExecute = tool(toolDefinition);
+
+export const calculatorToolWithExecute = tool({
+  ...toolDefinition,
   execute: async ({ operation, a, b }) => {
     let result: number;
 
@@ -43,3 +50,9 @@ export const calculatorTool = createNamedTool({
     };
   },
 });
+
+export const calculatorTool: GridTool = {
+  withExecute: calculatorToolWithExecute,
+  withoutExecute: calculatorToolWithoutExecute,
+  definition: toolDefinition,
+};

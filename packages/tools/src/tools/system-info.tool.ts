@@ -1,11 +1,12 @@
 import { z } from "zod";
-import { createNamedTool } from "@mrck-labs/grid-core";
+import { tool } from "ai";
+import { GridTool } from "../types";
 import { platform, arch, cpus, totalmem, freemem, homedir } from "os";
 
 /**
  * System information tool
  */
-export const systemInfoTool = createNamedTool({
+export const toolDefinition = {
   name: "systemInfo",
   description: "Get system and environment information",
   inputSchema: z.object({
@@ -18,6 +19,12 @@ export const systemInfoTool = createNamedTool({
       "uptime"
     ]).describe("Type of system information to retrieve")
   }),
+};
+
+export const systemInfoToolWithoutExecute = tool(toolDefinition);
+
+export const systemInfoToolWithExecute = tool({
+  ...toolDefinition,
   execute: async ({ info }) => {
     switch (info) {
       case "os":
@@ -98,3 +105,9 @@ export const systemInfoTool = createNamedTool({
     }
   }
 });
+
+export const systemInfoTool: GridTool = {
+  withExecute: systemInfoToolWithExecute,
+  withoutExecute: systemInfoToolWithoutExecute,
+  definition: toolDefinition,
+};

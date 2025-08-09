@@ -1,10 +1,11 @@
 import { z } from "zod";
-import { createNamedTool } from "@mrck-labs/grid-core";
+import { tool } from "ai";
+import { GridTool } from "../types";
 
 /**
  * JSON formatter and validator tool
  */
-export const jsonFormatterTool = createNamedTool({
+export const toolDefinition = {
   name: "jsonFormatter",
   description: "Format, validate, or minify JSON strings",
   inputSchema: z.object({
@@ -12,6 +13,12 @@ export const jsonFormatterTool = createNamedTool({
     json: z.string().describe("The JSON string to process"),
     indent: z.number().optional().default(2).describe("Number of spaces for indentation when formatting")
   }),
+};
+
+export const jsonFormatterToolWithoutExecute = tool(toolDefinition);
+
+export const jsonFormatterToolWithExecute = tool({
+  ...toolDefinition,
   execute: async ({ operation, json, indent = 2 }) => {
     try {
       const parsed = JSON.parse(json);
@@ -71,3 +78,9 @@ export const jsonFormatterTool = createNamedTool({
     }
   }
 });
+
+export const jsonFormatterTool: GridTool = {
+  withExecute: jsonFormatterToolWithExecute,
+  withoutExecute: jsonFormatterToolWithoutExecute,
+  definition: toolDefinition,
+};

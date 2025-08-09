@@ -1,11 +1,12 @@
 import { z } from "zod";
-import { createNamedTool } from "@mrck-labs/grid-core";
+import { tool } from "ai";
+import { GridTool } from "../types";
 import { createHash } from "crypto";
 
 /**
  * Hash generator tool for various cryptographic hash functions
  */
-export const hashTool = createNamedTool({
+export const toolDefinition = {
   name: "hash",
   description: "Generate various hash digests of text (MD5, SHA1, SHA256, SHA512)",
   inputSchema: z.object({
@@ -19,6 +20,12 @@ export const hashTool = createNamedTool({
       .default("hex")
       .describe("Output encoding format")
   }),
+};
+
+export const hashToolWithoutExecute = tool(toolDefinition);
+
+export const hashToolWithExecute = tool({
+  ...toolDefinition,
   execute: async ({ text, algorithm, encoding = "hex" }) => {
     try {
       const hash = createHash(algorithm)
@@ -44,3 +51,9 @@ export const hashTool = createNamedTool({
     }
   }
 });
+
+export const hashTool: GridTool = {
+  withExecute: hashToolWithExecute,
+  withoutExecute: hashToolWithoutExecute,
+  definition: toolDefinition,
+};

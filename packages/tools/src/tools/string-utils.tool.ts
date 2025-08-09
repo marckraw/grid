@@ -1,10 +1,11 @@
 import { z } from "zod";
-import { createNamedTool } from "@mrck-labs/grid-core";
+import { tool } from "ai";
+import { GridTool } from "../types";
 
 /**
  * String utilities tool for various text operations
  */
-export const stringUtilsTool = createNamedTool({
+export const toolDefinition = {
   name: "stringUtils",
   description: "Perform various string operations like reverse, count words/chars, or base64 encoding",
   inputSchema: z.object({
@@ -20,6 +21,12 @@ export const stringUtilsTool = createNamedTool({
     ]).describe("The string operation to perform"),
     text: z.string().describe("The text to process")
   }),
+};
+
+export const stringUtilsToolWithoutExecute = tool(toolDefinition);
+
+export const stringUtilsToolWithExecute = tool({
+  ...toolDefinition,
   execute: async ({ operation, text }) => {
     switch (operation) {
       case "reverse":
@@ -78,3 +85,9 @@ export const stringUtilsTool = createNamedTool({
     }
   }
 });
+
+export const stringUtilsTool: GridTool = {
+  withExecute: stringUtilsToolWithExecute,
+  withoutExecute: stringUtilsToolWithoutExecute,
+  definition: toolDefinition,
+};

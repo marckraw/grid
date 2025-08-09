@@ -1,10 +1,11 @@
 import { z } from "zod";
-import { createNamedTool } from "@mrck-labs/grid-core";
+import { tool } from "ai";
+import { GridTool } from "../types";
 
 /**
  * Random number generator tool
  */
-export const randomNumberTool = createNamedTool({
+export const toolDefinition = {
   name: "randomNumber",
   description: "Generate a random number within a specified range",
   inputSchema: z.object({
@@ -12,6 +13,12 @@ export const randomNumberTool = createNamedTool({
     max: z.number().describe("Maximum value (inclusive)"),
     integer: z.boolean().optional().describe("Whether to return an integer (default: false)")
   }),
+};
+
+export const randomNumberToolWithoutExecute = tool(toolDefinition);
+
+export const randomNumberToolWithExecute = tool({
+  ...toolDefinition,
   execute: async ({ min, max, integer = false }) => {
     if (min > max) {
       return {
@@ -31,3 +38,9 @@ export const randomNumberTool = createNamedTool({
     };
   }
 });
+
+export const randomNumberTool: GridTool = {
+  withExecute: randomNumberToolWithExecute,
+  withoutExecute: randomNumberToolWithoutExecute,
+  definition: toolDefinition,
+};
