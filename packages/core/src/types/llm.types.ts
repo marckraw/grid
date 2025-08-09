@@ -1,3 +1,4 @@
+import type { ModelMessage } from "ai";
 import z from "zod";
 
 // Zod schema for LLM

@@ -1,15 +1,13 @@
-import { tool as createTool, type CoreTool } from "ai";
+import { tool as createTool } from "ai";
+import type { Tool as AiTool } from "ai";
 import { z } from "zod";
 
 /**
  * Grid Tool type - directly uses Vercel AI SDK's CoreTool
  */
-export type Tool<
-  TParameters extends z.ZodTypeAny = z.ZodTypeAny,
-  TResult = any
-> = CoreTool<TParameters, TResult> & {
+export interface Tool extends AiTool {
   name: string; // We add name for easier identification
-};
+}
 
 /**
  * Create a tool using Vercel AI SDK
@@ -25,12 +23,12 @@ export const createNamedTool = <
 >(config: {
   name: string;
   description: string;
-  parameters: TParameters;
+  inputSchema: TParameters;
   execute: (params: z.infer<TParameters>) => Promise<TResult>;
 }): Tool<TParameters, TResult> => {
   const tool = createTool({
     description: config.description,
-    inputSchema: config.parameters,
+    inputSchema: config.inputSchema,
     execute: config.execute,
   });
 
