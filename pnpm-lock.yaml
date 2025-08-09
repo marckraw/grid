@@ -147,9 +147,12 @@ importers:
 
   apps/terminal-agent:
     dependencies:
+      '@ai-sdk/anthropic':
+        specifier: ^2.0.1
+        version: 2.0.1(zod@3.25.76)
       '@ai-sdk/openai':
-        specifier: ^2.0.4
-        version: 2.0.4(zod@3.25.76)
+        specifier: ^2.0.7
+        version: 2.0.7(zod@3.25.76)
       '@clack/prompts':
         specifier: ^0.11.0
         version: 0.11.0
@@ -166,8 +169,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/workflows
       ai:
-        specifier: ^5.0.7
-        version: 5.0.7(zod@3.25.76)
+        specifier: ^5.0.8
+        version: 5.0.8(zod@3.25.76)
       dotenv:
         specifier: ^17.2.0
         version: 17.2.0
@@ -229,7 +232,7 @@ importers:
         version: 2.0.1(zod@3.25.76)
       '@ai-sdk/openai':
         specifier: ^2.0.4
-        version: 2.0.4(zod@3.25.76)
+        version: 2.0.7(zod@3.25.76)
       '@elevenlabs/elevenlabs-js':
         specifier: ^2.7.0
         version: 2.7.0
@@ -238,7 +241,7 @@ importers:
         version: 1.29.1
       ai:
         specifier: ^5.0.7
-        version: 5.0.7(zod@3.25.76)
+        version: 5.0.8(zod@3.25.76)
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
@@ -335,8 +338,20 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4
 
+  '@ai-sdk/gateway@1.0.4':
+    resolution: {integrity: sha512-1roLdgMbFU3Nr4MC97/te7w6OqxsWBkDUkpbCcvxF3jz/ku91WVaJldn/PKU8feMKNyI5W9wnqhbjb1BqbExOQ==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4
+
   '@ai-sdk/openai@2.0.4':
     resolution: {integrity: sha512-PnVUFosX2zWk6emiX4SulZrGvGw79YJjh/DgxahpAcBpz71GlQyzVNTFAQx7ycFGLBg/YniJr1M2WJybYZZ3ug==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4
+
+  '@ai-sdk/openai@2.0.7':
+    resolution: {integrity: sha512-gIomHziQDBx1hs4VzDSDEFlfojf4/YQWY9F+r8ZiviGNUs5JKNbgHh1JoEHuC2XmMQ0x9LSyavLcqRn6aDxcyg==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4
@@ -2497,6 +2512,12 @@ packages:
 
   ai@5.0.7:
     resolution: {integrity: sha512-Nh7x0jo+IKRX0NlE1jMubtqspfZ7QnJo2ucWAy0WIm2NQwkACA9ktHfZIYuRmit+K0CiiqOO81cnBDHeJ5d76Q==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4
+
+  ai@5.0.8:
+    resolution: {integrity: sha512-qbnhj046UvG30V1S5WhjBn+RBGEAmi8PSZWqMhRsE3EPxvO5BcePXTZFA23e9MYyWS9zr4Vm8Mv3wQXwLmtIBw==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4
@@ -6378,7 +6399,19 @@ snapshots:
       '@ai-sdk/provider-utils': 3.0.1(zod@3.25.76)
       zod: 3.25.76
 
+  '@ai-sdk/gateway@1.0.4(zod@3.25.76)':
+    dependencies:
+      '@ai-sdk/provider': 2.0.0
+      '@ai-sdk/provider-utils': 3.0.1(zod@3.25.76)
+      zod: 3.25.76
+
   '@ai-sdk/openai@2.0.4(zod@3.25.76)':
+    dependencies:
+      '@ai-sdk/provider': 2.0.0
+      '@ai-sdk/provider-utils': 3.0.1(zod@3.25.76)
+      zod: 3.25.76
+
+  '@ai-sdk/openai@2.0.7(zod@3.25.76)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
       '@ai-sdk/provider-utils': 3.0.1(zod@3.25.76)
@@ -9338,6 +9371,14 @@ snapshots:
   ai@5.0.7(zod@3.25.76):
     dependencies:
       '@ai-sdk/gateway': 1.0.3(zod@3.25.76)
+      '@ai-sdk/provider': 2.0.0
+      '@ai-sdk/provider-utils': 3.0.1(zod@3.25.76)
+      '@opentelemetry/api': 1.9.0
+      zod: 3.25.76
+
+  ai@5.0.8(zod@3.25.76):
+    dependencies:
+      '@ai-sdk/gateway': 1.0.4(zod@3.25.76)
       '@ai-sdk/provider': 2.0.0
       '@ai-sdk/provider-utils': 3.0.1(zod@3.25.76)
       '@opentelemetry/api': 1.9.0
