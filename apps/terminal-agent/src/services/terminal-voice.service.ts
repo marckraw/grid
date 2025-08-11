@@ -75,7 +75,9 @@ export class TerminalVoiceService {
         this.recordingProcess = undefined; // Clear the process reference
 
         // Wait a bit for file to be written
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 500)); // Increased wait time
+        
+        console.log(`Audio file saved to: ${tempFile}`);
 
         // Return audio input pointing to the file
         return {

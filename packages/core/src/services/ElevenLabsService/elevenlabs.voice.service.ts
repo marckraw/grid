@@ -234,16 +234,35 @@ export const elevenlabsVoiceService = (
         audioData.byteLength
       );
 
+      // Additional debug logging
+      if (audio.dataType === "filepath") {
+        console.log("Audio file path:", audio.data);
+      }
+      console.log(
+        "Audio sample rate:",
+        audio.sampleRate,
+        "channels:",
+        audio.channels
+      );
+
       // Convert audio data to Blob for the API
       const audioBlob = new Blob([audioData], {
         type: `audio/${audio.format}`,
       });
 
       // Call ElevenLabs speech-to-text API
+      const modelId = options?.model || "eleven_multilingual_v2_speech_to_text";
+      console.log("Using transcription model:", modelId);
+
       const response = await client.speechToText.convert({
         file: audioBlob as any, // The API expects 'file' parameter
-        modelId: options?.model || "scribe_v1", // Default to scribe_v1 model
+        modelId: modelId,
       });
+
+      console.log(
+        "Transcription API response:",
+        JSON.stringify(response, null, 2)
+      );
 
       utils.emitProgress({
         type: "transcription_complete",
@@ -251,8 +270,11 @@ export const elevenlabsVoiceService = (
       });
 
       // Format the response according to our TranscriptionResult interface
+      // ElevenLabs returns { text: "transcribed text", ... }
+      const transcribedText = response.text || "";
+
       return {
-        text: response.text.text || "",
+        text: transcribedText,
         confidence: response.confidence,
         language: response.language || options?.language,
         duration: response.duration,
