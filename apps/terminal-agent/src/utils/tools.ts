@@ -12,7 +12,6 @@ export const getTools = ({
     return {
       ...acc,
       [tool.definition.name]:
-        // @ts-ignore
         executionType === "vercel-native"
           ? tool.withExecute
           : tool.withoutExecute,
