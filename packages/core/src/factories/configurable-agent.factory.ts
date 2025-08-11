@@ -6,7 +6,6 @@ import {
   type AgentActInput,
 } from "../types/agent.types.js";
 import { type LLMService } from "../types/llm.types.js";
-import { type Tool, prepareToolsForSDK } from "../types/tool.types.js";
 import { type ToolExecutor } from "../services/tool-executor.service.js";
 import type { ProgressMessage } from "../types/progress.types.js";
 import type {
