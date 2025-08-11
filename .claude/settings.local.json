@@ -19,7 +19,8 @@
       "Bash(ls:*)",
       "Bash(find:*)",
       "Bash(test:*)",
-      "mcp__linear__list_teams"
+      "mcp__linear__list_teams",
+      "Bash(grep:*)"
     ],
     "deny": []
   }
