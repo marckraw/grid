@@ -1,6 +1,9 @@
 import * as p from "@clack/prompts";
 import { createSpinner } from "../../utils/spinners.js";
-import { experimental_createMCPClient as createMCPClient, type Tool } from "ai";
+import {
+  experimental_createMCPClient as createMCPClient,
+  type ToolSet,
+} from "ai";
 import { Experimental_StdioMCPTransport } from "ai/mcp-stdio";
 
 export type MCPClientType = "figma" | "linear";
@@ -8,10 +11,11 @@ export type MCPClientType = "figma" | "linear";
 export const registerTestMCPTools = async (
   selectedClients: MCPClientType[] = []
 ) => {
-  let mcpClient: any = null;
-  let linearMcpClient: any = null;
-  let mcpTools: Record<string, any> = {};
-  let linearMcpTools: Record<string, any> = {};
+  let mcpClient: Awaited<ReturnType<typeof createMCPClient>> | null = null;
+  let linearMcpClient: Awaited<ReturnType<typeof createMCPClient>> | null =
+    null;
+  let mcpTools: ToolSet = {};
+  let linearMcpTools: ToolSet = {};
 
   const spinner = createSpinner();
 
@@ -78,6 +82,8 @@ export const registerTestMCPTools = async (
   return {
     transformerMcpTools,
     transformedLinearMcpTools,
+    mcpTools,
+    linearMcpTools,
     clients: { mcpClient, linearMcpClient }, // Return clients for cleanup
   };
 };

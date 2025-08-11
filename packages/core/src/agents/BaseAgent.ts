@@ -8,7 +8,7 @@ import { type LLMService } from "../types/llm.types.js";
 import { baseLLMService } from "../services/base.llm.service.js";
 
 export interface BaseAgent extends Omit<Agent, "act" | "sendUpdate"> {
-  availableTools: any[];
+  availableTools: Record<string, any>;
   llmService: LLMService;
 }
 
@@ -21,7 +21,7 @@ export interface BaseAgentConfigWithLLM extends BaseAgentConfig {
 export const createBaseAgent = ({
   id,
   type,
-  availableTools = [],
+  availableTools = {},
   metadata,
   llmService,
 }: BaseAgentConfigWithLLM): BaseAgent => {

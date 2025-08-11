@@ -1,3 +1,4 @@
+import type { ModelMessage, ToolSet } from "ai";
 import z from "zod";
 
 // Zod schema for LLM
@@ -34,10 +35,10 @@ export interface LLMTraceContext {
 // LLM Service Interface for injectable LLM providers
 export interface LLMServiceOptions {
   messages: ChatMessage[];
-  tools?: any[];
+  tools?: ToolSet;
   model?: string;
   temperature?: number;
-  maxTokens?: number;
+  maxOutputTokens?: number;
   responseFormat?: any;
   traceContext?: LLMTraceContext;
   [key: string]: any; // Allow additional provider-specific options
@@ -46,12 +47,6 @@ export interface LLMServiceOptions {
 export interface LLMService {
   // Main method to run LLM with messages and optional tools
   runLLM(options: LLMServiceOptions): Promise<ChatMessage>;
-
-  // Optional method for JSON responses (some providers might have special handling)
-  runLLMWithJSONResponse?(options: LLMServiceOptions): Promise<ChatMessage>;
-
-  // Optional method to format tools for the specific provider
-  formatTools?(tools: any[]): any[];
 
   // Optional method to check if service is available
   isAvailable?(): Promise<boolean>;

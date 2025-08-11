@@ -19,6 +19,7 @@ import {
   registerTestMCPTools,
   type MCPClientType,
 } from "./helpers/registerTestMcp.js";
+import { getTools } from "../utils/tools.js";
 
 const sendUpdateOnProgress = async (message: any) => {
   // Handle different progress message types
@@ -77,12 +78,32 @@ export async function exploreAgentConversation(): Promise<void> {
     return;
   }
 
-  const { transformerMcpTools, transformedLinearMcpTools, clients } =
-    await registerTestMCPTools(selectedMcpClients as MCPClientType[]);
+  const {
+    linearMcpTools,
+    mcpTools,
+    transformerMcpTools,
+    transformedLinearMcpTools,
+    clients,
+  } = await registerTestMCPTools(selectedMcpClients as MCPClientType[]);
+
+  // console.log("This is linear tools as array");
+  // console.log(transformedLinearMcpTools);
+  // console.log("This is linear tools in native vercel format: object");
+  // console.log(linearMcpTools);
 
   p.log.info(
     pc.dim("💾 Conversation is automatically saved to conversation.json\n")
   );
+
+  // const linearTools = getTools({
+  //   executionType: "vercel-native",
+  //   tools: [...transformerMcpTools, ...transformedLinearMcpTools],
+  // });
+
+  const tools = getTools({
+    executionType: "vercel-native",
+    tools: [currentTimeTool, calculatorTool, createImageTool],
+  });
 
   // Create tool executor and register tools
   const toolExecutor = createToolExecutor({
@@ -92,9 +113,9 @@ export async function exploreAgentConversation(): Promise<void> {
   });
 
   // Register local tools
-  toolExecutor.registerTool(calculatorTool);
-  toolExecutor.registerTool(currentTimeTool);
-  toolExecutor.registerTool(createImageTool);
+  toolExecutor.registerTool(calculatorTool.withoutExecute);
+  toolExecutor.registerTool(currentTimeTool.withoutExecute);
+  toolExecutor.registerTool(createImageTool.withoutExecute);
 
   // Register MCP tools if available
   for (const tool in transformerMcpTools) {
@@ -108,7 +129,7 @@ export async function exploreAgentConversation(): Promise<void> {
   // Create configurable agent
   const agent = createConfigurableAgent({
     llmService: baseLLMService({
-      toolExecutionMode: "custom",
+      toolExecutionMode: "vercel-native",
       langfuse: langfuseService,
     }),
     config: {
@@ -131,9 +152,10 @@ Be concise but friendly in your responses.`,
         version: "1.0.0",
       },
       tools: {
-        builtin: [],
-        custom: [calculatorTool, currentTimeTool, createImageTool],
-        mcp: [...transformerMcpTools, ...transformedLinearMcpTools],
+        builtin: {},
+        custom: { ...tools, ...linearMcpTools },
+        // mcp: [...transformerMcpTools, ...transformedLinearMcpTools],
+        mcp: {},
         agents: [],
       },
       behavior: {
@@ -144,7 +166,7 @@ Be concise but friendly in your responses.`,
       },
       orchestration: {},
     },
-    toolExecutor: toolExecutor,
+    // toolExecutor: toolExecutor,
   });
 
   // Create conversation flow with progress streaming

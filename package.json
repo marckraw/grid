@@ -25,7 +25,7 @@
     "test:coverage": "turbo run test -- --coverage",
     "lint": "turbo run lint",
     "docs": "pnpm --filter docs start",
-    "terminal-agent": "pnpm --filter terminal-agent dev",
+    "terminal-agent": "pnpm run build && pnpm --filter terminal-agent dev",
     "nextjs-test": "pnpm --filter nextjs-test dev",
     "changeset": "changeset",
     "version-packages": "changeset version",

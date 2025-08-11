@@ -6,3 +6,4 @@ export { configureGrid } from "./config.js";
 export { viewEnvironment } from "./environment.js";
 export { exploreWorkflowExamples } from "./workflow-examples.js";
 export { conversationWithMemory } from "./conversation-with-memory.js";
+export { simpleVercelAISDKTest } from "./simple-vercel-ai-sdk-test.js";
