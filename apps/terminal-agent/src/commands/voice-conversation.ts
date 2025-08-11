@@ -335,22 +335,29 @@ When speaking, use a conversational tone as if talking to someone in person.`,
 
     // Only trigger voice on space if not typing
     if (key && key.name === "space" && canRecord && !isTyping) {
-      if (!isRecording) {
+      if (!isRecording && !recordingControl) {
         // Start recording
         try {
           isRecording = true;
           voiceProgress.setState("listening");
           recordingControl = await terminalVoice.startRecording();
-        } catch (error) {
-          voiceProgress.showError(`Recording failed: ${error}`);
+        } catch (error: any) {
+          voiceProgress.showError(`Recording failed: ${error.message || error}`);
           isRecording = false;
+          recordingControl = null;
         }
-      } else if (recordingControl) {
+      } else if (isRecording && recordingControl) {
         // Stop recording and transcribe
         try {
           voiceProgress.setState("processing");
           const audioInput = await recordingControl.stop();
+          recordingControl = null; // Clear control immediately after stop
           isRecording = false;
+
+          // Debug log audio input
+          if (process.env.DEBUG) {
+            console.log("Audio input format:", audioInput.format, "size:", audioInput.data.length || audioInput.data);
+          }
 
           // Transcribe the audio
           const transcription = await voiceService.transcribe(audioInput);
@@ -364,8 +371,9 @@ When speaking, use a conversational tone as if talking to someone in person.`,
           } else {
             voiceProgress.showError("No speech detected");
           }
-        } catch (error) {
-          voiceProgress.showError(`Transcription failed: ${error}`);
+        } catch (error: any) {
+          voiceProgress.showError(`Transcription failed: ${error.message || error}`);
+          console.error("Full transcription error:", error);
         } finally {
           isRecording = false;
           recordingControl = null;
