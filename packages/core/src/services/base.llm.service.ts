@@ -27,10 +27,6 @@ export const baseLLMService = (
   } = config;
 
   const runLLM = async (options: LLMServiceOptions): Promise<ChatMessage> => {
-    console.log("[baseLLMService:runLLM] options", options);
-    console.log("Running this shit");
-    console.log("Tools: ");
-    console.log(options.tools);
     const {
       model = defaultModel,
       messages,
@@ -50,11 +46,6 @@ export const baseLLMService = (
       stopWhen:
         toolExecutionMode === "custom" ? stepCountIs(1) : stepCountIs(12),
     });
-
-    console.log(
-      "This is result from the baseLLMService runLLM [ai vercel sdk v5]"
-    );
-    console.log(result);
 
     return {
       role: "assistant",
