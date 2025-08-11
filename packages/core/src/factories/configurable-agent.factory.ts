@@ -89,11 +89,11 @@ export const createConfigurableAgent = ({
   });
 
   // Prepare available tools from config
-  const availableTools: Tool<any, any>[] = [
-    ...(config.tools?.custom || []),
-    ...(config.tools?.mcp || []),
+  const availableTools: Record<string, any> = {
+    ...(config.tools?.custom || {}),
+    ...(config.tools?.mcp || {}),
     // TODO: Adapt builtin and agent tools
-  ];
+  };
 
   let sendUpdate: (data: ProgressMessage) => Promise<void> = async (data) => {
     console.log("sendUpdate", data);
@@ -110,7 +110,7 @@ export const createConfigurableAgent = ({
     id: config.id,
     type: config.type,
     setSendUpdate,
-    availableTools: availableTools.map((t) => t.name),
+    availableTools: Object.keys(availableTools),
     // Enhanced metadata with config info
     getMetadata: () => ({
       ...config.metadata,
@@ -154,9 +154,6 @@ export const createConfigurableAgent = ({
             ...processedInput.messages,
           ];
 
-          // Tools are already in Vercel AI SDK format
-          const formattedTools = availableTools;
-
           // Internal loop for handling tool calls
           let response: AgentResponse = { role: "assistant", content: null };
           const maxToolRounds = 3; // Configurable limit for tool rounds
@@ -173,7 +170,7 @@ export const createConfigurableAgent = ({
               // Execute LLM call with tools
               const llmResponse = await base.llmService.runLLM({
                 messages: workingMessages,
-                tools: formattedTools.length > 0 ? formattedTools : undefined,
+                tools: availableTools,
                 traceContext: {
                   sessionId: input.context?.sessionId,
                   metadata: {

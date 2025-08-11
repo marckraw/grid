@@ -4,7 +4,14 @@ import type {
   LLMServiceOptions,
   ToolCall,
 } from "../types/index.js";
-import { generateText, generateObject, streamText } from "ai";
+import {
+  generateText,
+  generateObject,
+  streamText,
+  stepCountIs,
+  type ModelMessage,
+  type ToolSet,
+} from "ai";
 import { openai } from "@ai-sdk/openai";
 import { anthropic } from "@ai-sdk/anthropic";
 import {
@@ -28,235 +35,39 @@ export const baseLLMService = (
   } = config;
 
   const runLLM = async (options: LLMServiceOptions): Promise<ChatMessage> => {
+    console.log("[baseLLMService:runLLM] options", options);
+    console.log("Running this shit");
+    console.log("Tools: ");
+    console.log(options.tools);
     const {
       model = defaultModel,
       messages,
-      tools = [],
+      tools = {},
       temperature = 0.1,
       maxOutputTokens,
       responseFormat,
       traceContext,
     } = options;
 
-    console.log("[baseLLMService:runLLM] model used", model);
-
-    // Convert messages to Vercel AI SDK format
-    const formattedMessages = messages.map((msg) => {
-      if (msg.role === "tool") {
-        return {
-          role: "tool" as const,
-          content: [
-            {
-              type: "tool-result" as const,
-              toolCallId: msg.tool_call_id!,
-              toolName: msg.tool_name || "unknown",
-              result:
-                typeof msg.content === "string"
-                  ? JSON.parse(msg.content)
-                  : msg.content,
-            },
-          ],
-        };
-      }
-
-      if (msg.toolCalls) {
-        // Convert toolCalls to Vercel AI SDK format
-        const toolCallContent = msg.toolCalls.map((toolCall: any) => ({
-          type: "tool-call" as const,
-          toolCallId: toolCall.toolCallId,
-          toolName: toolCall.toolName,
-          args: toolCall.args || {},
-        }));
-
-        return {
-          role: msg.role as "assistant",
-          content: toolCallContent,
-        };
-      }
-
-      return {
-        role: msg.role as "system" | "user" | "assistant",
-        content:
-          typeof msg.content === "string"
-            ? msg.content
-            : JSON.stringify(msg.content),
-      };
+    const result = await generateText({
+      model: openai(model),
+      messages: messages as ModelMessage[],
+      temperature,
+      maxOutputTokens,
+      tools: tools,
+      stopWhen:
+        toolExecutionMode === "custom" ? stepCountIs(1) : stepCountIs(12),
     });
 
-    // Format tools for Vercel AI SDK
-    const formattedTools =
-      tools.length > 0 ? formatTools(tools, toolExecutionMode) : undefined;
+    console.log(
+      "This is result from the baseLLMService runLLM [ai vercel sdk v5]"
+    );
+    console.log(result);
 
-    const startTime = Date.now();
-
-    try {
-      // Determine the provider based on the model name
-      const modelInstance = model.startsWith("claude")
-        ? anthropic(model)
-        : openai(model);
-
-      let generation;
-      if (traceContext && traceContext.sessionId) {
-        generation = langfuse.createGenerationForSession(
-          traceContext.sessionId,
-          {
-            name: `llm-${model}`,
-            model,
-            input: {
-              messages: formattedMessages,
-              tools: formattedTools,
-              temperature,
-            },
-            metadata: {
-              ...traceContext.metadata,
-            },
-          }
-        );
-      }
-
-      const result = await generateText({
-        model: modelInstance,
-        messages: formattedMessages,
-        tools: formattedTools,
-        toolChoice: "auto", // Let model decide when to use tools
-        temperature,
-        maxOutputTokens,
-        maxSteps: toolExecutionMode === "vercel-native" ? 3 : 1, // Enable multi-step for vercel-native
-      });
-
-      const usage = result.usage;
-      const cost = langfuse.calculateCost(model, {
-        input: usage?.inputTokens,
-        output: usage?.outputTokens,
-        total: usage?.totalTokens,
-      });
-
-      if (generation) {
-        generation.end({
-          output: result.text.text,
-          usage: {
-            input: usage?.inputTokens,
-            output: usage?.outputTokens,
-            total: usage?.totalTokens,
-          },
-          cost,
-        });
-      }
-
-      // Log what we got from Vercel
-      if (toolExecutionMode === "vercel-native") {
-        console.log("[baseLLMService] Vercel result:", {
-          text: result.text.text,
-          toolCalls: result.toolCalls,
-          toolResults: result.toolResults,
-          finishReason: result.finishReason,
-        });
-      }
-
-      // Convert response back to our ChatMessage format
-      const response: ChatMessage = {
-        role: "assistant",
-        content: result.text.text || null,
-      };
-
-      // Handle tool calls if present
-      if (result.toolCalls && result.toolCalls.length > 0) {
-        response.toolCalls = result.toolCalls;
-      }
-
-      // If vercel-native and we have tool results, add them to metadata
-      if (toolExecutionMode === "vercel-native" && result.toolResults) {
-        response.metadata = {
-          toolResults: result.toolResults,
-        };
-      }
-
-      return response;
-    } catch (error) {
-      console.error("Error calling Vercel AI SDK:", error);
-      throw error;
-    }
-  };
-
-  const runLLMWithJSONResponse = async (
-    options: LLMServiceOptions
-  ): Promise<ChatMessage> => {
-    const {
-      model = defaultModel,
-      messages,
-      temperature = 0.1,
-      maxOutputTokens,
-      traceContext,
-    } = options;
-
-    // Convert messages to Vercel AI SDK format
-    const formattedMessages = messages.map((msg) => ({
-      role: msg.role as "system" | "user" | "assistant",
-      content:
-        typeof msg.content === "string"
-          ? msg.content
-          : JSON.stringify(msg.content),
-    }));
-
-    const startTime = Date.now();
-
-    try {
-      // Add system message to ensure JSON response
-      const messagesWithJsonInstruction = [
-        ...formattedMessages,
-        {
-          role: "system" as const,
-          content:
-            "You must respond with valid JSON only. No markdown formatting, no explanation, just pure JSON.",
-        },
-      ];
-
-      // Determine the provider based on the model name
-      const modelInstance = model.startsWith("claude")
-        ? anthropic(model)
-        : openai(model);
-
-      let generation;
-      if (traceContext && traceContext.sessionId) {
-        generation = langfuse.createGenerationForSession(
-          traceContext.sessionId,
-          {
-            name: `llm-${model}`,
-            model,
-            input: {
-              messages: messagesWithJsonInstruction,
-              temperature,
-            },
-          }
-        );
-      }
-
-      const result = await generateText({
-        model: modelInstance,
-        messages: messagesWithJsonInstruction,
-        temperature,
-        maxOutputTokens,
-      });
-
-      if (generation) {
-        generation.end({
-          output: result.text.text,
-          usage: {
-            input: result.usage?.inputTokens,
-            output: result.usage?.outputTokens,
-            total: result.usage?.totalTokens,
-          },
-        });
-      }
-
-      return {
-        role: "assistant",
-        content: result.text.text,
-      };
-    } catch (error) {
-      console.error("Error calling Vercel AI SDK for JSON response:", error);
-      throw error;
-    }
+    return {
+      role: "assistant",
+      content: result.text,
+    };
   };
 
   const formatTools = (tools: any[], executionMode: string = "custom") => {
@@ -308,7 +119,6 @@ export const baseLLMService = (
 
   return {
     runLLM,
-    runLLMWithJSONResponse,
     formatTools,
     isAvailable,
   };
