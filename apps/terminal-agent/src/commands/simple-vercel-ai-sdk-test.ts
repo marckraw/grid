@@ -11,7 +11,6 @@ import {
   type ToolSet,
   type ModelMessage,
 } from "ai";
-import { z } from "zod";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import {
@@ -19,10 +18,8 @@ import {
   currentTimeTool,
   systemInfoTool,
 } from "@mrck-labs/grid-tools";
-import {
-  createConfigurableAgent,
-  vercelLLMService,
-} from "@mrck-labs/grid-core";
+import { createConfigurableAgent } from "@mrck-labs/grid-core";
+import { getTools } from "../utils/tools.js";
 
 export async function simpleVercelAISDKTest(): Promise<void> {
   p.intro(pc.cyan("🤖 Simple Vercel AI SDK Test"));
@@ -44,6 +41,11 @@ export async function simpleVercelAISDKTest(): Promise<void> {
 
   const messages: ModelMessage[] = [];
 
+  const tools = getTools({
+    executionType: "vercel-native",
+    tools: [currentTimeTool, systemInfoTool, calculatorTool],
+  });
+
   const agent = createConfigurableAgent({
     config: {
       type: "general",
@@ -58,9 +60,9 @@ export async function simpleVercelAISDKTest(): Promise<void> {
         author: undefined,
       },
       tools: {
-        custom: [],
-        mcp: [],
-        builtin: [],
+        custom: tools,
+        mcp: {},
+        builtin: {},
         agents: undefined,
       },
       id: "",
@@ -98,21 +100,6 @@ export async function simpleVercelAISDKTest(): Promise<void> {
     // Send message with spinner
     const spinner = createSpinner();
     spinner.start("Thinking...");
-
-    // const tools = [currentTimeTool, systemInfoTool, calculatorTool];
-
-    // const executionType: "vercel-native" | "custom" = "vercel-native";
-
-    // const availableTools: ToolSet = tools.reduce((acc, tool) => {
-    //   return {
-    //     ...acc,
-    //     [tool.definition.name]:
-    //       // @ts-ignore
-    //       executionType === "vercel-native"
-    //         ? tool.withExecute
-    //         : tool.withoutExecute,
-    //   };
-    // }, {} as ToolSet);
 
     const responseFromAgent = await agent.act({
       messages: [
