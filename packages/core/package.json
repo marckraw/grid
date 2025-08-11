@@ -36,7 +36,7 @@
     "@ai-sdk/openai": "^2.0.4",
     "@elevenlabs/elevenlabs-js": "^2.7.0",
     "@mendable/firecrawl-js": "^1.29.1",
-    "ai": "^5.0.7",
+    "ai": "^5.0.8",
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
     "openai": "^5.9.0",

@@ -227,23 +227,7 @@ export const elevenlabsVoiceService = (
       // Prepare audio data
       const audioData = await utils.prepareAudioInput(audio);
 
-      console.log(
-        "Audio input format:",
-        audio.format,
-        "size:",
-        audioData.byteLength
-      );
 
-      // Additional debug logging
-      if (audio.dataType === "filepath") {
-        console.log("Audio file path:", audio.data);
-      }
-      console.log(
-        "Audio sample rate:",
-        audio.sampleRate,
-        "channels:",
-        audio.channels
-      );
 
       // Convert audio data to Blob for the API
       const audioBlob = new Blob([audioData], {
@@ -252,17 +236,12 @@ export const elevenlabsVoiceService = (
 
       // Call ElevenLabs speech-to-text API
       const modelId = options?.model || "scribe_v1";
-      console.log("Using transcription model:", modelId);
 
       const response = await client.speechToText.convert({
         file: audioBlob as any, // The API expects 'file' parameter
         modelId: modelId,
       });
 
-      console.log(
-        "Transcription API response:",
-        JSON.stringify(response, null, 2)
-      );
 
       utils.emitProgress({
         type: "transcription_complete",
@@ -293,7 +272,6 @@ export const elevenlabsVoiceService = (
       if (error instanceof VoiceError) {
         throw error;
       }
-      console.error("ElevenLabs transcription error:", error);
       throw new VoiceError(
         `Failed to transcribe audio with ElevenLabs: ${
           error instanceof Error ? error.message : String(error)
