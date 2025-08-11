@@ -251,7 +251,7 @@ export const elevenlabsVoiceService = (
       });
 
       // Call ElevenLabs speech-to-text API
-      const modelId = options?.model || "eleven_multilingual_v2_speech_to_text";
+      const modelId = options?.model || "scribe_v1";
       console.log("Using transcription model:", modelId);
 
       const response = await client.speechToText.convert({
