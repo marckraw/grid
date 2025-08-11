@@ -534,7 +534,7 @@ When speaking, use a conversational tone as if talking to someone in person.`,
   // Cleanup MCP clients
   for (const client of Object.values(clients)) {
     try {
-      await client.close();
+      await client?.close();
     } catch (error) {
       console.error("Error closing MCP client:", error);
     }
