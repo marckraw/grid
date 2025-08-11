@@ -1,13 +1,14 @@
 import { z } from "zod";
-import { createNamedTool } from "@mrck-labs/grid-core";
+import { tool } from "ai";
+import { GridTool } from "../types";
 
 /**
  * Data format converter tool
  */
-export const dataConverterTool = createNamedTool({
+export const toolDefinition = {
   name: "dataConverter",
   description: "Convert between different data formats (JSON, CSV, TSV)",
-  parameters: z.object({
+  inputSchema: z.object({
     from: z.enum(["json", "csv", "tsv"]).describe("Source format"),
     to: z.enum(["json", "csv", "tsv"]).describe("Target format"),
     data: z.string().describe("Data to convert"),
@@ -16,6 +17,12 @@ export const dataConverterTool = createNamedTool({
       delimiter: z.string().optional().describe("Custom delimiter for CSV (default: comma)")
     }).optional()
   }),
+};
+
+export const dataConverterToolWithoutExecute = tool(toolDefinition);
+
+export const dataConverterToolWithExecute = tool({
+  ...toolDefinition,
   execute: async ({ from, to, data, options = {} }) => {
     try {
       // Same format - just return the data
@@ -153,3 +160,9 @@ function getErrorHint(format: string, error: unknown): string {
   
   return 'Check that the input data matches the specified format.';
 }
+
+export const dataConverterTool: GridTool = {
+  withExecute: dataConverterToolWithExecute,
+  withoutExecute: dataConverterToolWithoutExecute,
+  definition: toolDefinition,
+};

@@ -106,7 +106,7 @@ export const VoiceConfigSchema = z.object({
 export const BaseAgentConfigSchema = z.object({
   id: z.string(),
   type: AgentTypeSchema,
-  availableTools: z.array(z.any()).optional(),
+  availableTools: z.record(z.any()).optional(),
   metadata: AgentMetadataSchema.partial().optional(),
   voice: VoiceConfigSchema.optional(),
 });
@@ -117,7 +117,7 @@ export type AgentType = z.infer<typeof AgentTypeSchema>;
 // Agent input schema
 export const AgentInputSchema = z.object({
   messages: z.array(ChatMessageSchema),
-  tools: z.array(z.any()).optional(), // Tools can be any structure
+  tools: z.record(z.any()).optional(), // Tools can be any structure
   context: AgentFlowContextSchema.optional(), // Full AgentFlowContext with all data
 });
 export type AgentInput = z.infer<typeof AgentInputSchema>;
@@ -132,7 +132,7 @@ export interface Agent {
   // Required properties
   readonly id: string;
   readonly type: AgentType;
-  readonly availableTools: any[];
+  readonly availableTools: Record<string, any>;
 
   // Required methods
   act: (input: AgentInput) => Promise<AgentResponse>;

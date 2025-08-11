@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { AgentTypeSchema, AgentMetadataSchema, VoiceConfigSchema } from "../types/agent.types.js";
+import {
+  AgentTypeSchema,
+  AgentMetadataSchema,
+  VoiceConfigSchema,
+} from "../types/agent.types.js";
 import type { Tool } from "../types/tool.types.js";
 
 // Tool source types
@@ -23,9 +27,9 @@ export const AgentPromptsSchema = z.object({
 
 // Tool configuration
 export const AgentToolsSchema = z.object({
-  builtin: z.array(z.string()).default([]), // Names of built-in tools
-  custom: z.array(z.custom<Tool<any, any>>()).default([]), // Custom tool instances
-  mcp: z.array(z.custom<Tool<any, any>>()).default([]), // MCP server tool instances
+  builtin: z.record(z.any()).default({}), // Names of built-in tools
+  custom: z.record(z.any()).default({}), // Custom tool instances
+  mcp: z.record(z.any()).default({}), // MCP server tool instances
   agents: z.array(AgentTypeSchema).optional(), // Other agents as tools
 });
 

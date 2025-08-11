@@ -33,7 +33,9 @@
     "zshy": "^0.0.4"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^2.0.4",
     "@mendable/firecrawl-js": "^1.29.1",
+    "ai": "^5.0.8",
     "zod": "^3.25.76"
   },
   "peerDependencies": {

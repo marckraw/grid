@@ -4,6 +4,7 @@ import {
   baseLLMService,
   createConfigurableAgent,
   createToolExecutor,
+  langfuseService,
 } from "@mrck-labs/grid-core";
 import { textWithCancel, isCancel } from "../../../utils/prompts.js";
 import { createSpinner } from "../../../utils/spinners.js";
@@ -13,7 +14,7 @@ export const testGeneralAgent = async () => {
   console.log(""); // Empty line for spacing
   p.note(
     "This is a general-purpose conversational agent with basic capabilities.\n" +
-    "Test its ability to maintain context, have natural conversations, and provide helpful responses.",
+      "Test its ability to maintain context, have natural conversations, and provide helpful responses.",
     "General Agent"
   );
   console.log(""); // Empty line for spacing
@@ -28,7 +29,7 @@ export const testGeneralAgent = async () => {
   const agent = createConfigurableAgent({
     llmService: baseLLMService({
       toolExecutionMode: "custom",
-      langfuse: { enabled: true },
+      langfuse: langfuseService,
     }),
     config: {
       id: "conversation-agent",
@@ -50,9 +51,9 @@ export const testGeneralAgent = async () => {
         version: "1.0.0",
       },
       tools: {
-        builtin: [],
-        custom: [],
-        mcp: [],
+        builtin: {},
+        custom: {},
+        mcp: {},
         agents: [],
       },
       behavior: {

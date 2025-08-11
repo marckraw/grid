@@ -4,6 +4,7 @@ import { createWorkflow } from "@mrck-labs/grid-workflows";
 import {
   createConfigurableAgent,
   baseLLMService,
+  langfuseService,
 } from "@mrck-labs/grid-core";
 import { textWithCancel, isCancel } from "../utils/prompts.js";
 
@@ -24,7 +25,7 @@ export async function exploreWorkflowExamples(): Promise<void> {
 
   // Create agents for different steps
   const analysisAgent = createConfigurableAgent({
-    llmService: baseLLMService({ langfuse: { enabled: false } }),
+    llmService: baseLLMService({ langfuse: langfuseService }),
     config: {
       id: "analysis-agent",
       type: "general",
@@ -57,13 +58,14 @@ export async function exploreWorkflowExamples(): Promise<void> {
   });
 
   const technicalAgent = createConfigurableAgent({
-    llmService: baseLLMService({ langfuse: { enabled: false } }),
+    llmService: baseLLMService({ langfuse: langfuseService }),
     config: {
       id: "technical-agent",
       type: "general",
       version: "1.0.0",
       prompts: {
-        system: "You are a technical support specialist. Provide detailed technical solutions.",
+        system:
+          "You are a technical support specialist. Provide detailed technical solutions.",
       },
       metadata: {
         id: "technical-agent",
@@ -114,7 +116,8 @@ export async function exploreWorkflowExamples(): Promise<void> {
       await setState("resolution.type", "billing");
       await setState("resolution.action", "escalate_to_billing_team");
       return {
-        message: "Your billing issue has been escalated to our billing team. They will contact you within 24 hours.",
+        message:
+          "Your billing issue has been escalated to our billing team. They will contact you within 24 hours.",
         escalated: true,
       };
     })
@@ -125,7 +128,8 @@ export async function exploreWorkflowExamples(): Promise<void> {
     .function(async (input, { setState }) => {
       await setState("resolution.type", "general");
       return {
-        message: "Thank you for contacting support. A representative will assist you shortly.",
+        message:
+          "Thank you for contacting support. A representative will assist you shortly.",
         queued: true,
       };
     })
@@ -158,8 +162,12 @@ export async function exploreWorkflowExamples(): Promise<void> {
 
     // Display results
     p.log.success(pc.green("\n✅ Workflow Result:"));
-    console.log(pc.cyan(`Final output: ${JSON.stringify(result.finalResult, null, 2)}`));
-    console.log(pc.dim(`\nExecuted steps: ${result.executedSteps.join(" → ")}`));
+    console.log(
+      pc.cyan(`Final output: ${JSON.stringify(result.finalResult, null, 2)}`)
+    );
+    console.log(
+      pc.dim(`\nExecuted steps: ${result.executedSteps.join(" → ")}`)
+    );
     console.log(pc.dim(`Duration: ${result.duration}ms`));
 
     // Show conversation history
@@ -188,7 +196,9 @@ export async function exploreWorkflowExamples(): Promise<void> {
     }
   } catch (error) {
     spinner.stop("Workflow failed");
-    p.log.error(pc.red(`Error: ${error instanceof Error ? error.message : String(error)}`));
+    p.log.error(
+      pc.red(`Error: ${error instanceof Error ? error.message : String(error)}`)
+    );
   }
 
   p.outro(pc.green("Workflow example completed!"));

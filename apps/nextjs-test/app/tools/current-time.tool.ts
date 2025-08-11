@@ -7,7 +7,7 @@ import { createNamedTool } from "@mrck-labs/grid-core";
 export const currentTimeTool = createNamedTool({
   name: "getCurrentTime",
   description: "Get the current date and time",
-  parameters: z.object({
+  inputSchema: z.object({
     timezone: z
       .string()
       .optional()

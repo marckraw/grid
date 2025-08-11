@@ -4,6 +4,7 @@ import {
   createToolExecutor,
   createConversationLoop,
   baseLLMService,
+  langfuseService,
 } from "@mrck-labs/grid-core";
 import { textWithCancel, isCancel } from "../../utils/prompts.js";
 import { createSpinner } from "../../utils/spinners.js";
@@ -103,7 +104,7 @@ export async function deepSearch(): Promise<void> {
   const agent = createConfigurableAgent({
     llmService: baseLLMService({
       toolExecutionMode: "custom",
-      langfuse: { enabled: true },
+      langfuse: langfuseService,
     }),
     config: {
       id: "deep-search-agent",

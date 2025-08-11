@@ -1,18 +1,26 @@
 import { z } from "zod";
-import { createNamedTool } from "@mrck-labs/grid-core";
+import { tool } from "ai";
+import { GridTool } from "../types";
 
 /**
  * Current time tool
  */
-export const currentTimeTool = createNamedTool({
+export const toolDefinition = {
   name: "getCurrentTime",
   description: "Get the current date and time",
-  parameters: z.object({
+  inputSchema: z.object({
     timezone: z
       .string()
       .optional()
       .describe("Timezone (e.g., 'UTC', 'America/New_York')"),
   }),
+};
+
+// this is used, when we not using vercel ai sdk execution of tools, but when we use our custom ToolExecutor
+export const currentTimeToolWithoutExecute = tool(toolDefinition);
+
+export const currentTimeToolWithExecute = tool({
+  ...toolDefinition,
   execute: async ({ timezone }) => {
     const now = new Date();
 
@@ -43,3 +51,9 @@ export const currentTimeTool = createNamedTool({
     };
   },
 });
+
+export const currentTimeTool: GridTool = {
+  withExecute: currentTimeToolWithExecute,
+  withoutExecute: currentTimeToolWithoutExecute,
+  definition: toolDefinition,
+};

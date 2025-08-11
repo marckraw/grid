@@ -6,10 +6,15 @@ import {
   type AgentActInput,
 } from "../types/agent.types.js";
 import { type LLMService } from "../types/llm.types.js";
-import { type Tool, prepareToolsForSDK } from "../types/tool.types.js";
 import { type ToolExecutor } from "../services/tool-executor.service.js";
 import type { ProgressMessage } from "../types/progress.types.js";
-import type { VoiceService, AudioResult, TranscriptionResult, VoiceOptions, TranscribeOptions } from "../types/voice.types.js";
+import type {
+  VoiceService,
+  AudioResult,
+  TranscriptionResult,
+  VoiceOptions,
+  TranscribeOptions,
+} from "../types/voice.types.js";
 
 interface BaseHandlerOptions {
   sendUpdate: (data: ProgressMessage) => Promise<void>;
@@ -83,11 +88,11 @@ export const createConfigurableAgent = ({
   });
 
   // Prepare available tools from config
-  const availableTools: Tool<any, any>[] = [
-    ...(config.tools?.custom || []),
-    ...(config.tools?.mcp || []),
+  const availableTools: Record<string, any> = {
+    ...(config.tools?.custom || {}),
+    ...(config.tools?.mcp || {}),
     // TODO: Adapt builtin and agent tools
-  ];
+  };
 
   let sendUpdate: (data: ProgressMessage) => Promise<void> = async (data) => {
     console.log("sendUpdate", data);
@@ -104,7 +109,7 @@ export const createConfigurableAgent = ({
     id: config.id,
     type: config.type,
     setSendUpdate,
-    availableTools: availableTools.map((t) => t.name),
+    availableTools: Object.keys(availableTools),
     // Enhanced metadata with config info
     getMetadata: () => ({
       ...config.metadata,
@@ -148,9 +153,6 @@ export const createConfigurableAgent = ({
             ...processedInput.messages,
           ];
 
-          // Tools are already in Vercel AI SDK format
-          const formattedTools = availableTools;
-
           // Internal loop for handling tool calls
           let response: AgentResponse = { role: "assistant", content: null };
           const maxToolRounds = 3; // Configurable limit for tool rounds
@@ -167,7 +169,13 @@ export const createConfigurableAgent = ({
               // Execute LLM call with tools
               const llmResponse = await base.llmService.runLLM({
                 messages: workingMessages,
-                tools: formattedTools.length > 0 ? formattedTools : undefined,
+                tools: availableTools,
+                traceContext: {
+                  sessionId: input.context?.sessionId,
+                  metadata: {
+                    ...input.context?.metadata,
+                  },
+                },
                 // Add any additional LLM options from config
                 ...(config.customConfig?.llmOptions || {}),
               });
@@ -338,6 +346,12 @@ export const createConfigurableAgent = ({
               try {
                 const fallbackResponse = await base.llmService.runLLM({
                   messages: fallbackMessages,
+                  traceContext: {
+                    sessionId: input.context?.sessionId,
+                    metadata: {
+                      ...input.context?.metadata,
+                    },
+                  },
                 });
 
                 return fallbackResponse;
@@ -366,32 +380,41 @@ export const createConfigurableAgent = ({
 
     // Voice capabilities (if voice service is provided)
     voiceService,
-    
+
     // Voice methods
-    speak: voiceService ? async (text: string, options?: VoiceOptions): Promise<AudioResult> => {
-      sendUpdate({ type: "speaking_start", content: text });
-      
-      try {
-        const audio = await voiceService.synthesize(text, {
-          ...config.voice?.defaultOptions,
-          ...options,
-          voiceId: options?.voiceId || config.voice?.voiceId,
-        });
-        
-        sendUpdate({ type: "speaking_complete", content: text });
-        return audio;
-      } catch (error) {
-        sendUpdate({ type: "error", content: `Voice synthesis failed: ${error}` });
-        throw error;
-      }
-    } : undefined,
-    
-    listen: voiceService ? async (options?: TranscribeOptions): Promise<TranscriptionResult> => {
-      sendUpdate({ type: "listening_start", content: "Listening..." });
-      
-      throw new Error("Listen method requires audio input - implement in your application layer");
-    } : undefined,
-    
+    speak: voiceService
+      ? async (text: string, options?: VoiceOptions): Promise<AudioResult> => {
+          sendUpdate({ type: "speaking_start", content: text });
+
+          try {
+            const audio = await voiceService.synthesize(text, {
+              ...config.voice?.defaultOptions,
+              ...options,
+              voiceId: options?.voiceId || config.voice?.voiceId,
+            });
+
+            sendUpdate({ type: "speaking_complete", content: text });
+            return audio;
+          } catch (error) {
+            sendUpdate({
+              type: "error",
+              content: `Voice synthesis failed: ${error}`,
+            });
+            throw error;
+          }
+        }
+      : undefined,
+
+    listen: voiceService
+      ? async (options?: TranscribeOptions): Promise<TranscriptionResult> => {
+          sendUpdate({ type: "listening_start", content: "Listening..." });
+
+          throw new Error(
+            "Listen method requires audio input - implement in your application layer"
+          );
+        }
+      : undefined,
+
     hasVoice: () => !!voiceService,
     canSpeak: () => !!voiceService?.synthesize,
     canListen: () => !!voiceService?.transcribe,

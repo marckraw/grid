@@ -16,6 +16,7 @@ import {
   deepSearch,
   exploreWorkflowExamples,
   exploreVoiceConversation,
+  simpleVercelAISDKTest,
 } from "./commands/index.js";
 import { conversationWithMemory } from "./commands/conversation-with-memory.js";
 
@@ -24,6 +25,11 @@ const menuOptions: MenuOption[] = [
     value: "agent-conversation",
     label: "💬 Agent Conversation",
     hint: "Interactive conversation with tools",
+  },
+  {
+    value: "simple-vercel-ai-sdk-test",
+    label: "🤖 Simple Vercel AI SDK Test",
+    hint: "Simple test of Vercel AI SDK",
   },
   {
     value: "conversation-with-memory",
@@ -65,6 +71,7 @@ const menuOptions: MenuOption[] = [
 
 const commandHandlers: Record<string, () => Promise<void>> = {
   "agent-conversation": exploreAgentConversation,
+  "simple-vercel-ai-sdk-test": simpleVercelAISDKTest,
   "conversation-with-memory": conversationWithMemory,
   "voice-conversation": exploreVoiceConversation,
   "test-agents": exploreTestAgents,

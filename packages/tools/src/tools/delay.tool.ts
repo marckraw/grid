@@ -1,19 +1,26 @@
 import { z } from "zod";
-import { createNamedTool } from "@mrck-labs/grid-core";
+import { tool } from "ai";
+import { GridTool } from "../types";
 
 /**
  * Delay/timer tool for async operations
  */
-export const delayTool = createNamedTool({
+export const toolDefinition = {
   name: "delay",
   description: "Wait for a specified amount of time (useful for timing operations or rate limiting)",
-  parameters: z.object({
+  inputSchema: z.object({
     milliseconds: z
       .number()
       .min(0)
       .max(5000)
       .describe("Time to wait in milliseconds (max 5000ms/5 seconds)")
   }),
+};
+
+export const delayToolWithoutExecute = tool(toolDefinition);
+
+export const delayToolWithExecute = tool({
+  ...toolDefinition,
   execute: async ({ milliseconds }) => {
     const start = Date.now();
     const startTime = new Date(start).toISOString();
@@ -34,3 +41,9 @@ export const delayTool = createNamedTool({
     };
   }
 });
+
+export const delayTool: GridTool = {
+  withExecute: delayToolWithExecute,
+  withoutExecute: delayToolWithoutExecute,
+  definition: toolDefinition,
+};
