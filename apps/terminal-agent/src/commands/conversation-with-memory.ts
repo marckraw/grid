@@ -46,7 +46,7 @@ export async function conversationWithMemory(): Promise<void> {
   // Create memory tools with both STM and MTM
   const memoryTools = createMemoryTools({ stm, mtm });
 
-  // Create tool executor and register memory tools
+  // Create tool executor for custom execution (memory tools need custom execution)
   const toolExecutor = createToolExecutor();
   Object.values(memoryTools).forEach((tool) => {
     toolExecutor.registerTool(tool);
@@ -90,9 +90,9 @@ Be proactive in using memory when it would enhance your responses.`,
         version: "1.0.0",
       },
       tools: {
-        builtin: [],
-        custom: Object.values(memoryTools),
-        mcp: [],
+        builtin: {},
+        custom: memoryTools,
+        mcp: {},
         agents: [],
       },
       behavior: {

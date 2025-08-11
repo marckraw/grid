@@ -50,9 +50,9 @@ export const testGeneralAgentWithCustomLLM = async () => {
         version: "1.0.0",
       },
       tools: {
-        builtin: [],
-        custom: [],
-        mcp: [],
+        builtin: {},
+        custom: {},
+        mcp: {},
         agents: [],
       },
       behavior: {

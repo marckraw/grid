@@ -19,6 +19,7 @@ import {
   registerTestMCPTools,
   type MCPClientType,
 } from "./helpers/registerTestMcp.js";
+import { getTools } from "../utils/tools.js";
 import readline from "readline";
 
 const sendUpdateOnProgress = async (message: any) => {
@@ -167,14 +168,25 @@ export async function exploreVoiceConversation(): Promise<void> {
     return;
   }
 
-  const { transformerMcpTools, transformedLinearMcpTools, clients } =
-    await registerTestMCPTools(selectedMcpClients as MCPClientType[]);
+  const {
+    linearMcpTools,
+    mcpTools,
+    transformerMcpTools,
+    transformedLinearMcpTools,
+    clients,
+  } = await registerTestMCPTools(selectedMcpClients as MCPClientType[]);
 
   p.log.info(
     pc.dim("💾 Conversation is automatically saved to conversation.json\n")
   );
 
-  // Create tool executor and register tools
+  // Convert tools to new format
+  const tools = getTools({
+    executionType: "vercel-native",
+    tools: [calculatorTool, currentTimeTool],
+  });
+
+  // Create tool executor for custom execution mode (if needed)
   const toolExecutor = createToolExecutor({
     onToolRegister: (tool) => {
       if (process.env.DEBUG) {
@@ -183,9 +195,9 @@ export async function exploreVoiceConversation(): Promise<void> {
     },
   });
 
-  // Register local tools
-  toolExecutor.registerTool(calculatorTool);
-  toolExecutor.registerTool(currentTimeTool);
+  // Register local tools for custom execution
+  toolExecutor.registerTool(calculatorTool.withoutExecute);
+  toolExecutor.registerTool(currentTimeTool.withoutExecute);
 
   // Register MCP tools if available
   for (const tool in transformerMcpTools) {
@@ -199,7 +211,7 @@ export async function exploreVoiceConversation(): Promise<void> {
   // Create configurable agent with voice
   const agent = createConfigurableAgent({
     llmService: baseLLMService({
-      toolExecutionMode: "custom",
+      toolExecutionMode: "vercel-native",
       langfuse: langfuseService,
     }),
     voiceService: voiceService,
@@ -224,9 +236,9 @@ When speaking, use a conversational tone as if talking to someone in person.`,
         version: "1.0.0",
       },
       tools: {
-        builtin: [],
-        custom: [calculatorTool, currentTimeTool],
-        mcp: [...transformerMcpTools, ...transformedLinearMcpTools],
+        builtin: {},
+        custom: { ...tools, ...linearMcpTools },
+        mcp: {},
         agents: [],
       },
       behavior: {
@@ -247,7 +259,7 @@ When speaking, use a conversational tone as if talking to someone in person.`,
       },
       orchestration: {},
     },
-    toolExecutor: toolExecutor,
+    // toolExecutor: toolExecutor, // Not needed for vercel-native mode
   });
 
   // Create conversation flow with progress streaming
