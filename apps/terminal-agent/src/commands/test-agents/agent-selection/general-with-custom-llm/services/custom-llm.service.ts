@@ -47,7 +47,11 @@ export class CustomLLMService implements LLMService {
       } else if (input.includes("how are you")) {
         responseContent +=
           "I'm functioning perfectly as a mock LLM! This demonstrates custom service integration.";
-      } else if (input.includes("tool") && tools && tools.length > 0) {
+      } else if (
+        input.includes("tool") &&
+        tools &&
+        Object.keys(tools).length > 0
+      ) {
         // Demonstrate tool calling
         p.log.info(pc.yellow("🔧 [CustomLLM] Generating tool call response"));
 
@@ -57,7 +61,7 @@ export class CustomLLMService implements LLMService {
           toolCalls: [
             {
               toolCallId: `call_${Date.now()}`,
-              toolName: tools[0].name || "example_tool",
+              toolName: Object.keys(tools)[0] || "example_tool",
               args: { example: "This is a mock tool call" },
             },
           ],
