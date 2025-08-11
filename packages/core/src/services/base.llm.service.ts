@@ -70,29 +70,6 @@ export const baseLLMService = (
     };
   };
 
-  const formatTools = (tools: any[], executionMode: string = "custom") => {
-    // Convert array of tools to object keyed by tool name
-    // This is what Vercel AI SDK expects
-    return tools.reduce((acc, tool) => {
-      if (tool.name) {
-        const { name, ...toolWithoutName } = tool;
-
-        if (executionMode === "vercel-native") {
-          // Keep execute function for Vercel to auto-execute
-          acc[name] = toolWithoutName;
-        } else {
-          // Remove execute function for custom execution
-          const { execute, ...toolWithoutExecute } = toolWithoutName as any;
-          acc[name] = {
-            description: toolWithoutExecute.description,
-            inputSchema: toolWithoutExecute.inputSchema,
-          };
-        }
-      }
-      return acc;
-    }, {} as Record<string, any>);
-  };
-
   const isAvailable = async (): Promise<boolean> => {
     try {
       // Simple test to check if the API is accessible
@@ -119,7 +96,6 @@ export const baseLLMService = (
 
   return {
     runLLM,
-    formatTools,
     isAvailable,
   };
 };

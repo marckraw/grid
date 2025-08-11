@@ -48,9 +48,6 @@ export interface LLMService {
   // Main method to run LLM with messages and optional tools
   runLLM(options: LLMServiceOptions): Promise<ChatMessage>;
 
-  // Optional method to format tools for the specific provider
-  formatTools?(tools: any[]): any[];
-
   // Optional method to check if service is available
   isAvailable?(): Promise<boolean>;
 }

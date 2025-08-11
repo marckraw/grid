@@ -86,33 +86,6 @@ export class CustomLLMService implements LLMService {
     return response;
   }
 
-  async runLLMWithJSONResponse?(
-    options: LLMServiceOptions
-  ): Promise<ChatMessage> {
-    p.log.info(pc.blue("📋 [CustomLLM] JSON response requested"));
-
-    // For demonstration, return a structured JSON response
-    const jsonResponse = {
-      status: "success",
-      message: "This is a JSON response from the custom LLM",
-      timestamp: new Date().toISOString(),
-      requestCount: this.requestCount,
-    };
-
-    return {
-      role: "assistant",
-      content: JSON.stringify(jsonResponse, null, 2),
-    };
-  }
-
-  formatTools?(tools: any[]): any[] {
-    p.log.info(pc.cyan("🛠️ [CustomLLM] Formatting " + tools.length + " tools"));
-
-    // In a real implementation, you would format tools according to your LLM's requirements
-    // For now, just return them as-is
-    return tools;
-  }
-
   async isAvailable?(): Promise<boolean> {
     p.log.info(pc.green("✅ [CustomLLM] Service is available"));
     return true;
