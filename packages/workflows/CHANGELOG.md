@@ -1,5 +1,12 @@
 # @mrck-labs/grid-workflows
 
+## 9.0.0
+
+### Patch Changes
+
+- Updated dependencies [a84fd8c]
+  - @mrck-labs/grid-core@0.24.0
+
 ## 8.0.1
 
 ### Patch Changes
