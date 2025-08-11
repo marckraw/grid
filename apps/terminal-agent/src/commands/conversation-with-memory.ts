@@ -50,7 +50,7 @@ export async function conversationWithMemory(): Promise<void> {
   const toolExecutor = createToolExecutor();
   Object.values(memoryTools).forEach((tool) => {
     toolExecutor.registerTool(tool);
-    p.log.success(`Registered memory tool: ${tool.name}`);
+    p.log.success(`Registered memory tool: ${Object.keys(tool)[0]}`);
   });
 
   // Create configurable agent with memory tools
