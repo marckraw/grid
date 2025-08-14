@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.25.0
+
+### Minor Changes
+
+- 4a25255: changes in how the tools passing looks like
+
 ## 0.24.0
 
 ### Minor Changes
