@@ -5,7 +5,7 @@ export const getTools = ({
   executionType = "custom",
   tools,
 }: {
-  executionType: "vercel-native" | "custom";
+  executionType?: "vercel-native" | "custom";
   tools: GridTool[];
 }) => {
   const availableTools: ToolSet = tools.reduce((acc, tool) => {
