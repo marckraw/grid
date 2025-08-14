@@ -30,19 +30,22 @@ export const baseLLMService = (
     const {
       model = defaultModel,
       messages,
-      tools = {},
+      tools = undefined,
       temperature = 0.1,
       maxOutputTokens,
       responseFormat,
       traceContext,
     } = options;
 
+    console.log("[baseLLMService:runLLM] - tools");
+    console.log(tools);
+
     const result = await generateText({
       model: openai(model),
       messages: messages as ModelMessage[],
       temperature,
       maxOutputTokens,
-      tools: tools,
+      tools,
       stopWhen:
         toolExecutionMode === "custom" ? stepCountIs(1) : stepCountIs(12),
     });
