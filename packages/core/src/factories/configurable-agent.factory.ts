@@ -94,6 +94,9 @@ export const createConfigurableAgent = ({
     // TODO: Adapt builtin and agent tools
   };
 
+  console.log("These are available tools");
+  console.log(availableTools);
+
   let sendUpdate: (data: ProgressMessage) => Promise<void> = async (data) => {
     console.log("sendUpdate", data);
   };

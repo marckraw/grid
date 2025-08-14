@@ -95,7 +95,7 @@ export const AgentConfigSchema = z.object({
   behavior: AgentBehaviorSchema.default({}),
 
   // Tools configuration
-  tools: AgentToolsSchema.default({ builtin: [] }),
+  tools: AgentToolsSchema.default({ builtin: {} }),
 
   // Hooks for custom logic
   hooks: AgentHooksSchema.optional(),

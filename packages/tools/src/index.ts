@@ -17,6 +17,7 @@ export { delayTool } from "./tools/delay.tool";
 export { hashTool } from "./tools/hash.tool";
 export { dataConverterTool } from "./tools/data-converter.tool";
 export { createImageTool } from "./tools/create-image.tool";
+export { getTools } from "./tools/get-tool";
 
 // Export all tools as a collection for convenience
 import { calculatorTool } from "./tools/calculator.tool";
