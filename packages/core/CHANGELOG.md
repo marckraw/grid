@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.26.0
+
+### Minor Changes
+
+- 1b609a3: expose BaseAgent
+
 ## 0.25.0
 
 ### Minor Changes
