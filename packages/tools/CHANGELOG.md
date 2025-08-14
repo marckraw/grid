@@ -1,5 +1,16 @@
 # @mrck-labs/grid-tools
 
+## 17.0.0
+
+### Minor Changes
+
+- 4a25255: changes in how the tools passing looks like
+
+### Patch Changes
+
+- Updated dependencies [4a25255]
+  - @mrck-labs/grid-core@0.25.0
+
 ## 16.0.0
 
 ### Minor Changes
