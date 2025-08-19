@@ -21,12 +21,18 @@ export const baseLLMService = (
   config: BaseLLMServiceConfig = {}
 ): LLMService => {
   const {
-    toolExecutionMode = "custom", // Default to custom execution
+    toolExecutionMode = "vercel-native", // Default to vercel-native execution
     defaultModel = "gpt-4.1-mini",
     langfuse = langfuseService,
   } = config;
 
+  console.log("[baseLLMService] - config");
+  console.log(config);
+
   const runLLM = async (options: LLMServiceOptions): Promise<ChatMessage> => {
+    console.log("[baseLLMService:runLLM] - options");
+    console.log(options);
+
     const {
       model = defaultModel,
       messages,
