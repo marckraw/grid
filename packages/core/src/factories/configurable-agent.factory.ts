@@ -66,7 +66,7 @@ export interface CreateConfigurableAgentOptions {
   customHandlers?: CustomHandlers;
   llmService?: LLMService;
   toolExecutor?: ToolExecutor;
-  voiceService?: VoiceService;
+  voiceService?: VoiceService;``
   // observability?: ObservabilityService; // Removed - using simple Langfuse integration
 }
 
@@ -86,6 +86,15 @@ export const createConfigurableAgent = ({
     type: config.type,
     llmService,
   });
+
+  console.log("[createConfigurableAgent] - config");
+  console.log(config);
+
+  console.log("LLM service");
+  console.log(llmService);
+
+  console.log("Base llm service:  ");
+  console.log(base.llmService);
 
   // Prepare available tools from config
   const availableTools: Record<string, any> = {
@@ -169,6 +178,10 @@ export const createConfigurableAgent = ({
             });
 
             try {
+              console.log("Executing LLM call with tools");
+              console.log(availableTools);
+              console.log(workingMessages);
+
               // Execute LLM call with tools
               const llmResponse = await base.llmService.runLLM({
                 messages: workingMessages,

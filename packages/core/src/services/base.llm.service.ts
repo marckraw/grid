@@ -26,7 +26,13 @@ export const baseLLMService = (
     langfuse = langfuseService,
   } = config;
 
+  console.log("[baseLLMService] - config");
+  console.log(config);
+
   const runLLM = async (options: LLMServiceOptions): Promise<ChatMessage> => {
+    console.log("[baseLLMService:runLLM] - options");
+    console.log(options);
+
     const {
       model = defaultModel,
       messages,
