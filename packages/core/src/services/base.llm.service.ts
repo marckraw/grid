@@ -21,7 +21,7 @@ export const baseLLMService = (
   config: BaseLLMServiceConfig = {}
 ): LLMService => {
   const {
-    toolExecutionMode = "custom", // Default to custom execution
+    toolExecutionMode = "vercel-native", // Default to vercel-native execution
     defaultModel = "gpt-4.1-mini",
     langfuse = langfuseService,
   } = config;

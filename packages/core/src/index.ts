@@ -94,4 +94,6 @@ export type {
 export {
   createMemoryTools,
   getMemoryToolsArray,
-} from "./tools/memory.tools.js";
+} from "./beta_tools/memory.tools.js";
+
+export * from "./tools/index.js";
