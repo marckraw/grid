@@ -1,4 +1,4 @@
-import type { GridTool } from "../types/index.js";
+import type { GridTool } from "./types.js";
 import type { ToolSet } from "ai";
 
 export const getTools = ({

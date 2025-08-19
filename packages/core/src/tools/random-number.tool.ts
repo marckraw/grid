@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { tool } from "ai";
-import { GridTool } from "../types/index.js";
+import type { GridTool } from "./types.js";
 
 /**
  * Random number generator tool

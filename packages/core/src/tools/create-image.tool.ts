@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { tool } from "ai";
-import { GridTool } from "../types/index.js";
+import type { GridTool } from "./types.js";
 import { createOpenAIImageService } from "./services/openai-image.service.js";
 import { writeFileSync } from "fs";
 import { join } from "path";
