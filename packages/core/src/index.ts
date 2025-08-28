@@ -11,6 +11,7 @@ export { createBaseAgent } from "./agents/BaseAgent.js";
 export type { BaseAgent } from "./agents/BaseAgent.js";
 export { transformMessagesForAI, getLastUserMessage } from "./utils.js";
 export * from "./types/index.js";
+export type { Agent } from "./types/agent.types.js";
 
 // Export tool types
 export type { Tool, ToolResult } from "./types/tool.types.js";
