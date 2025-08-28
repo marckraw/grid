@@ -96,6 +96,8 @@ export const createConfigurableAgent = ({
   console.log("Base llm service:  ");
   console.log(base.llmService);
 
+  console.log("Zmieniamy kuuuurwa!");
+
   // Prepare available tools from config
   const availableTools: Record<string, any> = {
     ...(config.tools?.custom || {}),
@@ -186,6 +188,7 @@ export const createConfigurableAgent = ({
               const llmResponse = await base.llmService.runLLM({
                 messages: workingMessages,
                 tools: availableTools,
+                sendUpdate,
                 traceContext: {
                   sessionId: input.context?.sessionId,
                   metadata: {

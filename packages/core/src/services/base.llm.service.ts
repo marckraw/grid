@@ -42,6 +42,7 @@ export const baseLLMService = (
       maxOutputTokens,
       responseFormat,
       traceContext,
+      sendUpdate,
     } = options;
 
     console.log("[baseLLMService:runLLM] - tools");
@@ -55,6 +56,14 @@ export const baseLLMService = (
       tools,
       stopWhen:
         toolExecutionMode === "custom" ? stepCountIs(1) : stepCountIs(12),
+      onStepFinish: (step) => {
+        console.log("[baseLLMService:runLLM] - onStepFinish");
+        console.log(step);
+        sendUpdate({
+          type: "step",
+          content: JSON.stringify(step),
+        });
+      },
     });
 
     return {
