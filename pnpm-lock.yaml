@@ -27,6 +27,9 @@ importers:
       typescript:
         specifier: ^5.3.3
         version: 5.8.3
+      zshy:
+        specifier: ^0.0.4
+        version: 0.0.4(typescript@5.8.3)
 
   apps/docs:
     dependencies:
@@ -225,9 +228,6 @@ importers:
       vitest:
         specifier: ^1.1.0
         version: 1.6.1(@types/node@20.19.7)(terser@5.43.1)
-      zshy:
-        specifier: ^0.0.4
-        version: 0.0.4(typescript@5.8.3)
 
   packages/core:
     dependencies:
@@ -302,9 +302,6 @@ importers:
       vitest:
         specifier: ^1.1.0
         version: 1.6.1(@types/node@20.19.7)(terser@5.43.1)
-      zshy:
-        specifier: ^0.0.4
-        version: 0.0.4(typescript@5.6.3)
 
   packages/workflows:
     dependencies:
