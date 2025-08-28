@@ -38,6 +38,7 @@
     "test": "vitest"
   },
   "devDependencies": {
+    "@mrck-labs/grid-core": "workspace:*",
     "@biomejs/biome": "^1.4.1",
     "typescript": "^5.3.3",
     "vitest": "^1.1.0",
