@@ -7,11 +7,11 @@ import {
   systemInfoTool,
   dataConverterTool,
   jsonFormatterTool,
-} from "@mrck-labs/grid-tools";
+} from "@mrck-labs/grid-core";
 
 /**
  * Math & Data Agent - Specialized for calculations and data processing
- * 
+ *
  * This agent is configured with tools for:
  * - Mathematical calculations
  * - Random number generation for simulations
@@ -59,7 +59,8 @@ You excel at:
       id: "math-data-agent",
       type: "general",
       name: "Math & Data Processor",
-      description: "An agent specialized in mathematical calculations and data processing",
+      description:
+        "An agent specialized in mathematical calculations and data processing",
       capabilities: ["general"],
       icon: "🧮",
       version: "1.0.0",
@@ -122,7 +123,7 @@ You excel at:
 - Performance analysis and benchmarking
 - Cryptographic operations and data security
 - Scientific computing and simulations`;
-  
+
   return createConfigurableAgent({
     llmService: baseLLMService({
       toolExecutionMode: "custom",
@@ -131,7 +132,7 @@ You excel at:
       id: "custom-math-data-agent",
       type: "general",
       prompts: {
-        system: options?.systemPromptAddition 
+        system: options?.systemPromptAddition
           ? `${baseSystemPrompt}\n\n${options.systemPromptAddition}`
           : baseSystemPrompt,
       },

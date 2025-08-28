@@ -1,4 +1,4 @@
-import type { Tool, ToolResult } from "../types/tool.types.js";
+import type { Tool, ToolLike, ToolResult } from "../types/tool.types.js";
 import type { ToolCall } from "../types/llm.types.js";
 
 /**
@@ -8,7 +8,7 @@ export interface ToolExecutorOptions {
   maxRetries?: number;
   defaultTimeout?: number;
   // observability?: ObservabilityService; // Removed - using simple Langfuse integration
-  onToolRegister?: (tool: Tool<any, any>) => void;
+  onToolRegister?: (tool: ToolLike) => void;
 }
 
 /**
@@ -23,12 +23,12 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
   // Observability tracking can be added to Langfuse if needed
 
   // Registry of tools by name
-  const toolRegistry = new Map<string, Tool<any, any>>();
+  const toolRegistry = new Map<string, ToolLike>();
 
   /**
    * Register a tool
    */
-  const registerTool = (tool: Tool<any, any>) => {
+  const registerTool = (tool: ToolLike) => {
     if (!tool.name) {
       throw new Error("Tool must have a name");
     }
@@ -46,14 +46,14 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
   /**
    * Get all registered tools
    */
-  const getAvailableTools = (): Tool<any, any>[] => {
+  const getAvailableTools = (): ToolLike[] => {
     return Array.from(toolRegistry.values());
   };
 
   /**
    * Get a specific tool
    */
-  const getTool = (toolName: string): Tool<any, any> | undefined => {
+  const getTool = (toolName: string): ToolLike | undefined => {
     return toolRegistry.get(toolName);
   };
 
@@ -89,7 +89,7 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
       });
 
       const executePromise = tool.execute
-        ? tool.execute(toolCall.args, {
+        ? tool.execute(toolCall.args as any, {
             toolCallId: toolCall.toolCallId,
             messages: [], // Empty messages for now
           })

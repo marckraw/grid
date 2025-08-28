@@ -263,12 +263,13 @@ export const createMemoryTools = (deps: {
     },
   });
 
+  // Return Vercel-native tools object: { [name]: AiTool }
   return {
-    searchRecentMemory,
-    recallConversationHistory,
-    getMemoryStatistics,
-    searchMemoryByTags,
-    recallFacts,
+    ...searchRecentMemory,
+    ...recallConversationHistory,
+    ...getMemoryStatistics,
+    ...searchMemoryByTags,
+    ...recallFacts,
   };
 };
 

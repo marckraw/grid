@@ -5,11 +5,11 @@ import {
   stringUtilsTool,
   jsonFormatterTool,
   dataConverterTool,
-} from "@mrck-labs/grid-tools";
+} from "@mrck-labs/grid-core";
 
 /**
  * Research Agent - Specialized for information gathering and analysis
- * 
+ *
  * This agent is configured with tools for:
  * - Web content reading and extraction
  * - Text processing and manipulation
@@ -52,7 +52,8 @@ You excel at:
       id: "research-agent",
       type: "general",
       name: "Research Assistant",
-      description: "An agent specialized in research, data gathering, and analysis",
+      description:
+        "An agent specialized in research, data gathering, and analysis",
       capabilities: ["general"],
       icon: "🔬",
       version: "1.0.0",
@@ -109,7 +110,7 @@ You excel at:
 - Comparative analysis
 - Information synthesis
 - Report generation`;
-  
+
   return createConfigurableAgent({
     llmService: baseLLMService({
       toolExecutionMode: "custom",
@@ -118,7 +119,7 @@ You excel at:
       id: "custom-research-agent",
       type: "general",
       prompts: {
-        system: options?.systemPromptAddition 
+        system: options?.systemPromptAddition
           ? `${baseSystemPrompt}\n\n${options.systemPromptAddition}`
           : baseSystemPrompt,
       },

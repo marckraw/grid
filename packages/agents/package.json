@@ -31,7 +31,6 @@
   },
   "dependencies": {
     "@mrck-labs/grid-core": "workspace:*",
-    "@mrck-labs/grid-tools": "workspace:*",
     "zod": "^3.22.4"
   },
   "files": [

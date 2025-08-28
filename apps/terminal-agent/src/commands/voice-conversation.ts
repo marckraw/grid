@@ -12,7 +12,7 @@ import {
 import { textWithCancel, isCancel } from "../utils/prompts.js";
 import { VoiceProgressIndicator } from "../utils/voice-progress.js";
 import { TerminalVoiceService } from "../services/terminal-voice.service.js";
-import { calculatorTool, currentTimeTool } from "@mrck-labs/grid-tools";
+import { calculatorTool, currentTimeTool } from "@mrck-labs/grid-core";
 import pc from "picocolors";
 import { saveConversation } from "./helpers/conversation.helper.js";
 import {
@@ -196,16 +196,16 @@ export async function exploreVoiceConversation(): Promise<void> {
   });
 
   // Register local tools for custom execution
-  toolExecutor.registerTool(calculatorTool.withoutExecute);
-  toolExecutor.registerTool(currentTimeTool.withoutExecute);
+  toolExecutor.registerTool(calculatorTool.withoutExecute as any);
+  toolExecutor.registerTool(currentTimeTool.withoutExecute as any);
 
   // Register MCP tools if available
   for (const tool in transformerMcpTools) {
-    toolExecutor.registerTool(transformerMcpTools[tool]);
+    toolExecutor.registerTool(transformerMcpTools[tool] as any);
   }
 
   for (const tool in transformedLinearMcpTools) {
-    toolExecutor.registerTool(transformedLinearMcpTools[tool]);
+    toolExecutor.registerTool(transformedLinearMcpTools[tool] as any);
   }
 
   // Create configurable agent with voice
@@ -342,7 +342,9 @@ When speaking, use a conversational tone as if talking to someone in person.`,
           voiceProgress.setState("listening");
           recordingControl = await terminalVoice.startRecording();
         } catch (error: any) {
-          voiceProgress.showError(`Recording failed: ${error.message || error}`);
+          voiceProgress.showError(
+            `Recording failed: ${error.message || error}`
+          );
           isRecording = false;
           recordingControl = null;
         }
@@ -356,7 +358,12 @@ When speaking, use a conversational tone as if talking to someone in person.`,
 
           // Debug log audio input
           if (process.env.DEBUG) {
-            console.log("Audio input format:", audioInput.format, "size:", audioInput.data.length || audioInput.data);
+            console.log(
+              "Audio input format:",
+              audioInput.format,
+              "size:",
+              audioInput.data.length || audioInput.data
+            );
           }
 
           // Transcribe the audio
@@ -372,7 +379,9 @@ When speaking, use a conversational tone as if talking to someone in person.`,
             voiceProgress.showError("No speech detected");
           }
         } catch (error: any) {
-          voiceProgress.showError(`Transcription failed: ${error.message || error}`);
+          voiceProgress.showError(
+            `Transcription failed: ${error.message || error}`
+          );
           console.error("Full transcription error:", error);
         } finally {
           isRecording = false;
