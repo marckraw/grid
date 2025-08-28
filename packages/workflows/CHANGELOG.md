@@ -1,5 +1,16 @@
 # @mrck-labs/grid-workflows
 
+## 14.0.0
+
+### Minor Changes
+
+- b49e53b: move to tsup and remove grid-tools package
+
+### Patch Changes
+
+- Updated dependencies [b49e53b]
+  - @mrck-labs/grid-core@0.29.0
+
 ## 13.0.0
 
 ### Patch Changes

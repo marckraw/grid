@@ -1,5 +1,16 @@
 # express-test
 
+## 0.6.0
+
+### Minor Changes
+
+- b49e53b: move to tsup and remove grid-tools package
+
+### Patch Changes
+
+- Updated dependencies [b49e53b]
+  - @mrck-labs/grid-core@0.29.0
+
 ## 0.5.3
 
 ### Patch Changes

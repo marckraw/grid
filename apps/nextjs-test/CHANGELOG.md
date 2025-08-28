@@ -1,5 +1,17 @@
 # nextjs-test
 
+## 0.9.0
+
+### Minor Changes
+
+- b49e53b: move to tsup and remove grid-tools package
+
+### Patch Changes
+
+- Updated dependencies [b49e53b]
+  - @mrck-labs/grid-agents@0.10.0
+  - @mrck-labs/grid-core@0.29.0
+
 ## 0.8.3
 
 ### Patch Changes
