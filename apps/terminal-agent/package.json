@@ -21,7 +21,6 @@
         "@clack/prompts": "^0.11.0",
         "@mrck-labs/grid-agents": "workspace:*",
         "@mrck-labs/grid-core": "workspace:*",
-        "@mrck-labs/grid-tools": "workspace:*",
         "@mrck-labs/grid-workflows": "workspace:*",
         "ai": "^5.0.8",
         "dotenv": "^17.2.0",

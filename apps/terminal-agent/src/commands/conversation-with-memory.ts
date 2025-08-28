@@ -49,7 +49,7 @@ export async function conversationWithMemory(): Promise<void> {
   // Create tool executor for custom execution (memory tools need custom execution)
   const toolExecutor = createToolExecutor();
   Object.values(memoryTools).forEach((tool) => {
-    toolExecutor.registerTool(tool);
+    toolExecutor.registerTool(tool as any);
     p.log.success(`Registered memory tool: ${Object.keys(tool)[0]}`);
   });
 

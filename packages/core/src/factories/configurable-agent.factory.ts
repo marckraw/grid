@@ -66,7 +66,7 @@ export interface CreateConfigurableAgentOptions {
   customHandlers?: CustomHandlers;
   llmService?: LLMService;
   toolExecutor?: ToolExecutor;
-  voiceService?: VoiceService;``
+  voiceService?: VoiceService;
   // observability?: ObservabilityService; // Removed - using simple Langfuse integration
 }
 

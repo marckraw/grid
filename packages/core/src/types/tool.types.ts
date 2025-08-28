@@ -9,6 +9,14 @@ export type Tool = AiTool & {
   name: string; // We add name for easier identification
 };
 
+// Structural Tool type to allow compatible tools from outside this package
+export type ToolLike = {
+  description?: string;
+  inputSchema: any;
+  execute?: (input: any, options?: any) => Promise<any>;
+  name?: string;
+};
+
 /**
  * Create a tool using Vercel AI SDK
  */

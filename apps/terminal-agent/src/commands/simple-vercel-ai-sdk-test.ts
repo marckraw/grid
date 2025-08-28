@@ -17,7 +17,7 @@ import {
   calculatorTool,
   currentTimeTool,
   systemInfoTool,
-} from "@mrck-labs/grid-tools";
+} from "@mrck-labs/grid-core";
 import { createConfigurableAgent } from "@mrck-labs/grid-core";
 import { getTools } from "../utils/tools.js";
 

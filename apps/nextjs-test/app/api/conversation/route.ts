@@ -26,8 +26,8 @@ function getConversation(
   if (!conversations.has(sessionId)) {
     // Create tool executor and register tools
     const toolExecutor = createToolExecutor();
-    toolExecutor.registerTool(calculatorTool);
-    toolExecutor.registerTool(currentTimeTool);
+    toolExecutor.registerTool(calculatorTool as any);
+    toolExecutor.registerTool(currentTimeTool as any);
 
     // Initialize voice service if API key is available
     const voiceService = process.env.ELEVENLABS_API_KEY

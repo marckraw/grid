@@ -1,4 +1,4 @@
-import type { GridTool } from "@mrck-labs/grid-tools";
+import type { GridTool } from "@mrck-labs/grid-core";
 import type { ToolSet } from "ai";
 
 export const getTools = ({

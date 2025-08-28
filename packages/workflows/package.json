@@ -15,14 +15,25 @@
   "publishConfig": {
     "access": "public"
   },
-  "zshy": {
-    "exports": {
-      ".": "./src/index.ts"
-    }
+  "tsup": {
+    "entry": [
+      "src/index.ts"
+    ],
+    "dts": true,
+    "splitting": false,
+    "sourcemap": true,
+    "clean": true,
+    "format": [
+      "esm",
+      "cjs"
+    ],
+    "outDir": "dist",
+    "minify": false,
+    "target": "es2020"
   },
   "scripts": {
-    "build": "zshy",
-    "dev": "zshy --watch",
+    "build": "tsup",
+    "dev": "tsup --watch",
     "lint": "biome check src",
     "test": "vitest"
   },
@@ -30,7 +41,7 @@
     "@biomejs/biome": "^1.4.1",
     "typescript": "^5.3.3",
     "vitest": "^1.1.0",
-    "zshy": "^0.0.4"
+    "tsup": "^8.5.0"
   },
   "dependencies": {
     "zod": "^3.25.76"
@@ -43,10 +54,10 @@
   ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
-  "types": "./dist/index.d.cts",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.cts",
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     }

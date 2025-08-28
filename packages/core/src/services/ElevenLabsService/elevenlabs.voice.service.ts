@@ -227,8 +227,6 @@ export const elevenlabsVoiceService = (
       // Prepare audio data
       const audioData = await utils.prepareAudioInput(audio);
 
-
-
       // Convert audio data to Blob for the API
       const audioBlob = new Blob([audioData], {
         type: `audio/${audio.format}`,
@@ -242,7 +240,6 @@ export const elevenlabsVoiceService = (
         modelId: modelId,
       });
 
-
       utils.emitProgress({
         type: "transcription_complete",
         timestamp: Date.now(),
@@ -250,20 +247,21 @@ export const elevenlabsVoiceService = (
 
       // Format the response according to our TranscriptionResult interface
       // ElevenLabs returns { text: "transcribed text", ... }
-      const transcribedText = response.text || "";
+      const resp: any = response as any;
+      const transcribedText = resp.text || "";
 
       return {
         text: transcribedText,
-        confidence: response.confidence,
-        language: response.language || options?.language,
-        duration: response.duration,
-        words: response.words?.map((word: any) => ({
+        confidence: resp.confidence,
+        language: resp.language || options?.language,
+        duration: resp.duration,
+        words: resp.words?.map((word: any) => ({
           word: word.text,
           start: word.start_time || word.start,
           end: word.end_time || word.end,
           confidence: word.confidence,
         })),
-        alternatives: response.alternatives?.map((alt: any) => ({
+        alternatives: resp.alternatives?.map((alt: any) => ({
           text: alt.text,
           confidence: alt.confidence,
         })),

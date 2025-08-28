@@ -12,7 +12,7 @@ import {
   calculatorTool,
   currentTimeTool,
   createImageTool,
-} from "@mrck-labs/grid-tools";
+} from "@mrck-labs/grid-core";
 import pc from "picocolors";
 import { saveConversation } from "./helpers/conversation.helper.js";
 import {
@@ -113,17 +113,17 @@ export async function exploreAgentConversation(): Promise<void> {
   });
 
   // Register local tools
-  toolExecutor.registerTool(calculatorTool.withoutExecute);
-  toolExecutor.registerTool(currentTimeTool.withoutExecute);
-  toolExecutor.registerTool(createImageTool.withoutExecute);
+  toolExecutor.registerTool(calculatorTool.withoutExecute as any);
+  toolExecutor.registerTool(currentTimeTool.withoutExecute as any);
+  toolExecutor.registerTool(createImageTool.withoutExecute as any);
 
   // Register MCP tools if available
   for (const tool in transformerMcpTools) {
-    toolExecutor.registerTool(transformerMcpTools[tool]);
+    toolExecutor.registerTool(transformerMcpTools[tool] as any);
   }
 
   for (const tool in transformedLinearMcpTools) {
-    toolExecutor.registerTool(transformedLinearMcpTools[tool]);
+    toolExecutor.registerTool(transformedLinearMcpTools[tool] as any);
   }
 
   // Create configurable agent

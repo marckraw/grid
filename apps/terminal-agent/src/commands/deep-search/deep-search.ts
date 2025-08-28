@@ -8,7 +8,7 @@ import {
 } from "@mrck-labs/grid-core";
 import { textWithCancel, isCancel } from "../../utils/prompts.js";
 import { createSpinner } from "../../utils/spinners.js";
-import { calculatorTool, currentTimeTool } from "@mrck-labs/grid-tools";
+import { calculatorTool, currentTimeTool } from "@mrck-labs/grid-core";
 import pc from "picocolors";
 import { saveConversation } from "../helpers/conversation.helper.js";
 import {
@@ -88,16 +88,16 @@ export async function deepSearch(): Promise<void> {
   });
 
   // Register local tools
-  toolExecutor.registerTool(calculatorTool);
-  toolExecutor.registerTool(currentTimeTool);
+  toolExecutor.registerTool(calculatorTool.withoutExecute as any);
+  toolExecutor.registerTool(currentTimeTool.withoutExecute as any);
 
   // Register MCP tools if available
   for (const tool in transformerMcpTools) {
-    toolExecutor.registerTool(transformerMcpTools[tool]);
+    toolExecutor.registerTool(transformerMcpTools[tool] as any);
   }
 
   for (const tool in transformedLinearMcpTools) {
-    toolExecutor.registerTool(transformedLinearMcpTools[tool]);
+    toolExecutor.registerTool(transformedLinearMcpTools[tool] as any);
   }
 
   // Create configurable agent
