@@ -28,6 +28,7 @@ export const baseLLMService = (
 
   console.log("[baseLLMService] - config");
   console.log(config);
+  console.log("whatever manite");
 
   const runLLM = async (options: LLMServiceOptions): Promise<ChatMessage> => {
     console.log("[baseLLMService:runLLM] - options");

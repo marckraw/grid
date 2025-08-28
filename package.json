@@ -40,5 +40,11 @@
     "turbo": "^1.11.2",
     "typescript": "^5.3.3"
   },
-  "packageManager": "pnpm@8.15.1"
+  "packageManager": "pnpm@8.15.1",
+  "pnpm": {
+    "overrides": {
+      "@changesets/cli>globby": "11.1.0",
+      "zshy>globby": "11.1.0"
+    }
+  }
 }
