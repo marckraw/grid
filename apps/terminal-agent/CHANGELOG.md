@@ -1,5 +1,18 @@
 # terminal-agent
 
+## 0.15.0
+
+### Minor Changes
+
+- b49e53b: move to tsup and remove grid-tools package
+
+### Patch Changes
+
+- Updated dependencies [b49e53b]
+  - @mrck-labs/grid-workflows@14.0.0
+  - @mrck-labs/grid-agents@0.10.0
+  - @mrck-labs/grid-core@0.29.0
+
 ## 0.14.3
 
 ### Patch Changes

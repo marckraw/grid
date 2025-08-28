@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.29.0
+
+### Minor Changes
+
+- b49e53b: move to tsup and remove grid-tools package
+
 ## 0.28.0
 
 ### Minor Changes
