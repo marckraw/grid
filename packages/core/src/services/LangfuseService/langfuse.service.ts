@@ -66,6 +66,17 @@ export const createLangfuseService = (
   // In-memory storage for session-based tracing
   const sessionTraces = new Map<string, any>(); // sessionToken -> current trace
   const traceCounters = new Map<string, number>(); // sessionToken -> execution counter
+  const sessionCurrentGenerations = new Map<string, any>(); // sessionToken -> current generation
+  const sessionOpenSpans = new Map<string, Map<string, any>>(); // sessionToken -> Map<spanName, span>
+  const sessionToolSpans = new Map<string, Map<string, any>>(); // sessionToken -> Map<toolCallId, span>
+
+  // Normalize labels (spans, events, generation names) to kebab-case
+  const normalizeLabel = (label: string): string =>
+    String(label)
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-") // replace groups of non-alnum chars with '-'
+      .replace(/^-+|-+$/g, ""); // trim leading/trailing '-'
 
   // Initialize Langfuse client with proper configuration
   const langfuse = (() => {
@@ -151,6 +162,7 @@ export const createLangfuseService = (
                 const endParams: any = {
                   output: update.output,
                   usage: update.usage,
+                  metadata: update.cost ? { cost: update.cost } : undefined,
                 };
 
                 if (update.error) {
@@ -168,10 +180,14 @@ export const createLangfuseService = (
             },
             update: (update: Partial<LangfuseGenerationUpdate>) => {
               try {
-                generation.update({
+                const updateParams: any = {
                   output: update.output,
                   usage: update.usage,
-                });
+                };
+                if (update.cost) {
+                  updateParams.metadata = { cost: update.cost };
+                }
+                generation.update(updateParams);
               } catch (error) {
                 console.error("Failed to update Langfuse generation:", error);
               }
@@ -405,8 +421,16 @@ export const createLangfuseService = (
     }
 
     try {
+      const normalizedName = normalizeLabel(spanName);
+
+      // If a span with the same name is already open for this session, reuse it
+      const existingSpans = sessionOpenSpans.get(sessionToken);
+      if (existingSpans && existingSpans.has(normalizedName)) {
+        return existingSpans.get(normalizedName);
+      }
+
       const span = trace.span({
-        name: spanName,
+        name: normalizedName,
         metadata: {
           sessionToken,
           timestamp: new Date().toISOString(),
@@ -415,7 +439,15 @@ export const createLangfuseService = (
         input,
       });
 
-      console.debug(`🔍 Created span: ${spanName}`, {
+      // Track open span for this session
+      let spansForSession = sessionOpenSpans.get(sessionToken);
+      if (!spansForSession) {
+        spansForSession = new Map<string, any>();
+        sessionOpenSpans.set(sessionToken, spansForSession);
+      }
+      spansForSession.set(normalizedName, span);
+
+      console.debug(`🔍 Created span: ${normalizedName}`, {
         sessionToken,
       });
 
@@ -423,6 +455,48 @@ export const createLangfuseService = (
     } catch (error) {
       console.error("Failed to create span:", error);
       return null;
+    }
+  };
+
+  /**
+   * End a span within the current trace for a session
+   */
+  const endSpanForSession = (
+    sessionToken: string,
+    spanName: string,
+    output?: any,
+    error?: Error | string
+  ) => {
+    const normalizedName = normalizeLabel(spanName);
+    const spansForSession = sessionOpenSpans.get(sessionToken);
+    if (!spansForSession) {
+      console.warn(`No open spans found for session: ${sessionToken}`);
+      return;
+    }
+
+    const span = spansForSession.get(normalizedName);
+    if (!span) {
+      console.warn(
+        `No span named "${normalizedName}" found for session: ${sessionToken}`
+      );
+      return;
+    }
+
+    try {
+      const endParams: any = { output };
+      if (error) {
+        endParams.level = "ERROR";
+        endParams.statusMessage =
+          typeof error === "string" ? error : error.message;
+      }
+      span.end(endParams);
+    } catch (err) {
+      console.error("Failed to end Langfuse span:", err);
+    } finally {
+      spansForSession.delete(normalizedName);
+      if (spansForSession.size === 0) {
+        sessionOpenSpans.delete(sessionToken);
+      }
     }
   };
 
@@ -441,7 +515,7 @@ export const createLangfuseService = (
 
     try {
       const generation = trace.generation({
-        name: options.name,
+        name: normalizeLabel(options.name),
         model: options.model,
         input: options.input,
         metadata: {
@@ -456,10 +530,155 @@ export const createLangfuseService = (
         model: options.model,
       });
 
+      // Track current generation for this session
+      sessionCurrentGenerations.set(sessionToken, generation);
+
       return generation;
     } catch (error) {
       console.error("Failed to create generation:", error);
       return null;
+    }
+  };
+
+  /**
+   * Start a tool span keyed by toolCallId for vercel-native tool telemetry
+   */
+  const startToolSpanForSession = (
+    sessionToken: string,
+    toolCallId: string,
+    toolName: string,
+    args?: unknown
+  ) => {
+    const trace = getCurrentTrace(sessionToken);
+    if (!trace || !toolCallId) return null;
+
+    try {
+      const spanName = `tool-${normalizeLabel(toolName || "unknown")}`;
+      const span = trace.span({
+        name: spanName,
+        input: args,
+        metadata: {
+          sessionToken,
+          toolCallId,
+          toolName,
+          timestamp: new Date().toISOString(),
+        },
+      });
+
+      let toolSpans = sessionToolSpans.get(sessionToken);
+      if (!toolSpans) {
+        toolSpans = new Map<string, any>();
+        sessionToolSpans.set(sessionToken, toolSpans);
+      }
+      toolSpans.set(toolCallId, span);
+
+      return span;
+    } catch (error) {
+      console.error("Failed to start tool span:", error);
+      return null;
+    }
+  };
+
+  /**
+   * End a tool span previously started via startToolSpanForSession
+   */
+  const endToolSpanForSession = (
+    sessionToken: string,
+    toolCallId: string,
+    output?: unknown,
+    error?: Error | string
+  ) => {
+    const toolSpans = sessionToolSpans.get(sessionToken);
+    if (!toolSpans) return;
+    const span = toolSpans.get(toolCallId);
+    if (!span) return;
+
+    try {
+      const endParams: any = { output };
+      if (error) {
+        endParams.level = "ERROR";
+        endParams.statusMessage =
+          typeof error === "string" ? error : error.message;
+      }
+      span.end(endParams);
+    } catch (err) {
+      console.error("Failed to end tool span:", err);
+    } finally {
+      toolSpans.delete(toolCallId);
+      if (toolSpans.size === 0) sessionToolSpans.delete(sessionToken);
+    }
+  };
+
+  /**
+   * Get current generation for a session
+   */
+  const getCurrentGeneration = (sessionToken: string) => {
+    return sessionCurrentGenerations.get(sessionToken) || null;
+  };
+
+  /**
+   * Update current generation for a session
+   */
+  const updateCurrentGenerationForSession = (
+    sessionToken: string,
+    update: Partial<LangfuseGenerationUpdate>
+  ) => {
+    const generation = getCurrentGeneration(sessionToken);
+    if (!generation) {
+      console.warn(`No active generation found for session: ${sessionToken}`);
+      return;
+    }
+
+    try {
+      const updateParams: any = {
+        output: update.output,
+        usage: update.usage,
+      };
+      if (update.cost) {
+        updateParams.metadata = { cost: update.cost };
+      }
+      generation.update(updateParams);
+    } catch (error) {
+      console.error("Failed to update Langfuse generation:", error);
+    }
+  };
+
+  /**
+   * End current generation for a session
+   */
+  const endCurrentGenerationForSession = (
+    sessionToken: string,
+    update: LangfuseGenerationUpdate
+  ) => {
+    const generation = getCurrentGeneration(sessionToken);
+    if (!generation) {
+      console.warn(`No active generation found for session: ${sessionToken}`);
+      return;
+    }
+
+    try {
+      const endParams: any = {
+        output: update.output,
+        usage: update.usage,
+      };
+
+      if (update.error) {
+        endParams.level = "ERROR";
+        endParams.statusMessage =
+          typeof update.error === "string"
+            ? update.error
+            : update.error.message;
+      }
+
+      if (update.cost) {
+        endParams.metadata = { cost: update.cost };
+      }
+
+      generation.end(endParams);
+    } catch (error) {
+      console.error("Failed to end Langfuse generation:", error);
+    } finally {
+      sessionCurrentGenerations.delete(sessionToken);
     }
   };
 
@@ -479,7 +698,7 @@ export const createLangfuseService = (
 
     try {
       trace.event({
-        name: eventName,
+        name: normalizeLabel(eventName),
         metadata: {
           sessionToken,
           timestamp: new Date().toISOString(),
@@ -487,7 +706,7 @@ export const createLangfuseService = (
         },
       });
 
-      console.debug(`🔍 Added event: ${eventName}`, {
+      console.debug(`🔍 Added event: ${normalizeLabel(eventName)}`, {
         sessionToken,
       });
     } catch (error) {
@@ -533,6 +752,9 @@ export const createLangfuseService = (
     } finally {
       // Clean up current trace reference
       sessionTraces.delete(sessionToken);
+      sessionCurrentGenerations.delete(sessionToken);
+      sessionOpenSpans.delete(sessionToken);
+      sessionToolSpans.delete(sessionToken);
     }
   };
 
@@ -548,6 +770,9 @@ export const createLangfuseService = (
 
     // Clean up counters
     traceCounters.delete(sessionToken);
+    sessionCurrentGenerations.delete(sessionToken);
+    sessionOpenSpans.delete(sessionToken);
+    sessionToolSpans.delete(sessionToken);
 
     console.info(`🔍 Cleaned up session: ${sessionToken}`);
   };
@@ -578,8 +803,14 @@ export const createLangfuseService = (
     createExecutionTrace,
     getCurrentTrace,
     createSpanForSession,
+    endSpanForSession,
     createGenerationForSession,
+    getCurrentGeneration,
+    updateCurrentGenerationForSession,
+    endCurrentGenerationForSession,
     addEventToSession,
+    startToolSpanForSession,
+    endToolSpanForSession,
     endExecutionTrace,
     cleanupSession,
     getSessionStats,

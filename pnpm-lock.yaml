@@ -226,10 +226,10 @@ importers:
   packages/core:
     dependencies:
       '@ai-sdk/anthropic':
-        specifier: ^2.0.1
+        specifier: ^2.0.9
         version: 2.0.9(zod@3.25.76)
       '@ai-sdk/openai':
-        specifier: ^2.0.4
+        specifier: ^2.0.22
         version: 2.0.22(zod@3.25.76)
       '@elevenlabs/elevenlabs-js':
         specifier: ^2.7.0
@@ -238,7 +238,7 @@ importers:
         specifier: ^1.29.1
         version: 1.29.3
       ai:
-        specifier: ^5.0.17
+        specifier: ^5.0.27
         version: 5.0.27(zod@3.25.76)
       date-fns:
         specifier: ^4.1.0
