@@ -68,17 +68,15 @@ export const baseLLMService = (
       prepareStep: (step) => {
         const allSteps = step.steps;
         if (allSteps.length > 0) {
-          allSteps.map((step) => {
+          allSteps.forEach((step) => {
             const allStepExecution = step.content;
-            allStepExecution.map((stepContent) => {
+            allStepExecution.forEach((stepContent) => {
               if (stepContent.type === "tool-call") {
                 sendUpdate({
                   type: "tool_execution",
                   content: JSON.stringify(stepContent),
                 });
               }
-
-              console.log("asdasd");
 
               if (stepContent.type === "tool-result") {
                 sendUpdate({
