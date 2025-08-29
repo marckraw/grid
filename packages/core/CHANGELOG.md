@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.30.0
+
+### Minor Changes
+
+- 70339a5: add a tool call sendupdate
+
 ## 0.29.0
 
 ### Minor Changes
