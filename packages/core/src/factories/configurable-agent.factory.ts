@@ -1,4 +1,5 @@
 import { type AgentConfig } from "./agent-config.schemas.js";
+import { langfuseService } from "../services/LangfuseService/langfuse.service.js";
 import { createBaseAgent } from "../agents/BaseAgent.js";
 import {
   type Agent,
@@ -134,10 +135,46 @@ export const createConfigurableAgent = ({
 
     // Main act method with all enhancements
     act: async (input) => {
-      // Tracing is now handled by Langfuse integration in baseLLMService
       let processedInput = input;
       let attempt = 0;
       const maxRetries = config.behavior?.maxRetries || 3;
+
+      // === Generic Langfuse tracing for all agents ===
+      if (!processedInput.context) processedInput.context = {} as any;
+      const ctx = processedInput.context as any;
+      console.log("This is ctx: ");
+      console.log(ctx);
+      const sessionToken = ctx.sessionToken as string;
+
+      console.log("And this is our session token: ");
+      console.log(sessionToken);
+
+      // Create execution trace only if not already present for this session
+      const existingTrace = langfuseService.getCurrentTrace(sessionToken);
+      if (!existingTrace) {
+        langfuseService.createExecutionTrace(
+          sessionToken,
+          config.type,
+          processedInput,
+          typeof ctx.conversationId === "number"
+            ? (ctx.conversationId as number)
+            : undefined,
+          {
+            agentId: config.id,
+            agentVersion: config.version,
+          }
+        );
+      }
+
+      // Open a top-level span and emit start event
+      langfuseService.createSpanForSession(sessionToken, "agent-act", {
+        agentId: config.id,
+        agentType: config.type,
+      });
+      langfuseService.addEventToSession(sessionToken, "agent-start", {
+        agentId: config.id,
+        agentType: config.type,
+      });
 
       // Execute with retry logic
       while (attempt < maxRetries) {
@@ -189,11 +226,11 @@ export const createConfigurableAgent = ({
                 messages: workingMessages,
                 tools: availableTools,
                 sendUpdate,
-                context: input.context,
+                context: processedInput.context,
                 traceContext: {
-                  sessionId: input.context?.sessionId,
+                  sessionId: processedInput.context?.sessionId,
                   metadata: {
-                    ...input.context?.metadata,
+                    ...processedInput.context?.metadata,
                   },
                 },
                 // Add any additional LLM options from config
@@ -339,7 +376,19 @@ export const createConfigurableAgent = ({
             });
           }
 
-          // Tracing handled by Langfuse integration
+          // Close trace on success
+          try {
+            langfuseService.addEventToSession(sessionToken, "agent-end", {
+              toolCalls: response.toolCalls?.length || 0,
+            });
+            langfuseService.endSpanForSession(sessionToken, "agent-act");
+            langfuseService.endExecutionTrace(sessionToken, {
+              contentPreview:
+                typeof response.content === "string"
+                  ? response.content.slice(0, 500)
+                  : undefined,
+            });
+          } catch {}
 
           return response;
         } catch (error) {
@@ -367,13 +416,29 @@ export const createConfigurableAgent = ({
                 const fallbackResponse = await base.llmService.runLLM({
                   sendUpdate,
                   messages: fallbackMessages,
+                  context: processedInput.context,
                   traceContext: {
-                    sessionId: input.context?.sessionId,
+                    sessionId: processedInput.context?.sessionId,
                     metadata: {
-                      ...input.context?.metadata,
+                      ...processedInput.context?.metadata,
                     },
                   },
                 });
+
+                // Close trace on fallback success
+                try {
+                  langfuseService.addEventToSession(sessionToken, "agent-end", {
+                    fallback: true,
+                  });
+                  langfuseService.endSpanForSession(sessionToken, "agent-act");
+                  langfuseService.endExecutionTrace(sessionToken, {
+                    contentPreview:
+                      typeof fallbackResponse.content === "string"
+                        ? fallbackResponse.content.slice(0, 500)
+                        : undefined,
+                    fallback: true,
+                  });
+                } catch {}
 
                 return fallbackResponse;
               } catch (fallbackError) {
@@ -385,7 +450,23 @@ export const createConfigurableAgent = ({
             }
 
             // End trace on final error
-            // Tracing handled by Langfuse integration
+            try {
+              langfuseService.addEventToSession(sessionToken, "agent-error", {
+                attempt,
+                message: (error as Error)?.message,
+              });
+              langfuseService.endSpanForSession(
+                sessionToken,
+                "agent-act",
+                undefined,
+                error as Error
+              );
+              langfuseService.endExecutionTrace(
+                sessionToken,
+                undefined,
+                error as Error
+              );
+            } catch {}
 
             throw error;
           }
@@ -393,7 +474,17 @@ export const createConfigurableAgent = ({
       }
 
       // End trace if we somehow exit the loop
-      // Tracing handled by Langfuse integration
+      try {
+        langfuseService.addEventToSession(sessionToken, "agent-error", {
+          message: "Exited loop unexpectedly",
+        });
+        langfuseService.endSpanForSession(sessionToken, "agent-act");
+        langfuseService.endExecutionTrace(
+          sessionToken,
+          undefined,
+          new Error("Unexpected end of retry loop")
+        );
+      } catch {}
 
       // Should never reach here
       throw new Error("Unexpected end of retry loop");

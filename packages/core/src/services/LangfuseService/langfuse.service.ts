@@ -69,6 +69,14 @@ export const createLangfuseService = (
   const sessionCurrentGenerations = new Map<string, any>(); // sessionToken -> current generation
   const sessionOpenSpans = new Map<string, Map<string, any>>(); // sessionToken -> Map<spanName, span>
 
+  // Normalize labels (spans, events, generation names) to kebab-case
+  const normalizeLabel = (label: string): string =>
+    String(label)
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-") // replace groups of non-alnum chars with '-'
+      .replace(/^-+|-+$/g, ""); // trim leading/trailing '-'
+
   // Initialize Langfuse client with proper configuration
   const langfuse = (() => {
     if (!mergedConfig.env.LANGFUSE_ENABLED) {
@@ -412,8 +420,16 @@ export const createLangfuseService = (
     }
 
     try {
+      const normalizedName = normalizeLabel(spanName);
+
+      // If a span with the same name is already open for this session, reuse it
+      const existingSpans = sessionOpenSpans.get(sessionToken);
+      if (existingSpans && existingSpans.has(normalizedName)) {
+        return existingSpans.get(normalizedName);
+      }
+
       const span = trace.span({
-        name: spanName,
+        name: normalizedName,
         metadata: {
           sessionToken,
           timestamp: new Date().toISOString(),
@@ -428,9 +444,9 @@ export const createLangfuseService = (
         spansForSession = new Map<string, any>();
         sessionOpenSpans.set(sessionToken, spansForSession);
       }
-      spansForSession.set(spanName, span);
+      spansForSession.set(normalizedName, span);
 
-      console.debug(`🔍 Created span: ${spanName}`, {
+      console.debug(`🔍 Created span: ${normalizedName}`, {
         sessionToken,
       });
 
@@ -450,16 +466,17 @@ export const createLangfuseService = (
     output?: any,
     error?: Error | string
   ) => {
+    const normalizedName = normalizeLabel(spanName);
     const spansForSession = sessionOpenSpans.get(sessionToken);
     if (!spansForSession) {
       console.warn(`No open spans found for session: ${sessionToken}`);
       return;
     }
 
-    const span = spansForSession.get(spanName);
+    const span = spansForSession.get(normalizedName);
     if (!span) {
       console.warn(
-        `No span named "${spanName}" found for session: ${sessionToken}`
+        `No span named "${normalizedName}" found for session: ${sessionToken}`
       );
       return;
     }
@@ -475,7 +492,7 @@ export const createLangfuseService = (
     } catch (err) {
       console.error("Failed to end Langfuse span:", err);
     } finally {
-      spansForSession.delete(spanName);
+      spansForSession.delete(normalizedName);
       if (spansForSession.size === 0) {
         sessionOpenSpans.delete(sessionToken);
       }
@@ -497,7 +514,7 @@ export const createLangfuseService = (
 
     try {
       const generation = trace.generation({
-        name: options.name,
+        name: normalizeLabel(options.name),
         model: options.model,
         input: options.input,
         metadata: {
@@ -611,7 +628,7 @@ export const createLangfuseService = (
 
     try {
       trace.event({
-        name: eventName,
+        name: normalizeLabel(eventName),
         metadata: {
           sessionToken,
           timestamp: new Date().toISOString(),
@@ -619,7 +636,7 @@ export const createLangfuseService = (
         },
       });
 
-      console.debug(`🔍 Added event: ${eventName}`, {
+      console.debug(`🔍 Added event: ${normalizeLabel(eventName)}`, {
         sessionToken,
       });
     } catch (error) {
