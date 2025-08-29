@@ -10,6 +10,7 @@ import {
   langfuseService,
   type LangfuseService,
 } from "./LangfuseService/langfuse.service.js";
+import { Steps } from "openai/resources/beta/threads/runs.mjs";
 
 export interface BaseLLMServiceConfig {
   toolExecutionMode?: "vercel-native" | "custom" | "none";
@@ -59,10 +60,36 @@ export const baseLLMService = (
       onStepFinish: (step) => {
         console.log("[baseLLMService:runLLM] - onStepFinish");
         console.log(step);
-        sendUpdate({
-          type: "step",
-          content: JSON.stringify(step),
-        });
+        // sendUpdate({
+        //   type: "step - onStepFinish",
+        //   content: JSON.stringify(step),
+        // });
+      },
+      prepareStep: (step) => {
+        const allSteps = step.steps;
+        if (allSteps.length > 0) {
+          allSteps.map((step) => {
+            const allStepExecution = step.content;
+            allStepExecution.map((stepContent) => {
+              if (stepContent.type === "tool-call") {
+                sendUpdate({
+                  type: "tool_execution",
+                  content: JSON.stringify(stepContent),
+                });
+              }
+
+              console.log("asdasd");
+
+              if (stepContent.type === "tool-result") {
+                sendUpdate({
+                  type: "tool_response",
+                  content: JSON.stringify(stepContent),
+                });
+              }
+            });
+          });
+        }
+        return step;
       },
     });
 

@@ -1,5 +1,6 @@
 import type { ModelMessage, ToolSet } from "ai";
 import z from "zod";
+import type { ProgressMessage } from "./progress.types.js";
 
 // Zod schema for LLM
 
@@ -41,6 +42,7 @@ export interface LLMServiceOptions {
   maxOutputTokens?: number;
   responseFormat?: any;
   traceContext?: LLMTraceContext;
+  sendUpdate: (data: ProgressMessage) => Promise<void>;
   [key: string]: any; // Allow additional provider-specific options
 }
 

@@ -364,6 +364,7 @@ export const createConfigurableAgent = ({
 
               try {
                 const fallbackResponse = await base.llmService.runLLM({
+                  sendUpdate,
                   messages: fallbackMessages,
                   traceContext: {
                     sessionId: input.context?.sessionId,

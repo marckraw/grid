@@ -168,6 +168,7 @@ Return only valid JSON, no explanations.`;
 
     try {
       const response = await llmService.runLLM({
+        sendUpdate: async (data) => console.log(data),
         messages: [
           {
             role: "system",
