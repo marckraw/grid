@@ -45,6 +45,18 @@ export const baseLLMService = (
       sendUpdate,
     } = options;
 
+    const generation = langfuse.createGenerationForSession(
+      options.context.sessionToken,
+      {
+        input: options.messages,
+        model,
+        name: "llm-generation",
+        metadata: {
+          ...options.context.metadata,
+        },
+      }
+    );
+
     const result = await generateText({
       model: openai(model),
       messages: messages as ModelMessage[],
@@ -74,6 +86,26 @@ export const baseLLMService = (
         isEnabled: true,
       },
     });
+
+    // End generation with success if tracing
+    if (generation) {
+      const usage = result.usage;
+      const cost = langfuseService.calculateCost(model, {
+        total: usage?.totalTokens,
+        input: usage?.inputTokens,
+        output: usage?.outputTokens,
+      });
+
+      generation.end({
+        output: result.text,
+        usage: {
+          input: usage?.inputTokens,
+          output: usage?.outputTokens,
+          total: usage?.totalTokens,
+        },
+        cost,
+      });
+    }
 
     return {
       role: "assistant",

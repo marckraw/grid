@@ -189,6 +189,7 @@ export const createConfigurableAgent = ({
                 messages: workingMessages,
                 tools: availableTools,
                 sendUpdate,
+                context: input.context,
                 traceContext: {
                   sessionId: input.context?.sessionId,
                   metadata: {

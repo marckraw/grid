@@ -66,6 +66,8 @@ export const createLangfuseService = (
   // In-memory storage for session-based tracing
   const sessionTraces = new Map<string, any>(); // sessionToken -> current trace
   const traceCounters = new Map<string, number>(); // sessionToken -> execution counter
+  const sessionCurrentGenerations = new Map<string, any>(); // sessionToken -> current generation
+  const sessionOpenSpans = new Map<string, Map<string, any>>(); // sessionToken -> Map<spanName, span>
 
   // Initialize Langfuse client with proper configuration
   const langfuse = (() => {
@@ -151,6 +153,7 @@ export const createLangfuseService = (
                 const endParams: any = {
                   output: update.output,
                   usage: update.usage,
+                  metadata: update.cost ? { cost: update.cost } : undefined,
                 };
 
                 if (update.error) {
@@ -168,10 +171,14 @@ export const createLangfuseService = (
             },
             update: (update: Partial<LangfuseGenerationUpdate>) => {
               try {
-                generation.update({
+                const updateParams: any = {
                   output: update.output,
                   usage: update.usage,
-                });
+                };
+                if (update.cost) {
+                  updateParams.metadata = { cost: update.cost };
+                }
+                generation.update(updateParams);
               } catch (error) {
                 console.error("Failed to update Langfuse generation:", error);
               }
@@ -415,6 +422,14 @@ export const createLangfuseService = (
         input,
       });
 
+      // Track open span for this session
+      let spansForSession = sessionOpenSpans.get(sessionToken);
+      if (!spansForSession) {
+        spansForSession = new Map<string, any>();
+        sessionOpenSpans.set(sessionToken, spansForSession);
+      }
+      spansForSession.set(spanName, span);
+
       console.debug(`🔍 Created span: ${spanName}`, {
         sessionToken,
       });
@@ -423,6 +438,47 @@ export const createLangfuseService = (
     } catch (error) {
       console.error("Failed to create span:", error);
       return null;
+    }
+  };
+
+  /**
+   * End a span within the current trace for a session
+   */
+  const endSpanForSession = (
+    sessionToken: string,
+    spanName: string,
+    output?: any,
+    error?: Error | string
+  ) => {
+    const spansForSession = sessionOpenSpans.get(sessionToken);
+    if (!spansForSession) {
+      console.warn(`No open spans found for session: ${sessionToken}`);
+      return;
+    }
+
+    const span = spansForSession.get(spanName);
+    if (!span) {
+      console.warn(
+        `No span named "${spanName}" found for session: ${sessionToken}`
+      );
+      return;
+    }
+
+    try {
+      const endParams: any = { output };
+      if (error) {
+        endParams.level = "ERROR";
+        endParams.statusMessage =
+          typeof error === "string" ? error : error.message;
+      }
+      span.end(endParams);
+    } catch (err) {
+      console.error("Failed to end Langfuse span:", err);
+    } finally {
+      spansForSession.delete(spanName);
+      if (spansForSession.size === 0) {
+        sessionOpenSpans.delete(sessionToken);
+      }
     }
   };
 
@@ -456,10 +512,86 @@ export const createLangfuseService = (
         model: options.model,
       });
 
+      // Track current generation for this session
+      sessionCurrentGenerations.set(sessionToken, generation);
+
       return generation;
     } catch (error) {
       console.error("Failed to create generation:", error);
       return null;
+    }
+  };
+
+  /**
+   * Get current generation for a session
+   */
+  const getCurrentGeneration = (sessionToken: string) => {
+    return sessionCurrentGenerations.get(sessionToken) || null;
+  };
+
+  /**
+   * Update current generation for a session
+   */
+  const updateCurrentGenerationForSession = (
+    sessionToken: string,
+    update: Partial<LangfuseGenerationUpdate>
+  ) => {
+    const generation = getCurrentGeneration(sessionToken);
+    if (!generation) {
+      console.warn(`No active generation found for session: ${sessionToken}`);
+      return;
+    }
+
+    try {
+      const updateParams: any = {
+        output: update.output,
+        usage: update.usage,
+      };
+      if (update.cost) {
+        updateParams.metadata = { cost: update.cost };
+      }
+      generation.update(updateParams);
+    } catch (error) {
+      console.error("Failed to update Langfuse generation:", error);
+    }
+  };
+
+  /**
+   * End current generation for a session
+   */
+  const endCurrentGenerationForSession = (
+    sessionToken: string,
+    update: LangfuseGenerationUpdate
+  ) => {
+    const generation = getCurrentGeneration(sessionToken);
+    if (!generation) {
+      console.warn(`No active generation found for session: ${sessionToken}`);
+      return;
+    }
+
+    try {
+      const endParams: any = {
+        output: update.output,
+        usage: update.usage,
+      };
+
+      if (update.error) {
+        endParams.level = "ERROR";
+        endParams.statusMessage =
+          typeof update.error === "string"
+            ? update.error
+            : update.error.message;
+      }
+
+      if (update.cost) {
+        endParams.metadata = { cost: update.cost };
+      }
+
+      generation.end(endParams);
+    } catch (error) {
+      console.error("Failed to end Langfuse generation:", error);
+    } finally {
+      sessionCurrentGenerations.delete(sessionToken);
     }
   };
 
@@ -533,6 +665,8 @@ export const createLangfuseService = (
     } finally {
       // Clean up current trace reference
       sessionTraces.delete(sessionToken);
+      sessionCurrentGenerations.delete(sessionToken);
+      sessionOpenSpans.delete(sessionToken);
     }
   };
 
@@ -548,6 +682,8 @@ export const createLangfuseService = (
 
     // Clean up counters
     traceCounters.delete(sessionToken);
+    sessionCurrentGenerations.delete(sessionToken);
+    sessionOpenSpans.delete(sessionToken);
 
     console.info(`🔍 Cleaned up session: ${sessionToken}`);
   };
@@ -578,7 +714,11 @@ export const createLangfuseService = (
     createExecutionTrace,
     getCurrentTrace,
     createSpanForSession,
+    endSpanForSession,
     createGenerationForSession,
+    getCurrentGeneration,
+    updateCurrentGenerationForSession,
+    endCurrentGenerationForSession,
     addEventToSession,
     endExecutionTrace,
     cleanupSession,
