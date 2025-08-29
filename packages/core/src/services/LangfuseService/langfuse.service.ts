@@ -68,6 +68,7 @@ export const createLangfuseService = (
   const traceCounters = new Map<string, number>(); // sessionToken -> execution counter
   const sessionCurrentGenerations = new Map<string, any>(); // sessionToken -> current generation
   const sessionOpenSpans = new Map<string, Map<string, any>>(); // sessionToken -> Map<spanName, span>
+  const sessionToolSpans = new Map<string, Map<string, any>>(); // sessionToken -> Map<toolCallId, span>
 
   // Normalize labels (spans, events, generation names) to kebab-case
   const normalizeLabel = (label: string): string =>
@@ -540,6 +541,75 @@ export const createLangfuseService = (
   };
 
   /**
+   * Start a tool span keyed by toolCallId for vercel-native tool telemetry
+   */
+  const startToolSpanForSession = (
+    sessionToken: string,
+    toolCallId: string,
+    toolName: string,
+    args?: unknown
+  ) => {
+    const trace = getCurrentTrace(sessionToken);
+    if (!trace || !toolCallId) return null;
+
+    try {
+      const spanName = `tool-${normalizeLabel(toolName || "unknown")}`;
+      const span = trace.span({
+        name: spanName,
+        input: args,
+        metadata: {
+          sessionToken,
+          toolCallId,
+          toolName,
+          timestamp: new Date().toISOString(),
+        },
+      });
+
+      let toolSpans = sessionToolSpans.get(sessionToken);
+      if (!toolSpans) {
+        toolSpans = new Map<string, any>();
+        sessionToolSpans.set(sessionToken, toolSpans);
+      }
+      toolSpans.set(toolCallId, span);
+
+      return span;
+    } catch (error) {
+      console.error("Failed to start tool span:", error);
+      return null;
+    }
+  };
+
+  /**
+   * End a tool span previously started via startToolSpanForSession
+   */
+  const endToolSpanForSession = (
+    sessionToken: string,
+    toolCallId: string,
+    output?: unknown,
+    error?: Error | string
+  ) => {
+    const toolSpans = sessionToolSpans.get(sessionToken);
+    if (!toolSpans) return;
+    const span = toolSpans.get(toolCallId);
+    if (!span) return;
+
+    try {
+      const endParams: any = { output };
+      if (error) {
+        endParams.level = "ERROR";
+        endParams.statusMessage =
+          typeof error === "string" ? error : error.message;
+      }
+      span.end(endParams);
+    } catch (err) {
+      console.error("Failed to end tool span:", err);
+    } finally {
+      toolSpans.delete(toolCallId);
+      if (toolSpans.size === 0) sessionToolSpans.delete(sessionToken);
+    }
+  };
+
+  /**
    * Get current generation for a session
    */
   const getCurrentGeneration = (sessionToken: string) => {
@@ -684,6 +754,7 @@ export const createLangfuseService = (
       sessionTraces.delete(sessionToken);
       sessionCurrentGenerations.delete(sessionToken);
       sessionOpenSpans.delete(sessionToken);
+      sessionToolSpans.delete(sessionToken);
     }
   };
 
@@ -701,6 +772,7 @@ export const createLangfuseService = (
     traceCounters.delete(sessionToken);
     sessionCurrentGenerations.delete(sessionToken);
     sessionOpenSpans.delete(sessionToken);
+    sessionToolSpans.delete(sessionToken);
 
     console.info(`🔍 Cleaned up session: ${sessionToken}`);
   };
@@ -737,6 +809,8 @@ export const createLangfuseService = (
     updateCurrentGenerationForSession,
     endCurrentGenerationForSession,
     addEventToSession,
+    startToolSpanForSession,
+    endToolSpanForSession,
     endExecutionTrace,
     cleanupSession,
     getSessionStats,

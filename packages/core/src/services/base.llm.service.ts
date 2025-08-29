@@ -57,6 +57,14 @@ export const baseLLMService = (
       }
     );
 
+    // Try to link AI SDK telemetry to our existing Langfuse trace
+    const parentTrace = langfuse.getCurrentTrace(options.context.sessionToken);
+    const parentTraceId =
+      // common id locations across SDK versions
+      (parentTrace as any)?.id ||
+      (parentTrace as any)?.traceId ||
+      (parentTrace as any)?.trace?.id;
+
     const result = await generateText({
       model: openai(model),
       messages: messages as ModelMessage[],
@@ -68,6 +76,22 @@ export const baseLLMService = (
       onStepFinish: (step) => {
         step.content.forEach((stepContent) => {
           if (stepContent.type === "tool-call") {
+            try {
+              const sc: any = stepContent as any;
+              const toolCallId =
+                sc.toolCallId ??
+                sc.id ??
+                sc.callId ??
+                `${Date.now()}-${Math.random()}`;
+              const toolName = sc.toolName ?? sc.name ?? "unknown";
+              const args = sc.args ?? sc.input ?? sc.parameters;
+              langfuse.startToolSpanForSession(
+                options.context.sessionToken,
+                toolCallId,
+                toolName,
+                args
+              );
+            } catch {}
             sendUpdate({
               type: "tool_execution",
               content: JSON.stringify(stepContent),
@@ -75,6 +99,16 @@ export const baseLLMService = (
           }
 
           if (stepContent.type === "tool-result") {
+            try {
+              const sc: any = stepContent as any;
+              const toolCallId = sc.toolCallId ?? sc.id ?? sc.callId;
+              const result = sc.result ?? sc.output ?? sc.data;
+              langfuse.endToolSpanForSession(
+                options.context.sessionToken,
+                toolCallId,
+                result
+              );
+            } catch {}
             sendUpdate({
               type: "tool_response",
               content: JSON.stringify(stepContent),
@@ -84,6 +118,14 @@ export const baseLLMService = (
       },
       experimental_telemetry: {
         isEnabled: true,
+        functionId: "llm-generation",
+        metadata: {
+          langfuseTraceId: parentTraceId,
+          langfuseUpdateParent: false,
+          sessionId: options.context.sessionToken,
+          ...(traceContext?.userId ? { userId: traceContext.userId } : {}),
+          ...(traceContext?.tags ? { tags: traceContext.tags } : {}),
+        },
       },
     });
 
