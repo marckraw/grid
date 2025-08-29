@@ -10,7 +10,6 @@ import {
   langfuseService,
   type LangfuseService,
 } from "./LangfuseService/langfuse.service.js";
-import { Steps } from "openai/resources/beta/threads/runs.mjs";
 
 export interface BaseLLMServiceConfig {
   toolExecutionMode?: "vercel-native" | "custom" | "none";
@@ -46,9 +45,6 @@ export const baseLLMService = (
       sendUpdate,
     } = options;
 
-    console.log("[baseLLMService:runLLM] - tools");
-    console.log(tools);
-
     const result = await generateText({
       model: openai(model),
       messages: messages as ModelMessage[],
@@ -58,36 +54,24 @@ export const baseLLMService = (
       stopWhen:
         toolExecutionMode === "custom" ? stepCountIs(1) : stepCountIs(12),
       onStepFinish: (step) => {
-        console.log("[baseLLMService:runLLM] - onStepFinish");
-        console.log(step);
-        // sendUpdate({
-        //   type: "step - onStepFinish",
-        //   content: JSON.stringify(step),
-        // });
-      },
-      prepareStep: (step) => {
-        const allSteps = step.steps;
-        if (allSteps.length > 0) {
-          allSteps.forEach((step) => {
-            const allStepExecution = step.content;
-            allStepExecution.forEach((stepContent) => {
-              if (stepContent.type === "tool-call") {
-                sendUpdate({
-                  type: "tool_execution",
-                  content: JSON.stringify(stepContent),
-                });
-              }
-
-              if (stepContent.type === "tool-result") {
-                sendUpdate({
-                  type: "tool_response",
-                  content: JSON.stringify(stepContent),
-                });
-              }
+        step.content.forEach((stepContent) => {
+          if (stepContent.type === "tool-call") {
+            sendUpdate({
+              type: "tool_execution",
+              content: JSON.stringify(stepContent),
             });
-          });
-        }
-        return step;
+          }
+
+          if (stepContent.type === "tool-result") {
+            sendUpdate({
+              type: "tool_response",
+              content: JSON.stringify(stepContent),
+            });
+          }
+        });
+      },
+      experimental_telemetry: {
+        isEnabled: true,
       },
     });
 
