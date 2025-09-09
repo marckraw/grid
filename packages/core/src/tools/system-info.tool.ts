@@ -1,7 +1,7 @@
-import { z } from "zod";
+import { arch, cpus, freemem, homedir, platform, totalmem } from "os";
 import { tool } from "ai";
+import { z } from "zod";
 import type { GridTool } from "./types.js";
-import { platform, arch, cpus, totalmem, freemem, homedir } from "os";
 
 /**
  * System information tool

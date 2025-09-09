@@ -30,8 +30,7 @@
     "vitest": "^1.1.0"
   },
   "dependencies": {
-    "@mrck-labs/grid-core": "workspace:*",
-    "zod": "^3.22.4"
+    "@mrck-labs/grid-core": "workspace:*"
   },
   "files": [
     "dist"

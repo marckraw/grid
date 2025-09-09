@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: ['@mrck-labs/grid-core', '@mrck-labs/grid-agents'],
+  transpilePackages: ['@mrck-labs/grid-core'],
 }
 
 export default nextConfig

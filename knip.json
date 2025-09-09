@@ -1,0 +1,22 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "workspaces": {
+    "packages": {
+      "packages": ["packages/*", "apps/*"]
+    }
+  },
+  "ignore": [
+    // examples, docs, and test harnesses are intentionally unused by runtime
+    "packages/core/examples/**",
+    "packages/core/src/examples/**",
+    "packages/core/docs/**",
+    "apps/docs/**"
+  ],
+  "entry": [
+    "packages/**/src/index.ts",
+    "apps/**/src/index.ts",
+    "apps/nextjs-test/app/**/*.tsx",
+    "apps/nextjs-test/app/**/*.ts"
+  ]
+}
+

@@ -1,14 +1,14 @@
+import { anthropic } from "@ai-sdk/anthropic";
+import { openai } from "@ai-sdk/openai";
+import { type ModelMessage, generateText, stepCountIs } from "ai";
 import type {
   ChatMessage,
   LLMService,
   LLMServiceOptions,
 } from "../types/index.js";
-import { generateText, stepCountIs, type ModelMessage } from "ai";
-import { openai } from "@ai-sdk/openai";
-import { anthropic } from "@ai-sdk/anthropic";
 import {
-  langfuseService,
   type LangfuseService,
+  langfuseService,
 } from "./LangfuseService/langfuse.service.js";
 
 export interface BaseLLMServiceConfig {
@@ -18,7 +18,7 @@ export interface BaseLLMServiceConfig {
 }
 
 export const baseLLMService = (
-  config: BaseLLMServiceConfig = {}
+  config: BaseLLMServiceConfig = {},
 ): LLMService => {
   const {
     toolExecutionMode = "vercel-native", // Default to vercel-native execution
@@ -54,7 +54,7 @@ export const baseLLMService = (
         metadata: {
           ...options.context.metadata,
         },
-      }
+      },
     );
 
     // Try to link AI SDK telemetry to our existing Langfuse trace
@@ -89,7 +89,7 @@ export const baseLLMService = (
                 options.context.sessionToken,
                 toolCallId,
                 toolName,
-                args
+                args,
               );
             } catch {}
             sendUpdate({
@@ -106,7 +106,7 @@ export const baseLLMService = (
               langfuse.endToolSpanForSession(
                 options.context.sessionToken,
                 toolCallId,
-                result
+                result,
               );
             } catch {}
             sendUpdate({

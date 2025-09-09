@@ -2,7 +2,7 @@ import { validateChatMessage } from "./factories/configurable-agent.factory.type
 import type { ChatMessage } from "./types/llm.types.js";
 
 export const transformMessagesForAI = (
-  conversationHistory: any[]
+  conversationHistory: any[],
 ): ChatMessage[] => {
   const transformedMessages = conversationHistory.reduce((acc, msg) => {
     // For regular user messages
@@ -18,7 +18,7 @@ export const transformMessagesForAI = (
       } else {
         console.warn(
           "⚠️ Invalid user message in conversation history:",
-          validation.error
+          validation.error,
         );
         acc.push(userMessage); // Add anyway for graceful degradation
       }
@@ -50,7 +50,7 @@ export const transformMessagesForAI = (
         } else {
           console.warn(
             "⚠️ Invalid assistant tool call message:",
-            validation.error
+            validation.error,
           );
           acc.push(assistantMessage); // Add anyway
         }
@@ -99,7 +99,7 @@ export const transformMessagesForAI = (
   }, [] as ChatMessage[]);
 
   console.info(
-    `✅ Transformed ${conversationHistory.length} messages to ${transformedMessages.length} valid AI messages`
+    `✅ Transformed ${conversationHistory.length} messages to ${transformedMessages.length} valid AI messages`,
   );
   return transformedMessages;
 };

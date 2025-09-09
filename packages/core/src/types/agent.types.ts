@@ -2,12 +2,12 @@ import z from "zod";
 import { AgentFlowContextSchema, type ProgressMessage } from "./index.js";
 import { ChatMessageSchema } from "./llm.types.js";
 import type {
-  VoiceConfig,
-  VoiceService,
   AudioResult,
-  TranscriptionResult,
-  VoiceOptions,
   TranscribeOptions,
+  TranscriptionResult,
+  VoiceConfig,
+  VoiceOptions,
+  VoiceService,
 } from "./voice.types.js";
 
 export const AgentTypeSchema = z.enum([
@@ -138,7 +138,7 @@ export interface Agent {
   act: (input: AgentInput) => Promise<AgentResponse>;
 
   setSendUpdate?: (
-    sendUpdate: (data: ProgressMessage) => Promise<void>
+    sendUpdate: (data: ProgressMessage) => Promise<void>,
   ) => void;
 
   // Optional methods for enhanced functionality
@@ -165,7 +165,7 @@ export class AgentError extends Error {
     message: string,
     public agentType: AgentType,
     public agentId: string,
-    public originalError?: Error
+    public originalError?: Error,
   ) {
     super(message);
     this.name = "AgentError";
@@ -178,7 +178,7 @@ export class AgentInitializationError extends AgentError {
       `Failed to initialize agent ${agentType}:${agentId}`,
       agentType,
       agentId,
-      originalError
+      originalError,
     );
     this.name = "AgentInitializationError";
   }
@@ -190,7 +190,7 @@ export class AgentExecutionError extends AgentError {
       `Agent execution failed for ${agentType}:${agentId}`,
       agentType,
       agentId,
-      originalError
+      originalError,
     );
     this.name = "AgentExecutionError";
   }

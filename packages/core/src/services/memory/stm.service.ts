@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import * as path from "path";
-import type { STMService, STMConfig, MemoryEvent } from "./memory.types.js";
+import type { MemoryEvent, STMConfig, STMService } from "./memory.types.js";
 
 export const createSimpleSTMService = (config?: STMConfig): STMService => {
   const logPath = config?.logPath || "./memory/stm.jsonl";
@@ -37,7 +37,7 @@ export const createSimpleSTMService = (config?: STMConfig): STMService => {
             // Skip malformed lines
             console.warn(
               "Skipping malformed JSON line:",
-              line.substring(0, 50) + "..."
+              line.substring(0, 50) + "...",
             );
           }
         });
@@ -57,13 +57,13 @@ export const createSimpleSTMService = (config?: STMConfig): STMService => {
     const cutoff = Date.now() - hours * 60 * 60 * 1000;
 
     return events.filter(
-      (event) => new Date(event.timestamp).getTime() > cutoff
+      (event) => new Date(event.timestamp).getTime() > cutoff,
     );
   };
 
   const getByType = async (
     type: string,
-    limit = 100
+    limit = 100,
   ): Promise<MemoryEvent[]> => {
     const events = await readAllEvents();
     const filtered = events.filter((event) => event.type === type);

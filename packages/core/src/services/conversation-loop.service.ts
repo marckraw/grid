@@ -1,14 +1,14 @@
 import type { Agent, AgentResponse } from "../types/agent.types.js";
-import type { ProgressMessage } from "../types/progress.types.js";
 import type { ChatMessage } from "../types/llm.types.js";
+import type { ProgressMessage } from "../types/progress.types.js";
 import { createProgressMessage } from "../types/progress.types.js";
-import {
-  createConversationManager,
-  type ConversationManagerOptions,
-  type ConversationManagerHandlers,
-} from "./conversation-manager.service.js";
-import type { ConversationHistoryHandlers } from "./conversation-history.service.js";
 import type { ConversationContextHandlers } from "./conversation-context.service.js";
+import type { ConversationHistoryHandlers } from "./conversation-history.service.js";
+import {
+  type ConversationManagerHandlers,
+  type ConversationManagerOptions,
+  createConversationManager,
+} from "./conversation-manager.service.js";
 
 /**
  * Event handlers for conversation loop operations
@@ -37,7 +37,7 @@ export interface GroupedHandlers {
 /**
  * History modes for conversation loop
  */
-export type HistoryMode = 'full' | 'none' | 'last-n';
+export type HistoryMode = "full" | "none" | "last-n";
 
 /**
  * Options for creating a conversation loop
@@ -70,17 +70,17 @@ export interface SendMessageResult {
  * including agent interactions, tool execution, and state management.
  */
 export const createConversationLoop = (options: ConversationLoopOptions) => {
-  const { 
-    agent, 
-    onMessage, 
-    onError, 
-    onComplete, 
-    onProgress, 
+  const {
+    agent,
+    onMessage,
+    onError,
+    onComplete,
+    onProgress,
     handlers,
-    historyMode = 'full',
-    historyLimit = 5
+    historyMode = "full",
+    historyLimit = 5,
   } = options;
-  
+
   // Mutable history mode state
   let currentHistoryMode = historyMode;
   let currentHistoryLimit = historyLimit;
@@ -135,7 +135,7 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
   const sendProgress = async (
     type: ProgressMessage["type"],
     content: string,
-    metadata?: Record<string, any>
+    metadata?: Record<string, any>,
   ) => {
     if (onProgress) {
       const message = createProgressMessage(type, content, metadata);
@@ -147,7 +147,7 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
    * Send a message and get response
    */
   const sendMessage = async (
-    userMessage: string
+    userMessage: string,
   ): Promise<SendMessageResult> => {
     console.log("[ConversationLoop] sendMessage", userMessage);
 
@@ -188,24 +188,26 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
       // Get messages based on history mode
       const getMessagesForAgent = (): ChatMessage[] => {
         const allMessages = manager.getMessages();
-        
+
         switch (currentHistoryMode) {
-          case 'none':
+          case "none":
             // Only current user message - agent must use memory tools!
-            return [{ role: 'user' as const, content: userMessage }];
-          
-          case 'last-n':
+            return [{ role: "user" as const, content: userMessage }];
+
+          case "last-n":
             // Last N messages (not including the current one that was just added)
             const lastN = allMessages.slice(-(currentHistoryLimit + 1));
-            return lastN.length > 0 ? lastN : [{ role: 'user' as const, content: userMessage }];
-          
-          case 'full':
+            return lastN.length > 0
+              ? lastN
+              : [{ role: "user" as const, content: userMessage }];
+
+          case "full":
           default:
             // Current behavior - all messages
             return allMessages;
         }
       };
-      
+
       // Get agent response with configured message history
       const response = await agent.act({
         messages: getMessagesForAgent(),
@@ -239,7 +241,7 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
             {
               toolName: toolResponse.toolName,
               toolCallId: toolResponse.toolCallId,
-            }
+            },
           );
         }
       }
@@ -400,7 +402,7 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
       });
     }
   };
-  
+
   /**
    * Set the history mode for the conversation
    */
@@ -410,13 +412,13 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
       currentHistoryLimit = limit;
     }
   };
-  
+
   /**
    * Get the current history mode configuration
    */
   const getHistoryMode = () => ({
     mode: currentHistoryMode,
-    limit: currentHistoryLimit
+    limit: currentHistoryLimit,
   });
 
   return {
@@ -449,7 +451,7 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
     },
     isActive: () => isActive,
     getTurnCount: () => turnCount,
-    
+
     // History mode management
     setHistoryMode,
     getHistoryMode,

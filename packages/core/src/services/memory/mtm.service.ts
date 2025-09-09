@@ -1,13 +1,13 @@
 import { promises as fs } from "fs";
 import * as path from "path";
-import type {
-  MTMService,
-  MTMConfig,
-  MTMSummary,
-  STMService,
-  MemoryEvent,
-} from "./memory.types.js";
 import type { LLMService } from "../../types/llm.types.js";
+import type {
+  MTMConfig,
+  MTMService,
+  MTMSummary,
+  MemoryEvent,
+  STMService,
+} from "./memory.types.js";
 
 /**
  * Creates a Mid-Term Memory service that summarizes daily events
@@ -28,7 +28,7 @@ export const createMTMService = (deps: {
    * Extract facts from conversation messages using simple patterns
    */
   const extractFactsFromEvents = (
-    events: MemoryEvent[]
+    events: MemoryEvent[],
   ): MTMSummary["extractedFacts"] => {
     const facts: MTMSummary["extractedFacts"] = {
       userPreferences: [],
@@ -102,7 +102,7 @@ export const createMTMService = (deps: {
         let prefMatch;
         while ((prefMatch = prefPattern.exec(event.data.message)) !== null) {
           facts.userPreferences?.push(
-            `favorite ${prefMatch[1]}: ${prefMatch[2].trim()}`
+            `favorite ${prefMatch[1]}: ${prefMatch[2].trim()}`,
           );
         }
 
@@ -138,7 +138,7 @@ export const createMTMService = (deps: {
    * Use LLM to extract facts if available
    */
   const extractFactsWithLLM = async (
-    events: MemoryEvent[]
+    events: MemoryEvent[],
   ): Promise<MTMSummary["extractedFacts"]> => {
     if (!llmService) {
       return extractFactsFromEvents(events);
@@ -189,7 +189,7 @@ Return only valid JSON, no explanations.`;
     } catch (error) {
       console.warn(
         "LLM fact extraction failed, falling back to patterns:",
-        error
+        error,
       );
     }
 
@@ -202,11 +202,11 @@ Return only valid JSON, no explanations.`;
    */
   const generateMarkdownSummary = (
     summary: MTMSummary,
-    dayEvents: MemoryEvent[]
+    dayEvents: MemoryEvent[],
   ): string => {
     let markdown = `# Daily Memory Summary - ${summary.date}\n\n`;
     markdown += `*Generated at: ${new Date(
-      summary.createdAt
+      summary.createdAt,
     ).toLocaleString()}*\n\n`;
 
     // User Profile Section
@@ -253,7 +253,7 @@ Return only valid JSON, no explanations.`;
 
     // Conversation Transcript Samples
     const conversations = dayEvents.filter(
-      (e) => e.type.includes("message") || e.type.includes("response")
+      (e) => e.type.includes("message") || e.type.includes("response"),
     );
     if (conversations.length > 0) {
       markdown += `## Conversation Samples\n\n`;
@@ -271,7 +271,7 @@ Return only valid JSON, no explanations.`;
         .slice(0, 3)
         .forEach(([sessionId, events]) => {
           const sessionStart = new Date(
-            events[0].timestamp
+            events[0].timestamp,
           ).toLocaleTimeString();
           markdown += `### Session at ${sessionStart}\n\n`;
 
@@ -330,16 +330,16 @@ Return only valid JSON, no explanations.`;
 
     // Extract conversation stats
     const conversationStarts = dayEvents.filter(
-      (e) => e.type === "conversation.started"
+      (e) => e.type === "conversation.started",
     ).length;
     const userMessages = dayEvents.filter(
-      (e) => e.type === "conversation.user.message"
+      (e) => e.type === "conversation.user.message",
     );
     const avgMessageLength =
       userMessages.length > 0
         ? userMessages.reduce(
             (sum, e) => sum + (e.data.message?.length || 0),
-            0
+            0,
           ) / userMessages.length
         : 0;
 
@@ -355,12 +355,12 @@ Return only valid JSON, no explanations.`;
       highlights.push(
         `Had ${conversationStarts} conversation${
           conversationStarts > 1 ? "s" : ""
-        }`
+        }`,
       );
     }
     if (extractedFacts.keyTopics && extractedFacts.keyTopics.length > 0) {
       highlights.push(
-        `Discussed: ${extractedFacts.keyTopics.slice(0, 3).join(", ")}`
+        `Discussed: ${extractedFacts.keyTopics.slice(0, 3).join(", ")}`,
       );
     }
 

@@ -7,7 +7,7 @@ export const currentDatePrompt = (timeZone = "Europe/Zurich") => {
   const localFormatted = formatInTimeZone(
     now,
     timeZone,
-    "EEEE, dd MMMM yyyy 'at' HH:mm:ss XXX"
+    "EEEE, dd MMMM yyyy 'at' HH:mm:ss XXX",
   );
 
   // ISO 8601 UTC for calculations

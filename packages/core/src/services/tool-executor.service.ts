@@ -1,5 +1,5 @@
-import type { Tool, ToolLike, ToolResult } from "../types/tool.types.js";
 import type { ToolCall } from "../types/llm.types.js";
+import type { Tool, ToolLike, ToolResult } from "../types/tool.types.js";
 
 /**
  * Tool executor options
@@ -62,7 +62,7 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
    */
   const executeToolCall = async (
     toolCall: ToolCall,
-    context?: { agentId?: string }
+    context?: { agentId?: string },
   ): Promise<ToolResult> => {
     const startTime = Date.now();
     const tool = toolRegistry.get(toolCall.toolName);
@@ -84,7 +84,7 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(
           () => reject(new Error("Tool execution timed out")),
-          config.defaultTimeout
+          config.defaultTimeout,
         );
       });
 
@@ -125,12 +125,12 @@ export const createToolExecutor = (options?: ToolExecutorOptions) => {
    */
   const executeToolCalls = async (
     toolCalls: ToolCall[],
-    context?: { agentId?: string }
+    context?: { agentId?: string },
   ): Promise<ToolResult[]> => {
     // Batch execution tracking can be added to Langfuse if needed
 
     const results = await Promise.all(
-      toolCalls.map((toolCall) => executeToolCall(toolCall, context))
+      toolCalls.map((toolCall) => executeToolCall(toolCall, context)),
     );
 
     // Record batch completion

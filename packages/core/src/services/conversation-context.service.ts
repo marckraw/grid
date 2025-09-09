@@ -3,7 +3,10 @@
  */
 export interface ConversationContextHandlers {
   onStateChanged?: (key: string, newValue: any, oldValue: any) => Promise<void>;
-  onStatesChanged?: (updates: Record<string, any>, oldState: Record<string, any>) => Promise<void>;
+  onStatesChanged?: (
+    updates: Record<string, any>,
+    oldState: Record<string, any>,
+  ) => Promise<void>;
   onMetadataChanged?: (key: string, value: any) => Promise<void>;
   onReset?: () => Promise<void>;
 }
@@ -21,27 +24,29 @@ export interface ConversationContextOptions {
 
 /**
  * Creates a conversation context manager - atomic primitive for managing conversation state
- * 
+ *
  * This primitive manages the contextual information for a conversation,
  * including state that persists across messages, metadata, and session info.
  */
-export const createConversationContext = (options?: ConversationContextOptions) => {
+export const createConversationContext = (
+  options?: ConversationContextOptions,
+) => {
   const config = {
     sessionId: options?.sessionId ?? `session-${Date.now()}`,
     userId: options?.userId,
   };
-  
+
   // Internal state storage using closure
   const state: Record<string, any> = { ...(options?.initialState || {}) };
   const metadata: Record<string, any> = { ...(options?.metadata || {}) };
-  
+
   // Track conversation metrics
   const metrics = {
     startTime: Date.now(),
     messageCount: 0,
     toolCallCount: 0,
   };
-  
+
   /**
    * Update a state value
    */
@@ -54,7 +59,7 @@ export const createConversationContext = (options?: ConversationContextOptions) 
       await options.handlers.onStateChanged(key, value, oldValue);
     }
   };
-  
+
   /**
    * Update multiple state values at once
    */
@@ -67,7 +72,7 @@ export const createConversationContext = (options?: ConversationContextOptions) 
       await options.handlers.onStatesChanged(updates, oldState);
     }
   };
-  
+
   /**
    * Get the current state
    */
@@ -75,33 +80,33 @@ export const createConversationContext = (options?: ConversationContextOptions) 
     // Return a copy to prevent external modifications
     return { ...state };
   };
-  
+
   /**
    * Get a specific state value
    */
   const getStateValue = <T = any>(key: string): T | undefined => {
     return state[key] as T;
   };
-  
+
   /**
    * Clear a state value
    */
   const clearStateValue = (key: string) => {
     delete state[key];
   };
-  
+
   /**
    * Reset all state
    */
   const resetState = async () => {
-    Object.keys(state).forEach(key => delete state[key]);
+    Object.keys(state).forEach((key) => delete state[key]);
 
     // Call handler if provided
     if (options?.handlers?.onReset) {
       await options.handlers.onReset();
     }
   };
-  
+
   /**
    * Update metadata
    */
@@ -113,28 +118,28 @@ export const createConversationContext = (options?: ConversationContextOptions) 
       await options.handlers.onMetadataChanged(key, value);
     }
   };
-  
+
   /**
    * Get metadata
    */
   const getMetadata = (): Record<string, any> => {
     return { ...metadata };
   };
-  
+
   /**
    * Increment message count
    */
   const incrementMessageCount = () => {
     metrics.messageCount++;
   };
-  
+
   /**
    * Increment tool call count
    */
-  const incrementToolCallCount = (count: number = 1) => {
+  const incrementToolCallCount = (count = 1) => {
     metrics.toolCallCount += count;
   };
-  
+
   /**
    * Get conversation metrics
    */
@@ -144,7 +149,7 @@ export const createConversationContext = (options?: ConversationContextOptions) 
       duration: Date.now() - metrics.startTime,
     };
   };
-  
+
   /**
    * Get full context snapshot
    */
@@ -157,7 +162,7 @@ export const createConversationContext = (options?: ConversationContextOptions) 
       metrics: getMetrics(),
     };
   };
-  
+
   return {
     // State management
     updateState,
@@ -166,16 +171,16 @@ export const createConversationContext = (options?: ConversationContextOptions) 
     getStateValue,
     clearStateValue,
     resetState,
-    
+
     // Metadata management
     updateMetadata,
     getMetadata,
-    
+
     // Metrics
     incrementMessageCount,
     incrementToolCallCount,
     getMetrics,
-    
+
     // Utility
     getSnapshot,
     getSessionId: () => config.sessionId,

@@ -1,15 +1,15 @@
 import type { AgentResponse } from "../types/agent.types.js";
 import type { ChatMessage } from "../types/llm.types.js";
 import {
-  createConversationHistory,
-  type ConversationHistoryOptions,
-  type ConversationHistoryHandlers,
-} from "./conversation-history.service.js";
-import {
-  createConversationContext,
-  type ConversationContextOptions,
   type ConversationContextHandlers,
+  type ConversationContextOptions,
+  createConversationContext,
 } from "./conversation-context.service.js";
+import {
+  type ConversationHistoryHandlers,
+  type ConversationHistoryOptions,
+  createConversationHistory,
+} from "./conversation-history.service.js";
 
 /**
  * Event handlers for conversation manager operations
@@ -48,7 +48,7 @@ export interface ConversationManagerOptions {
  * with context/state management, providing a unified interface for conversation handling.
  */
 export const createConversationManager = (
-  options?: ConversationManagerOptions
+  options?: ConversationManagerOptions,
 ) => {
   // Extract handlers from grouped structure
   const managerHandlers = options?.handlers?.manager;
@@ -97,31 +97,31 @@ export const createConversationManager = (
         await history.addToolResponse(
           toolResponse.toolCallId,
           toolResponse.toolName,
-          toolResponse.result
+          toolResponse.result,
         );
 
         // Call legacy callback if provided
         if (options?.onToolExecution) {
           // Find the original tool call to get args
           const toolCall = response.toolCalls?.find(
-            (tc) => tc.toolCallId === toolResponse.toolCallId
+            (tc) => tc.toolCallId === toolResponse.toolCallId,
           );
           options.onToolExecution(
             toolResponse.toolName,
             toolCall?.args || {},
-            toolResponse.result
+            toolResponse.result,
           );
         }
 
         // Call new handler if provided
         if (managerHandlers?.onToolExecution) {
           const toolCall = response.toolCalls?.find(
-            (tc) => tc.toolCallId === toolResponse.toolCallId
+            (tc) => tc.toolCallId === toolResponse.toolCallId,
           );
           await managerHandlers.onToolExecution(
             toolResponse.toolName,
             toolCall?.args || {},
-            toolResponse.result
+            toolResponse.result,
           );
         }
       }

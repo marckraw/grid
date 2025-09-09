@@ -6,7 +6,7 @@
 /**
  * Supported audio formats across different interfaces
  */
-export type AudioFormat = 'mp3' | 'wav' | 'pcm' | 'ogg' | 'webm' | 'flac';
+export type AudioFormat = "mp3" | "wav" | "pcm" | "ogg" | "webm" | "flac";
 
 /**
  * Audio data that can work in both Node.js and browser environments
@@ -16,22 +16,22 @@ export interface AudioData {
    * Raw audio data - Buffer in Node.js, ArrayBuffer in browser
    */
   data: Buffer | ArrayBuffer | Uint8Array;
-  
+
   /**
    * Audio format
    */
   format: AudioFormat;
-  
+
   /**
    * Sample rate in Hz (e.g., 44100, 48000)
    */
   sampleRate?: number;
-  
+
   /**
    * Number of audio channels (1 for mono, 2 for stereo)
    */
   channels?: number;
-  
+
   /**
    * Bit depth (e.g., 16, 24)
    */
@@ -46,12 +46,12 @@ export interface AudioResult extends AudioData {
    * Duration in seconds
    */
   duration?: number;
-  
+
   /**
    * Size in bytes
    */
   size: number;
-  
+
   /**
    * Optional metadata
    */
@@ -71,17 +71,17 @@ export interface AudioInput {
    * Audio data - can be Buffer, ArrayBuffer, base64 string, or file path
    */
   data: Buffer | ArrayBuffer | Uint8Array | string;
-  
+
   /**
    * Format of the audio
    */
   format: AudioFormat;
-  
+
   /**
    * Type of the data field
    */
-  dataType: 'buffer' | 'base64' | 'filepath' | 'url';
-  
+  dataType: "buffer" | "base64" | "filepath" | "url";
+
   /**
    * Optional audio properties
    */
@@ -97,52 +97,52 @@ export interface VoiceOptions {
    * Voice ID to use (provider-specific)
    */
   voiceId?: string;
-  
+
   /**
    * Language code (e.g., 'en-US', 'es-ES')
    */
   language?: string;
-  
+
   /**
    * Voice stability (0.0 to 1.0) - ElevenLabs specific
    */
   stability?: number;
-  
+
   /**
    * Voice similarity boost (0.0 to 1.0) - ElevenLabs specific
    */
   similarityBoost?: number;
-  
+
   /**
    * Speaking style (0.0 to 1.0) - ElevenLabs specific
    */
   style?: number;
-  
+
   /**
    * Use speaker boost - ElevenLabs specific
    */
   useSpeakerBoost?: boolean;
-  
+
   /**
    * Speaking rate/speed (0.5 to 2.0)
    */
   speed?: number;
-  
+
   /**
    * Voice pitch (-20 to 20)
    */
   pitch?: number;
-  
+
   /**
    * Output format preference
    */
   outputFormat?: AudioFormat;
-  
+
   /**
    * Enable streaming generation
    */
   stream?: boolean;
-  
+
   /**
    * Model to use for synthesis
    */
@@ -157,27 +157,27 @@ export interface TranscribeOptions {
    * Language code for transcription
    */
   language?: string;
-  
+
   /**
    * Enable automatic language detection
    */
   detectLanguage?: boolean;
-  
+
   /**
    * Include word-level timestamps
    */
   timestamps?: boolean;
-  
+
   /**
    * Include punctuation
    */
   punctuate?: boolean;
-  
+
   /**
    * Model to use (e.g., 'whisper-large', 'whisper-medium')
    */
   model?: string;
-  
+
   /**
    * Temperature for sampling (0.0 to 1.0)
    */
@@ -192,22 +192,22 @@ export interface TranscriptionResult {
    * Transcribed text
    */
   text: string;
-  
+
   /**
    * Confidence score (0.0 to 1.0)
    */
   confidence?: number;
-  
+
   /**
    * Detected or specified language
    */
   language?: string;
-  
+
   /**
    * Duration of the audio in seconds
    */
   duration?: number;
-  
+
   /**
    * Word-level details if requested
    */
@@ -217,7 +217,7 @@ export interface TranscriptionResult {
     end: number;
     confidence?: number;
   }>;
-  
+
   /**
    * Alternative transcriptions
    */
@@ -235,27 +235,27 @@ export interface Voice {
    * Unique voice identifier
    */
   id: string;
-  
+
   /**
    * Display name
    */
   name: string;
-  
+
   /**
    * Voice description
    */
   description?: string;
-  
+
   /**
    * Preview URL if available
    */
   previewUrl?: string;
-  
+
   /**
    * Supported languages
    */
   languages?: string[];
-  
+
   /**
    * Voice characteristics
    */
@@ -266,7 +266,7 @@ export interface Voice {
     useCase?: string[];
     [key: string]: any;
   };
-  
+
   /**
    * Whether this is a custom/cloned voice
    */
@@ -281,17 +281,17 @@ export interface AudioChunk {
    * Chunk data
    */
   data: Uint8Array;
-  
+
   /**
    * Chunk index
    */
   index: number;
-  
+
   /**
    * Is this the final chunk?
    */
   isFinal: boolean;
-  
+
   /**
    * Timestamp of this chunk
    */
@@ -306,42 +306,51 @@ export interface VoiceService {
    * Synthesize text to speech
    */
   synthesize(text: string, options?: VoiceOptions): Promise<AudioResult>;
-  
+
   /**
    * Stream synthesis for real-time playback
    */
-  streamSynthesize?(text: string, options?: VoiceOptions): AsyncGenerator<AudioChunk>;
-  
+  streamSynthesize?(
+    text: string,
+    options?: VoiceOptions,
+  ): AsyncGenerator<AudioChunk>;
+
   /**
    * Transcribe audio to text
    */
-  transcribe(audio: AudioInput, options?: TranscribeOptions): Promise<TranscriptionResult>;
-  
+  transcribe(
+    audio: AudioInput,
+    options?: TranscribeOptions,
+  ): Promise<TranscriptionResult>;
+
   /**
    * Stream transcription for real-time processing
    */
-  streamTranscribe?(audio: AsyncGenerator<AudioChunk>, options?: TranscribeOptions): AsyncGenerator<TranscriptionResult>;
-  
+  streamTranscribe?(
+    audio: AsyncGenerator<AudioChunk>,
+    options?: TranscribeOptions,
+  ): AsyncGenerator<TranscriptionResult>;
+
   /**
    * List available voices
    */
   listVoices(): Promise<Voice[]>;
-  
+
   /**
    * Get specific voice details
    */
   getVoice?(voiceId: string): Promise<Voice | null>;
-  
+
   /**
    * Clone a voice (if supported)
    */
   cloneVoice?(name: string, samples: AudioInput[]): Promise<Voice>;
-  
+
   /**
    * Delete a custom voice
    */
   deleteVoice?(voiceId: string): Promise<boolean>;
-  
+
   /**
    * Check if service is available
    */
@@ -356,38 +365,38 @@ export interface VoiceConfig {
    * Enable voice capabilities
    */
   enabled: boolean;
-  
+
   /**
    * Default voice ID
    */
   voiceId?: string;
-  
+
   /**
    * Default voice options
    */
   defaultOptions?: Partial<VoiceOptions>;
-  
+
   /**
    * Automatically speak responses
    */
   autoSpeak?: boolean;
-  
+
   /**
    * Automatically listen after speaking
    */
   autoListen?: boolean;
-  
+
   /**
    * Allow interruption while speaking
    */
   allowInterruption?: boolean;
-  
+
   /**
    * Mixed modality settings
    */
   mixedModality?: {
     enabled: boolean;
-    mergeStrategy: 'temporal' | 'contextual' | 'append';
+    mergeStrategy: "temporal" | "contextual" | "append";
   };
 }
 
@@ -397,12 +406,17 @@ export interface VoiceConfig {
 export class VoiceError extends Error {
   constructor(
     message: string,
-    public code: 'SYNTHESIS_FAILED' | 'TRANSCRIPTION_FAILED' | 'VOICE_NOT_FOUND' | 
-                 'QUOTA_EXCEEDED' | 'INVALID_AUDIO' | 'SERVICE_UNAVAILABLE',
-    public details?: any
+    public code:
+      | "SYNTHESIS_FAILED"
+      | "TRANSCRIPTION_FAILED"
+      | "VOICE_NOT_FOUND"
+      | "QUOTA_EXCEEDED"
+      | "INVALID_AUDIO"
+      | "SERVICE_UNAVAILABLE",
+    public details?: any,
   ) {
     super(message);
-    this.name = 'VoiceError';
+    this.name = "VoiceError";
   }
 }
 
@@ -410,20 +424,28 @@ export class VoiceError extends Error {
  * Progress event for voice operations
  */
 export interface VoiceProgressEvent {
-  type: 'synthesis_start' | 'synthesis_progress' | 'synthesis_complete' |
-        'transcription_start' | 'transcription_progress' | 'transcription_complete' |
-        'listening_start' | 'listening_stop' | 'speaking_start' | 'speaking_stop';
-  
+  type:
+    | "synthesis_start"
+    | "synthesis_progress"
+    | "synthesis_complete"
+    | "transcription_start"
+    | "transcription_progress"
+    | "transcription_complete"
+    | "listening_start"
+    | "listening_stop"
+    | "speaking_start"
+    | "speaking_stop";
+
   /**
    * Progress percentage (0-100)
    */
   progress?: number;
-  
+
   /**
    * Associated data
    */
   data?: any;
-  
+
   /**
    * Timestamp
    */

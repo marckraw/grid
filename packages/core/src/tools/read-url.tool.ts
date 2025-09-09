@@ -1,7 +1,7 @@
-import { z } from "zod";
-import { tool } from "ai";
-import type { GridTool } from "./types.js";
 import FirecrawlApp from "@mendable/firecrawl-js";
+import { tool } from "ai";
+import { z } from "zod";
+import type { GridTool } from "./types.js";
 
 /**
  * Read URL tool
@@ -14,7 +14,7 @@ export const toolDefinition = {
     url: z
       .string()
       .describe(
-        "The url to read. The LLM will return a response that will be used to answer the user's message."
+        "The url to read. The LLM will return a response that will be used to answer the user's message.",
       ),
   }),
 };
@@ -63,7 +63,7 @@ export const createReadUrlTool = (config?: { firecrawlApiKey?: string }) => {
   const apiKey = config?.firecrawlApiKey || process.env.FIRECRAWL_API_KEY || "";
   if (!apiKey) {
     throw new Error(
-      "Missing Firecrawl API key. Please provide it via config or the FIRECRAWL_API_KEY environment variable."
+      "Missing Firecrawl API key. Please provide it via config or the FIRECRAWL_API_KEY environment variable.",
     );
   }
   const firecrawl = new FirecrawlApp({ apiKey });

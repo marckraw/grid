@@ -51,7 +51,7 @@ export type ProgressMessageType = z.infer<typeof ProgressMessageTypeEnum>;
 export const createProgressMessage = (
   type: ProgressMessageType,
   content: string,
-  metadata?: Record<string, any>
+  metadata?: Record<string, any>,
 ): ProgressMessage => {
   return {
     type,

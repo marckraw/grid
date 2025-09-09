@@ -1,11 +1,11 @@
-import {
-  type Agent,
-  type BaseAgentConfig,
-  type AgentMetadata,
-  type AgentInput,
-} from "../types/agent.types.js";
-import { type LLMService } from "../types/llm.types.js";
 import { baseLLMService } from "../services/base.llm.service.js";
+import type {
+  Agent,
+  AgentInput,
+  AgentMetadata,
+  BaseAgentConfig,
+} from "../types/agent.types.js";
+import type { LLMService } from "../types/llm.types.js";
 
 export interface BaseAgent extends Omit<Agent, "act" | "sendUpdate"> {
   availableTools: Record<string, any>;

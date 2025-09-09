@@ -44,9 +44,7 @@
     "vitest": "^1.1.0",
     "tsup": "^8.5.0"
   },
-  "dependencies": {
-    "zod": "^3.25.76"
-  },
+  "dependencies": {},
   "peerDependencies": {
     "@mrck-labs/grid-core": "workspace:*"
   },

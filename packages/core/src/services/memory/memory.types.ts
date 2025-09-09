@@ -19,7 +19,7 @@ export interface MemoryEvent {
 }
 
 export interface STMService {
-  log: (event: Omit<MemoryEvent, 'timestamp'>) => Promise<void>;
+  log: (event: Omit<MemoryEvent, "timestamp">) => Promise<void>;
   getRecent: (hours?: number) => Promise<MemoryEvent[]>;
   getByType: (type: string, limit?: number) => Promise<MemoryEvent[]>;
   clear: () => Promise<void>;
