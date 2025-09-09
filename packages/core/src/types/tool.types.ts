@@ -1,6 +1,6 @@
 import { tool as createTool } from "ai";
 import type { Tool as AiTool } from "ai";
-import { z } from "zod";
+import type { z } from "zod";
 
 /**
  * Grid Tool type - Vercel AI SDK's Tool with a name property
@@ -35,7 +35,7 @@ export { createTool };
 export const createNamedTool = <
   TName extends string,
   TParameters extends z.ZodTypeAny = z.ZodTypeAny,
-  TResult = any
+  TResult = any,
 >(config: {
   name: TName;
   description: string;
@@ -70,7 +70,7 @@ export interface ToolResult {
  * Type guard to check if something is a Tool
  */
 export const isTool = <T extends z.ZodTypeAny = z.ZodTypeAny>(
-  value: unknown
+  value: unknown,
 ): value is AiTool<T> => {
   return (
     typeof value === "object" &&

@@ -1,20 +1,20 @@
+import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 import type {
-  VoiceService,
-  VoiceOptions,
-  TranscribeOptions,
-  AudioResult,
-  AudioInput,
-  TranscriptionResult,
-  Voice,
   AudioChunk,
   AudioFormat,
+  AudioInput,
+  AudioResult,
+  TranscribeOptions,
+  TranscriptionResult,
+  Voice,
+  VoiceOptions,
+  VoiceService,
 } from "../../types/voice.types.js";
 import { VoiceError } from "../../types/voice.types.js";
 import {
-  baseVoiceService,
   type BaseVoiceServiceConfig,
+  baseVoiceService,
 } from "../base.voice.service.js";
-import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 
 export interface ElevenLabsVoiceServiceConfig extends BaseVoiceServiceConfig {
   apiKey?: string; // Optional since SDK can use env var
@@ -37,7 +37,7 @@ export interface ElevenLabsVoiceServiceConfig extends BaseVoiceServiceConfig {
  * ElevenLabs implementation of VoiceService
  */
 export const elevenlabsVoiceService = (
-  config: ElevenLabsVoiceServiceConfig
+  config: ElevenLabsVoiceServiceConfig,
 ): VoiceService => {
   const {
     apiKey,
@@ -61,7 +61,7 @@ export const elevenlabsVoiceService = (
    */
   const synthesize = async (
     text: string,
-    options?: VoiceOptions
+    options?: VoiceOptions,
   ): Promise<AudioResult> => {
     await utils.rateLimit();
     utils.validateText(text);
@@ -72,7 +72,7 @@ export const elevenlabsVoiceService = (
     if (!voiceId) {
       throw new VoiceError(
         "Voice ID is required for synthesis",
-        "SYNTHESIS_FAILED"
+        "SYNTHESIS_FAILED",
       );
     }
 
@@ -102,7 +102,7 @@ export const elevenlabsVoiceService = (
       }
 
       const audioData = new Uint8Array(
-        chunks.reduce((acc, chunk) => acc + chunk.length, 0)
+        chunks.reduce((acc, chunk) => acc + chunk.length, 0),
       );
       let offset = 0;
       for (const chunk of chunks) {
@@ -132,7 +132,7 @@ export const elevenlabsVoiceService = (
       throw new VoiceError(
         "Failed to synthesize speech with ElevenLabs",
         "SYNTHESIS_FAILED",
-        error
+        error,
       );
     }
   };
@@ -142,7 +142,7 @@ export const elevenlabsVoiceService = (
    */
   const streamSynthesize = async function* (
     text: string,
-    options?: VoiceOptions
+    options?: VoiceOptions,
   ): AsyncGenerator<AudioChunk> {
     await utils.rateLimit();
     utils.validateText(text);
@@ -153,7 +153,7 @@ export const elevenlabsVoiceService = (
     if (!voiceId) {
       throw new VoiceError(
         "Voice ID is required for synthesis",
-        "SYNTHESIS_FAILED"
+        "SYNTHESIS_FAILED",
       );
     }
 
@@ -204,7 +204,7 @@ export const elevenlabsVoiceService = (
       throw new VoiceError(
         "Failed to stream synthesis with ElevenLabs",
         "SYNTHESIS_FAILED",
-        error
+        error,
       );
     }
   };
@@ -214,7 +214,7 @@ export const elevenlabsVoiceService = (
    */
   const transcribe = async (
     audio: AudioInput,
-    options?: TranscribeOptions
+    options?: TranscribeOptions,
   ): Promise<TranscriptionResult> => {
     await utils.rateLimit();
 
@@ -275,7 +275,7 @@ export const elevenlabsVoiceService = (
           error instanceof Error ? error.message : String(error)
         }`,
         "TRANSCRIPTION_FAILED",
-        error
+        error,
       );
     }
   };
@@ -308,7 +308,7 @@ export const elevenlabsVoiceService = (
       throw new VoiceError(
         "Failed to list voices from ElevenLabs",
         "SERVICE_UNAVAILABLE",
-        error
+        error,
       );
     }
   };
@@ -346,7 +346,7 @@ export const elevenlabsVoiceService = (
       throw new VoiceError(
         "Failed to get voice from ElevenLabs",
         "SERVICE_UNAVAILABLE",
-        error
+        error,
       );
     }
   };
@@ -356,12 +356,12 @@ export const elevenlabsVoiceService = (
    */
   const cloneVoice = async (
     name: string,
-    samples: AudioInput[]
+    samples: AudioInput[],
   ): Promise<Voice> => {
     if (samples.length === 0) {
       throw new VoiceError(
         "At least one voice sample is required",
-        "INVALID_AUDIO"
+        "INVALID_AUDIO",
       );
     }
 
@@ -400,7 +400,7 @@ export const elevenlabsVoiceService = (
       if (!voiceId) {
         throw new VoiceError(
           "No voice ID returned from clone operation",
-          "SERVICE_UNAVAILABLE"
+          "SERVICE_UNAVAILABLE",
         );
       }
 
@@ -408,7 +408,7 @@ export const elevenlabsVoiceService = (
       if (!voice) {
         throw new VoiceError(
           "Failed to fetch cloned voice details",
-          "SERVICE_UNAVAILABLE"
+          "SERVICE_UNAVAILABLE",
         );
       }
 
@@ -420,7 +420,7 @@ export const elevenlabsVoiceService = (
       throw new VoiceError(
         "Failed to clone voice with ElevenLabs",
         "SYNTHESIS_FAILED",
-        error
+        error,
       );
     }
   };
@@ -446,7 +446,7 @@ export const elevenlabsVoiceService = (
       throw new VoiceError(
         "Failed to delete voice from ElevenLabs",
         "SERVICE_UNAVAILABLE",
-        error
+        error,
       );
     }
   };

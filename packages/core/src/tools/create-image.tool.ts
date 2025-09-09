@@ -1,9 +1,9 @@
-import { z } from "zod";
-import { tool } from "ai";
-import type { GridTool } from "./types.js";
-import { createOpenAIImageService } from "./services/openai-image.service.js";
 import { writeFileSync } from "fs";
 import { join } from "path";
+import { tool } from "ai";
+import { z } from "zod";
+import { createOpenAIImageService } from "./services/openai-image.service.js";
+import type { GridTool } from "./types.js";
 
 /**
  * Create image tool
@@ -18,12 +18,12 @@ export const toolDefinition = {
     prompt: z
       .string()
       .describe(
-        "prompt for the image. Be sure to consider the user's original message when making the prompt. If you are unsure, then as the user to provide more details."
+        "prompt for the image. Be sure to consider the user's original message when making the prompt. If you are unsure, then as the user to provide more details.",
       ),
     whichModelToUse: z
       .enum(["openai", "leonardo"])
       .describe(
-        "Which model to use to generate the image. If the user didn't mention which model to use, you must ask which one they want to use: openai, or leonardo. Make sure to look at the whole conversation history before making your choice."
+        "Which model to use to generate the image. If the user didn't mention which model to use, you must ask which one they want to use: openai, or leonardo. Make sure to look at the whole conversation history before making your choice.",
       ),
     tags: z
       .array(z.string())

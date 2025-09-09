@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { getLastUserMessage, transformMessagesForAI } from "./utils.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ChatMessage } from "./types/llm.types.js";
+import { getLastUserMessage, transformMessagesForAI } from "./utils.js";
 
 describe("getLastUserMessage", () => {
   it("should return undefined when conversation history is empty", () => {
@@ -125,7 +125,7 @@ describe("transformMessagesForAI", () => {
     const result = transformMessagesForAI([]);
     expect(result).toEqual([]);
     expect(consoleInfoSpy).toHaveBeenCalledWith(
-      "✅ Transformed 0 messages to 0 valid AI messages"
+      "✅ Transformed 0 messages to 0 valid AI messages",
     );
   });
 
@@ -144,7 +144,7 @@ describe("transformMessagesForAI", () => {
       content: "What is the weather like?",
     });
     expect(consoleInfoSpy).toHaveBeenCalledWith(
-      "✅ Transformed 2 messages to 2 valid AI messages"
+      "✅ Transformed 2 messages to 2 valid AI messages",
     );
   });
 
@@ -234,7 +234,7 @@ describe("transformMessagesForAI", () => {
 
     expect(result).toHaveLength(0);
     expect(consoleInfoSpy).toHaveBeenCalledWith(
-      "✅ Transformed 1 messages to 0 valid AI messages"
+      "✅ Transformed 1 messages to 0 valid AI messages",
     );
   });
 
@@ -249,7 +249,7 @@ describe("transformMessagesForAI", () => {
     expect(result).toHaveLength(1);
     expect(result[0]).toEqual({ role: "user", content: "Valid user message" });
     expect(consoleInfoSpy).toHaveBeenCalledWith(
-      "✅ Transformed 2 messages to 1 valid AI messages"
+      "✅ Transformed 2 messages to 1 valid AI messages",
     );
   });
 
@@ -320,7 +320,7 @@ describe("transformMessagesForAI", () => {
     transformMessagesForAI(input);
 
     expect(consoleInfoSpy).toHaveBeenCalledWith(
-      "✅ Transformed 3 messages to 2 valid AI messages"
+      "✅ Transformed 3 messages to 2 valid AI messages",
     );
   });
 });

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import {
-  AgentTypeSchema,
   AgentMetadataSchema,
+  AgentTypeSchema,
   VoiceConfigSchema,
 } from "../types/agent.types.js";
 import type { Tool } from "../types/tool.types.js";
@@ -139,7 +139,7 @@ export const createAgentConfig = (config: AgentConfig): AgentConfig => {
   const validation = validateAgentConfig(config);
   if (!validation.success) {
     throw new Error(
-      `Invalid agent configuration: ${JSON.stringify(validation.error)}`
+      `Invalid agent configuration: ${JSON.stringify(validation.error)}`,
     );
   }
   return validation.data!;

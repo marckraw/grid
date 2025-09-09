@@ -1,21 +1,21 @@
-import { type AgentConfig } from "./agent-config.schemas.js";
-import { langfuseService } from "../services/LangfuseService/langfuse.service.js";
 import { createBaseAgent } from "../agents/BaseAgent.js";
-import {
-  type Agent,
-  type AgentResponse,
-  type AgentActInput,
+import { langfuseService } from "../services/LangfuseService/langfuse.service.js";
+import type { ToolExecutor } from "../services/tool-executor.service.js";
+import type {
+  Agent,
+  AgentActInput,
+  AgentResponse,
 } from "../types/agent.types.js";
-import { type LLMService } from "../types/llm.types.js";
-import { type ToolExecutor } from "../services/tool-executor.service.js";
+import type { LLMService } from "../types/llm.types.js";
 import type { ProgressMessage } from "../types/progress.types.js";
 import type {
-  VoiceService,
   AudioResult,
+  TranscribeOptions,
   TranscriptionResult,
   VoiceOptions,
-  TranscribeOptions,
+  VoiceService,
 } from "../types/voice.types.js";
+import type { AgentConfig } from "./agent-config.schemas.js";
 
 interface BaseHandlerOptions {
   sendUpdate: (data: ProgressMessage) => Promise<void>;
@@ -53,10 +53,10 @@ export interface CustomHandlers {
   beforeAct?: (options: BeforeActOptions) => Promise<AgentActInput>;
   afterResponse?: (options: AfterResponseOptions) => Promise<AgentResponse>;
   onError?: (
-    options: OnErrorOptions
+    options: OnErrorOptions,
   ) => Promise<void | { retry: boolean; modifiedInput?: AgentActInput }>;
   validateResponse?: (
-    options: ValidateResponseOptions
+    options: ValidateResponseOptions,
   ) => Promise<{ isValid: boolean; errors?: string[] }>;
   transformInput?: (options: TransformInputOptions) => Promise<AgentActInput>;
   transformOutput?: (options: TransformOutputOptions) => Promise<AgentResponse>;
@@ -88,16 +88,15 @@ export const createConfigurableAgent = ({
     llmService,
   });
 
-  console.log("[createConfigurableAgent] - config");
-  console.log(config);
-
-  console.log("LLM service");
-  console.log(llmService);
-
-  console.log("Base llm service:  ");
-  console.log(base.llmService);
-
-  console.log("Zmieniamy kuuuurwa!");
+  // Optional: add targeted debug logs behind an environment flag if needed
+  const debugEnabled = process.env.GRID_DEBUG === "1";
+  if (debugEnabled) {
+    console.debug("[createConfigurableAgent] config", config);
+    console.debug(
+      "[createConfigurableAgent] llmService provided",
+      !!llmService,
+    );
+  }
 
   // Prepare available tools from config
   const availableTools: Record<string, any> = {
@@ -106,8 +105,12 @@ export const createConfigurableAgent = ({
     // TODO: Adapt builtin and agent tools
   };
 
-  console.log("These are available tools");
-  console.log(availableTools);
+  if (debugEnabled) {
+    console.debug(
+      "[createConfigurableAgent] available tools",
+      Object.keys(availableTools),
+    );
+  }
 
   let sendUpdate: (data: ProgressMessage) => Promise<void> = async (data) => {
     console.log("sendUpdate", data);
@@ -124,7 +127,8 @@ export const createConfigurableAgent = ({
     id: config.id,
     type: config.type,
     setSendUpdate,
-    availableTools: Object.keys(availableTools),
+    // Expose the actual tool map to satisfy the Agent interface contract
+    availableTools,
     // Enhanced metadata with config info
     getMetadata: () => ({
       ...config.metadata,
@@ -142,12 +146,7 @@ export const createConfigurableAgent = ({
       // === Generic Langfuse tracing for all agents ===
       if (!processedInput.context) processedInput.context = {} as any;
       const ctx = processedInput.context as any;
-      console.log("This is ctx: ");
-      console.log(ctx);
       const sessionToken = ctx.sessionToken as string;
-
-      console.log("And this is our session token: ");
-      console.log(sessionToken);
 
       // Create execution trace only if not already present for this session
       const existingTrace = langfuseService.getCurrentTrace(sessionToken);
@@ -162,7 +161,7 @@ export const createConfigurableAgent = ({
           {
             agentId: config.id,
             agentVersion: config.version,
-          }
+          },
         );
       }
 
@@ -199,7 +198,7 @@ export const createConfigurableAgent = ({
           }
 
           // Prepare initial messages with system prompt
-          let workingMessages = [
+          const workingMessages = [
             { role: "system" as const, content: config.prompts.system },
             ...processedInput.messages,
           ];
@@ -211,15 +210,15 @@ export const createConfigurableAgent = ({
 
           while (toolRound < maxToolRounds) {
             toolRound++;
-            sendUpdate({
-              type: "thinking",
-              content: "Thinking",
-            });
+            sendUpdate({ type: "thinking", content: "Thinking" });
 
             try {
-              console.log("Executing LLM call with tools");
-              console.log(availableTools);
-              console.log(workingMessages);
+              if (debugEnabled) {
+                console.debug(
+                  "[agent-act] executing LLM call with tools",
+                  Object.keys(availableTools),
+                );
+              }
 
               // Execute LLM call with tools
               const llmResponse = await base.llmService.runLLM({
@@ -274,8 +273,12 @@ export const createConfigurableAgent = ({
             // Otherwise, assume the LLM service handled it (vercel-native mode)
             if (toolExecutor) {
               // Execute tool calls with our tool executor
-              console.log("toolExecutor: tool calls stuff");
-              console.log(response.toolCalls);
+              if (debugEnabled) {
+                console.debug(
+                  "[agent-act] executing tool calls",
+                  response.toolCalls,
+                );
+              }
               // Execute tools and get responses (ensure args is always present)
               const toolCallsWithArgs = response.toolCalls.map((tc) => ({
                 ...tc,
@@ -285,10 +288,12 @@ export const createConfigurableAgent = ({
                 toolCallsWithArgs,
                 {
                   agentId: config.id,
-                }
+                },
               );
 
-              console.log("toolResponses", toolResponses);
+              if (debugEnabled) {
+                console.debug("[agent-act] toolResponses", toolResponses);
+              }
 
               // Add assistant message with tool calls to working messages
               workingMessages.push({
@@ -346,8 +351,8 @@ export const createConfigurableAgent = ({
             if (!validationResult.isValid) {
               const validationError = new Error(
                 `Response validation failed: ${validationResult.errors?.join(
-                  ", "
-                )}`
+                  ", ",
+                )}`,
               );
 
               // Hook: onError for validation errors
@@ -444,7 +449,7 @@ export const createConfigurableAgent = ({
               } catch (fallbackError) {
                 // Fallback also failed
                 throw new Error(
-                  `Agent execution failed after ${attempt} attempts. Original error: ${error}. Fallback error: ${fallbackError}`
+                  `Agent execution failed after ${attempt} attempts. Original error: ${error}. Fallback error: ${fallbackError}`,
                 );
               }
             }
@@ -459,12 +464,12 @@ export const createConfigurableAgent = ({
                 sessionToken,
                 "agent-act",
                 undefined,
-                error as Error
+                error as Error,
               );
               langfuseService.endExecutionTrace(
                 sessionToken,
                 undefined,
-                error as Error
+                error as Error,
               );
             } catch {}
 
@@ -482,7 +487,7 @@ export const createConfigurableAgent = ({
         langfuseService.endExecutionTrace(
           sessionToken,
           undefined,
-          new Error("Unexpected end of retry loop")
+          new Error("Unexpected end of retry loop"),
         );
       } catch {}
 
@@ -522,7 +527,7 @@ export const createConfigurableAgent = ({
           sendUpdate({ type: "listening_start", content: "Listening..." });
 
           throw new Error(
-            "Listen method requires audio input - implement in your application layer"
+            "Listen method requires audio input - implement in your application layer",
           );
         }
       : undefined,

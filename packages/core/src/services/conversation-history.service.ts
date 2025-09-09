@@ -29,10 +29,10 @@ export interface ConversationHistoryOptions {
  * It handles the storage and retrieval of messages in a conversation.
  */
 export const createConversationHistory = (
-  options?: ConversationHistoryOptions
+  options?: ConversationHistoryOptions,
 ) => {
   const config = {
-    maxMessages: options?.maxMessages ?? Infinity,
+    maxMessages: options?.maxMessages ?? Number.POSITIVE_INFINITY,
     systemPrompt: options?.systemPrompt,
   };
 
@@ -58,7 +58,7 @@ export const createConversationHistory = (
       const systemMessages = messages.filter((m) => m.role === "system");
       const nonSystemMessages = messages.filter((m) => m.role !== "system");
       const trimmedMessages = nonSystemMessages.slice(
-        -config.maxMessages + systemMessages.length
+        -config.maxMessages + systemMessages.length,
       );
       messages.length = 0;
       messages.push(...systemMessages, ...trimmedMessages);
@@ -117,7 +117,7 @@ export const createConversationHistory = (
   const addToolResponse = async (
     toolCallId: string,
     toolName: string,
-    result: any
+    result: any,
   ) => {
     const toolMessage: ChatMessage = {
       role: "tool",
@@ -159,7 +159,7 @@ export const createConversationHistory = (
    * Get the last message of a specific role
    */
   const getLastMessageByRole = (
-    role: ChatMessage["role"]
+    role: ChatMessage["role"],
   ): ChatMessage | undefined => {
     return messages.filter((m) => m.role === role).pop();
   };

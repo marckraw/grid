@@ -19,15 +19,14 @@
         "@ai-sdk/anthropic": "^2.0.1",
         "@ai-sdk/openai": "^2.0.7",
         "@clack/prompts": "^0.11.0",
-        "@mrck-labs/grid-agents": "workspace:*",
+        
         "@mrck-labs/grid-core": "workspace:*",
         "@mrck-labs/grid-workflows": "workspace:*",
         "ai": "^5.0.8",
         "dotenv": "^17.2.0",
-        "node-mic-record": "^0.0.1",
+        
         "picocolors": "^1.1.1",
-        "play-sound": "^1.1.6",
-        "temp": "^0.9.4",
+        
         "zod": "^3.25.76"
     }
 }

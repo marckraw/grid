@@ -1,5 +1,5 @@
-import { experimental_generateImage as generateImage } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
+import { experimental_generateImage as generateImage } from "ai";
 
 export const createOpenAIImageService = ({ apiKey }: { apiKey?: string }) => {
   const openai = createOpenAI({

@@ -1,5 +1,5 @@
-import { z } from "zod";
 import { tool } from "ai";
+import { z } from "zod";
 import type { GridTool } from "./types.js";
 
 /**
@@ -75,7 +75,7 @@ export const dataConverterToolWithExecute = tool({
           result = toDelimited(
             parsedData,
             options.delimiter || ",",
-            options.headers ?? true
+            options.headers ?? true,
           );
           break;
 
@@ -133,7 +133,7 @@ function parseDelimited(data: string, delimiter: string): any[] {
 function toDelimited(
   data: any[],
   delimiter: string,
-  includeHeaders: boolean
+  includeHeaders: boolean,
 ): string {
   if (!Array.isArray(data) || data.length === 0) {
     return "";

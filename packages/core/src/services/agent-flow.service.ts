@@ -1,8 +1,8 @@
 import type { Agent } from "../types/agent.types.js";
 import type { AgentFlowContext, ChatMessage } from "../types/index.js";
 import type { ProgressMessage } from "../types/progress.types.js";
-import type { ToolExecutor } from "./tool-executor.service.js";
 import type { ToolResult } from "../types/tool.types.js";
+import type { ToolExecutor } from "./tool-executor.service.js";
 
 export const agentFlowService = () => {
   const testVariable = "test";
@@ -15,7 +15,7 @@ export const agentFlowService = () => {
    * Set the global send function for streaming updates
    */
   const setSendFunction = (
-    sendFn: (data: ProgressMessage) => Promise<void>
+    sendFn: (data: ProgressMessage) => Promise<void>,
   ) => {
     sendFunction = sendFn;
   };
@@ -25,7 +25,7 @@ export const agentFlowService = () => {
    */
   const sendUpdate = async (
     data: ProgressMessage,
-    context?: AgentFlowContext
+    context?: AgentFlowContext,
   ): Promise<void> => {
     if (sendFunction) {
       await sendFunction(data);
@@ -146,7 +146,7 @@ export const agentFlowService = () => {
               toolCallsWithArgs,
               {
                 agentId: agent.id,
-              }
+              },
             );
 
             // Add tool responses to conversation history

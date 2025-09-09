@@ -9,7 +9,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@mrck-labs/grid-agents": "workspace:*",
     "@mrck-labs/grid-core": "workspace:*",
     "next": "15.4.6",
     "react": "^18",

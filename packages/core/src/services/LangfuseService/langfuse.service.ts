@@ -45,7 +45,7 @@ export interface CreateLangfuseServiceConfig {
 }
 
 export const createLangfuseService = (
-  config: CreateLangfuseServiceConfig = {}
+  config: CreateLangfuseServiceConfig = {},
 ) => {
   const defaultEnv = {
     LANGFUSE_ENABLED: process.env.LANGFUSE_ENABLED === "true",
@@ -90,7 +90,7 @@ export const createLangfuseService = (
       !mergedConfig.env.LANGFUSE_PUBLIC_KEY
     ) {
       console.warn(
-        "⚠️ Langfuse API keys not configured. Tracing will be disabled."
+        "⚠️ Langfuse API keys not configured. Tracing will be disabled.",
       );
       return null;
     }
@@ -262,7 +262,7 @@ export const createLangfuseService = (
    */
   const calculateCost = (
     model: string,
-    usage: { input?: number; output?: number; total?: number }
+    usage: { input?: number; output?: number; total?: number },
   ): { input: number; output: number; total: number } => {
     // Simplified cost calculation - you can expand this with actual pricing
     const costs: Record<string, { input: number; output: number }> = {
@@ -348,7 +348,7 @@ export const createLangfuseService = (
     agentType: string,
     input: any,
     conversationId?: number,
-    metadata?: Record<string, any>
+    metadata?: Record<string, any>,
   ) => {
     if (!isEnabled()) {
       return createNoOpTrace();
@@ -412,7 +412,7 @@ export const createLangfuseService = (
     sessionToken: string,
     spanName: string,
     metadata?: Record<string, any>,
-    input?: any
+    input?: any,
   ) => {
     const trace = getCurrentTrace(sessionToken);
     if (!trace) {
@@ -465,7 +465,7 @@ export const createLangfuseService = (
     sessionToken: string,
     spanName: string,
     output?: any,
-    error?: Error | string
+    error?: Error | string,
   ) => {
     const normalizedName = normalizeLabel(spanName);
     const spansForSession = sessionOpenSpans.get(sessionToken);
@@ -477,7 +477,7 @@ export const createLangfuseService = (
     const span = spansForSession.get(normalizedName);
     if (!span) {
       console.warn(
-        `No span named "${normalizedName}" found for session: ${sessionToken}`
+        `No span named "${normalizedName}" found for session: ${sessionToken}`,
       );
       return;
     }
@@ -505,7 +505,7 @@ export const createLangfuseService = (
    */
   const createGenerationForSession = (
     sessionToken: string,
-    options: LangfuseGenerationOptions
+    options: LangfuseGenerationOptions,
   ) => {
     const trace = getCurrentTrace(sessionToken);
     if (!trace) {
@@ -547,7 +547,7 @@ export const createLangfuseService = (
     sessionToken: string,
     toolCallId: string,
     toolName: string,
-    args?: unknown
+    args?: unknown,
   ) => {
     const trace = getCurrentTrace(sessionToken);
     if (!trace || !toolCallId) return null;
@@ -586,7 +586,7 @@ export const createLangfuseService = (
     sessionToken: string,
     toolCallId: string,
     output?: unknown,
-    error?: Error | string
+    error?: Error | string,
   ) => {
     const toolSpans = sessionToolSpans.get(sessionToken);
     if (!toolSpans) return;
@@ -621,7 +621,7 @@ export const createLangfuseService = (
    */
   const updateCurrentGenerationForSession = (
     sessionToken: string,
-    update: Partial<LangfuseGenerationUpdate>
+    update: Partial<LangfuseGenerationUpdate>,
   ) => {
     const generation = getCurrentGeneration(sessionToken);
     if (!generation) {
@@ -648,7 +648,7 @@ export const createLangfuseService = (
    */
   const endCurrentGenerationForSession = (
     sessionToken: string,
-    update: LangfuseGenerationUpdate
+    update: LangfuseGenerationUpdate,
   ) => {
     const generation = getCurrentGeneration(sessionToken);
     if (!generation) {
@@ -688,7 +688,7 @@ export const createLangfuseService = (
   const addEventToSession = (
     sessionToken: string,
     eventName: string,
-    properties?: Record<string, any>
+    properties?: Record<string, any>,
   ) => {
     const trace = getCurrentTrace(sessionToken);
     if (!trace) {
@@ -720,7 +720,7 @@ export const createLangfuseService = (
   const endExecutionTrace = (
     sessionToken: string,
     output?: any,
-    error?: Error | string
+    error?: Error | string,
   ) => {
     const trace = getCurrentTrace(sessionToken);
     if (!trace) {
@@ -785,7 +785,7 @@ export const createLangfuseService = (
       activeSessions: sessionTraces.size,
       totalExecutions: Array.from(traceCounters.values()).reduce(
         (sum, count) => sum + count,
-        0
+        0,
       ),
       sessionTokens: Array.from(sessionTraces.keys()),
     };

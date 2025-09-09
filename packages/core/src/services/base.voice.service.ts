@@ -1,14 +1,14 @@
 import type {
-  VoiceService,
-  VoiceOptions,
-  TranscribeOptions,
-  AudioResult,
+  AudioChunk,
+  AudioFormat,
   AudioInput,
+  AudioResult,
+  TranscribeOptions,
   TranscriptionResult,
   Voice,
-  AudioChunk,
+  VoiceOptions,
   VoiceProgressEvent,
-  AudioFormat,
+  VoiceService,
 } from "../types/voice.types.js";
 import { VoiceError } from "../types/voice.types.js";
 
@@ -31,7 +31,7 @@ export interface VoiceServiceUtils {
   convertAudioFormat: (
     data: Buffer | ArrayBuffer | Uint8Array,
     fromFormat: AudioFormat,
-    toFormat: AudioFormat
+    toFormat: AudioFormat,
   ) => Promise<Buffer | ArrayBuffer>;
   validateAudioInput: (audio: AudioInput) => void;
   validateText: (text: string) => void;
@@ -47,7 +47,7 @@ export interface VoiceServiceUtils {
  * This returns utilities that providers can use when implementing VoiceService
  */
 export const baseVoiceService = (
-  config: BaseVoiceServiceConfig = {}
+  config: BaseVoiceServiceConfig = {},
 ): VoiceServiceUtils => {
   const {
     defaultVoiceId,
@@ -79,17 +79,17 @@ export const baseVoiceService = (
   const convertAudioFormat = async (
     data: Buffer | ArrayBuffer | Uint8Array,
     fromFormat: AudioFormat,
-    toFormat: AudioFormat
+    toFormat: AudioFormat,
   ): Promise<Buffer | ArrayBuffer> => {
     // Basic implementation - providers can override with actual conversion
     if (fromFormat === toFormat) {
       return data instanceof Uint8Array ? data.buffer : data;
     }
-    
+
     // Providers should implement actual format conversion
     throw new VoiceError(
       `Audio format conversion from ${fromFormat} to ${toFormat} not implemented`,
-      "SERVICE_UNAVAILABLE"
+      "SERVICE_UNAVAILABLE",
     );
   };
 
@@ -116,7 +116,7 @@ export const baseVoiceService = (
     if (text.length > 5000) {
       throw new VoiceError(
         "Text exceeds maximum length of 5000 characters",
-        "SYNTHESIS_FAILED"
+        "SYNTHESIS_FAILED",
       );
     }
   };
@@ -129,7 +129,7 @@ export const baseVoiceService = (
       throw new VoiceError(
         `Failed to load audio from path: ${filepath}`,
         "INVALID_AUDIO",
-        error
+        error,
       );
     }
   };
@@ -145,7 +145,7 @@ export const baseVoiceService = (
       throw new VoiceError(
         `Failed to load audio from URL: ${url}`,
         "INVALID_AUDIO",
-        error
+        error,
       );
     }
   };
@@ -162,31 +162,33 @@ export const baseVoiceService = (
       throw new VoiceError(
         "Failed to decode base64 audio data",
         "INVALID_AUDIO",
-        error
+        error,
       );
     }
   };
 
-  const prepareAudioInput = async (audio: AudioInput): Promise<ArrayBuffer | Buffer> => {
+  const prepareAudioInput = async (
+    audio: AudioInput,
+  ): Promise<ArrayBuffer | Buffer> => {
     validateAudioInput(audio);
 
     switch (audio.dataType) {
       case "buffer":
         return audio.data as Buffer | ArrayBuffer | Uint8Array;
-      
+
       case "base64":
         return decodeBase64(audio.data as string);
-      
+
       case "filepath":
         return await loadAudioFromPath(audio.data as string);
-      
+
       case "url":
         return await loadAudioFromUrl(audio.data as string);
-      
+
       default:
         throw new VoiceError(
           `Unsupported audio data type: ${audio.dataType}`,
-          "INVALID_AUDIO"
+          "INVALID_AUDIO",
         );
     }
   };
@@ -194,12 +196,12 @@ export const baseVoiceService = (
   const rateLimit = async (): Promise<void> => {
     const now = Date.now();
     const timeSinceLastRequest = now - lastRequestTime;
-    
+
     if (timeSinceLastRequest < minRequestInterval) {
       const delay = minRequestInterval - timeSinceLastRequest;
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
-    
+
     lastRequestTime = Date.now();
   };
 

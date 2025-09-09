@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { createNamedTool } from "../types/tool.types.js";
 import type {
-  STMService,
   MTMService,
+  STMService,
 } from "../services/memory/memory.types.js";
+import { createNamedTool } from "../types/tool.types.js";
 
 /**
  * Creates memory tools that agents can use to query their own memory
@@ -30,7 +30,7 @@ export const createMemoryTools = (deps: {
         .string()
         .optional()
         .describe(
-          'Optional event type filter (e.g., "conversation.user.message")'
+          'Optional event type filter (e.g., "conversation.user.message")',
         ),
     }),
     execute: async ({ hours, query, eventType }) => {
@@ -98,7 +98,7 @@ export const createMemoryTools = (deps: {
       const allMessages = [...userMessages, ...agentMessages]
         .sort(
           (a, b) =>
-            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
         )
         .slice(-limit);
 
@@ -170,7 +170,7 @@ export const createMemoryTools = (deps: {
         .boolean()
         .default(false)
         .describe(
-          "If true, event must have ALL tags. If false, ANY tag matches."
+          "If true, event must have ALL tags. If false, ANY tag matches.",
         ),
     }),
     execute: async ({ tags, matchAll }) => {
@@ -209,7 +209,7 @@ export const createMemoryTools = (deps: {
       query: z
         .string()
         .describe(
-          'What fact to search for (e.g., "user name", "favorite color", "preferences")'
+          'What fact to search for (e.g., "user name", "favorite color", "preferences")',
         ),
     }),
     execute: async ({ query }) => {

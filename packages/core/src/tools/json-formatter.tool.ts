@@ -1,5 +1,5 @@
-import { z } from "zod";
 import { tool } from "ai";
+import { z } from "zod";
 import type { GridTool } from "./types.js";
 
 /**
@@ -74,7 +74,7 @@ export const jsonFormatterToolWithExecute = tool({
       let position: number | undefined;
       const match = errorMessage.match(/position (\d+)/);
       if (match) {
-        position = parseInt(match[1]);
+        position = Number.parseInt(match[1]);
       }
 
       return {
