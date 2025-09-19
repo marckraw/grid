@@ -10,19 +10,7 @@ import type {
   TranscribeOptions,
 } from "./voice.types.js";
 
-export const AgentTypeSchema = z.enum([
-  "general",
-  "scribe",
-  "rephraser",
-  "figma-analyzer",
-  "test-openrouter",
-  "figma-to-storyblok",
-  "irf-architect",
-  "storyblok-editor",
-  "decision-maker",
-  "orchestrator",
-  "site-builder",
-]);
+export const AgentTypeSchema = z.string();
 
 export const AgentCapabilitySchema = z.enum([
   "general",
