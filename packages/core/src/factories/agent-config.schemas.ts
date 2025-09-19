@@ -82,7 +82,7 @@ export const AgentOrchestrationSchema = z
 export const AgentConfigSchema = z.object({
   // Basic identification
   id: z.string(),
-  type: AgentTypeSchema,
+  type: z.string(), //
   version: z.string().default("1.0.0"),
 
   // Metadata
