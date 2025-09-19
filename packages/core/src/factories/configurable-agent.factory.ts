@@ -88,26 +88,12 @@ export const createConfigurableAgent = ({
     llmService,
   });
 
-  console.log("[createConfigurableAgent] - config");
-  console.log(config);
-
-  console.log("LLM service");
-  console.log(llmService);
-
-  console.log("Base llm service:  ");
-  console.log(base.llmService);
-
-  console.log("Zmieniamy kuuuurwa!");
-
   // Prepare available tools from config
   const availableTools: Record<string, any> = {
     ...(config.tools?.custom || {}),
     ...(config.tools?.mcp || {}),
     // TODO: Adapt builtin and agent tools
   };
-
-  console.log("These are available tools");
-  console.log(availableTools);
 
   let sendUpdate: (data: ProgressMessage) => Promise<void> = async (data) => {
     console.log("sendUpdate", data);
@@ -135,6 +121,11 @@ export const createConfigurableAgent = ({
 
     // Main act method with all enhancements
     act: async (input) => {
+      await sendUpdate({
+        type: "unknown",
+        content: "Agent starting to act.",
+      });
+
       let processedInput = input;
       let attempt = 0;
       const maxRetries = config.behavior?.maxRetries || 3;
@@ -142,12 +133,7 @@ export const createConfigurableAgent = ({
       // === Generic Langfuse tracing for all agents ===
       if (!processedInput.context) processedInput.context = {} as any;
       const ctx = processedInput.context as any;
-      console.log("This is ctx: ");
-      console.log(ctx);
       const sessionToken = ctx.sessionToken as string;
-
-      console.log("And this is our session token: ");
-      console.log(sessionToken);
 
       // Create execution trace only if not already present for this session
       const existingTrace = langfuseService.getCurrentTrace(sessionToken);
@@ -217,10 +203,6 @@ export const createConfigurableAgent = ({
             });
 
             try {
-              console.log("Executing LLM call with tools");
-              console.log(availableTools);
-              console.log(workingMessages);
-
               // Execute LLM call with tools
               const llmResponse = await base.llmService.runLLM({
                 messages: workingMessages,
@@ -274,8 +256,6 @@ export const createConfigurableAgent = ({
             // Otherwise, assume the LLM service handled it (vercel-native mode)
             if (toolExecutor) {
               // Execute tool calls with our tool executor
-              console.log("toolExecutor: tool calls stuff");
-              console.log(response.toolCalls);
               // Execute tools and get responses (ensure args is always present)
               const toolCallsWithArgs = response.toolCalls.map((tc) => ({
                 ...tc,
@@ -287,8 +267,6 @@ export const createConfigurableAgent = ({
                   agentId: config.id,
                 }
               );
-
-              console.log("toolResponses", toolResponses);
 
               // Add assistant message with tool calls to working messages
               workingMessages.push({

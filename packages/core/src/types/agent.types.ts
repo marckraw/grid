@@ -77,10 +77,10 @@ export const AgentCapabilitySchema = z.enum([
 
 export const AgentMetadataSchema = z.object({
   id: z.string(),
-  type: AgentTypeSchema,
+  type: z.string(), //
   name: z.string(),
   description: z.string(),
-  capabilities: z.array(AgentCapabilitySchema),
+  capabilities: z.array(z.string()),
   icon: z.string(),
   version: z.string().optional(),
   author: z.string().optional(),
