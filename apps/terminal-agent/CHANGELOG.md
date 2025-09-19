@@ -1,5 +1,18 @@
 # terminal-agent
 
+## 0.16.0
+
+### Minor Changes
+
+- 10c6df8: make the agent schema config less restrictive
+
+### Patch Changes
+
+- Updated dependencies [10c6df8]
+  - @mrck-labs/grid-core@0.31.0
+  - @mrck-labs/grid-agents@0.10.2
+  - @mrck-labs/grid-workflows@16.0.0
+
 ## 0.15.1
 
 ### Patch Changes
