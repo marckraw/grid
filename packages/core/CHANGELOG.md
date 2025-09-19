@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.31.0
+
+### Minor Changes
+
+- 10c6df8: make the agent schema config less restrictive
+
 ## 0.30.0
 
 ### Minor Changes
