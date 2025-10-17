@@ -14,6 +14,7 @@ import {
 export interface BaseLLMServiceConfig {
   toolExecutionMode?: "vercel-native" | "custom" | "none";
   defaultModel?: string;
+  defaultProvider?: string; // Default provider (openai, anthropic, etc.)
   langfuse?: LangfuseService;
 }
 
@@ -22,20 +23,16 @@ export const baseLLMService = (
 ): LLMService => {
   const {
     toolExecutionMode = "vercel-native", // Default to vercel-native execution
-    defaultModel = "gpt-4.1-mini",
+    // Default model - can be overridden per-call via options.model
+    defaultModel = "gpt-5-mini",
+    defaultProvider = "openai", // Default provider - can be overridden per-call via options.provider
     langfuse = langfuseService,
   } = config;
 
-  console.log("[baseLLMService] - config");
-  console.log(config);
-  console.log("whatever manite");
-
   const runLLM = async (options: LLMServiceOptions): Promise<ChatMessage> => {
-    console.log("[baseLLMService:runLLM] - options");
-    console.log(options);
-
     const {
       model = defaultModel,
+      provider, // AI provider to use (openai, anthropic, etc.)
       messages,
       tools = undefined,
       temperature = 0.1,
@@ -65,8 +62,21 @@ export const baseLLMService = (
       (parentTrace as any)?.traceId ||
       (parentTrace as any)?.trace?.id;
 
+    // Determine which AI SDK provider to use based on provider parameter
+    // Default to openai if not specified
+    const useAnthropic = provider === "anthropic";
+    const aiModel = useAnthropic
+      ? anthropic(model) // Remove prefix if present
+      : openai(model);
+
+    console.log(
+      `🤖 [base.llm.service] Using AI SDK: ${
+        useAnthropic ? "anthropic" : "openai"
+      } for model: ${model}`
+    );
+
     const result = await generateText({
-      model: openai(model),
+      model: aiModel,
       messages: messages as ModelMessage[],
       temperature,
       maxOutputTokens,
@@ -158,8 +168,9 @@ export const baseLLMService = (
   const isAvailable = async (): Promise<boolean> => {
     try {
       // Simple test to check if the API is accessible
-      // Use configured default model
-      const testModel = defaultModel.startsWith("claude")
+      // Use configured default model and provider
+      const useAnthropic = defaultProvider === "anthropic";
+      const testModel = useAnthropic
         ? anthropic(defaultModel)
         : openai(defaultModel);
 

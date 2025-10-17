@@ -162,6 +162,28 @@ export const createConfigurableAgent = ({
         agentType: config.type,
       });
 
+      // Determine model from priority chain (outside try-catch for fallback access)
+      const modelToUse =
+        (processedInput.context as any)?.model || // 1. Runtime override (highest priority)
+        config.behavior?.model || // 2. Behavior schema
+        config.customConfig?.model || // 3. Custom config
+        undefined; // 4. Let LLM service use its default
+
+      const providerToUse =
+        (processedInput.context as any)?.provider ||
+        config.behavior?.provider ||
+        config.customConfig?.provider ||
+        undefined;
+
+      // Log model selection for transparency
+      if (modelToUse) {
+        console.log(
+          `🤖 [${config.id}] Using model: ${modelToUse}${
+            providerToUse ? ` (provider: ${providerToUse})` : ""
+          }`
+        );
+      }
+
       // Execute with retry logic
       while (attempt < maxRetries) {
         attempt++;
@@ -209,10 +231,14 @@ export const createConfigurableAgent = ({
                 tools: availableTools,
                 sendUpdate,
                 context: processedInput.context,
+                model: modelToUse, // Pass model from priority chain
+                provider: providerToUse, // Pass provider to determine which AI SDK to use
                 traceContext: {
                   sessionId: processedInput.context?.sessionId,
                   metadata: {
                     ...processedInput.context?.metadata,
+                    modelUsed: modelToUse,
+                    providerUsed: providerToUse,
                   },
                 },
                 // Add any additional LLM options from config
@@ -395,6 +421,8 @@ export const createConfigurableAgent = ({
                   sendUpdate,
                   messages: fallbackMessages,
                   context: processedInput.context,
+                  model: modelToUse,
+                  provider: providerToUse,
                   traceContext: {
                     sessionId: processedInput.context?.sessionId,
                     metadata: {

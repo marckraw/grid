@@ -38,6 +38,7 @@ export interface LLMServiceOptions {
   messages: ChatMessage[];
   tools?: ToolSet;
   model?: string;
+  provider?: string; // AI provider (e.g., "openai", "anthropic", "openrouter")
   temperature?: number;
   maxOutputTokens?: number;
   responseFormat?: any;
