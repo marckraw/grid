@@ -175,8 +175,6 @@ Be concise but friendly in your responses.`,
     handlers: {
       manager: {
         onToolExecution: async (toolName, args, result) => {
-          console.log("  Args:", args);
-          console.log("  Result:", result);
           if (process.env.DEBUG) {
             console.log("  Args:", args);
             console.log("  Result:", result);

@@ -3,7 +3,12 @@ import type {
   LLMService,
   LLMServiceOptions,
 } from "../types/index.js";
-import { generateText, stepCountIs, type ModelMessage } from "ai";
+import {
+  generateText,
+  generateObject,
+  stepCountIs,
+  type ModelMessage,
+} from "ai";
 import { openai } from "@ai-sdk/openai";
 import { anthropic } from "@ai-sdk/anthropic";
 import {
@@ -38,6 +43,7 @@ export const baseLLMService = (
       temperature = 0.1,
       maxOutputTokens,
       responseFormat,
+      schema,
       traceContext,
       sendUpdate,
     } = options;
@@ -74,6 +80,48 @@ export const baseLLMService = (
         useAnthropic ? "anthropic" : "openai"
       } for model: ${model}`
     );
+    console.log(
+      `🔧 [base.llm.service] Max output tokens: ${
+        maxOutputTokens || "default (varies by model)"
+      }`
+    );
+    console.log(`🌡️ [base.llm.service] Temperature: ${temperature}`);
+
+    // If structured output requested and schema provided, use generateObject to enforce pure JSON
+    if (responseFormat === "structured" && schema) {
+      const { object, response } = await generateObject({
+        model: aiModel,
+        messages: messages as ModelMessage[],
+        schema: schema as any,
+        temperature,
+        maxOutputTokens,
+      });
+
+      // End generation with success if tracing
+      if (generation) {
+        const usage = (response as any)?.usage;
+        const cost = langfuseService.calculateCost(model, {
+          total: usage?.totalTokens,
+          input: usage?.inputTokens,
+          output: usage?.outputTokens,
+        });
+
+        generation.end({
+          output: JSON.stringify(object),
+          usage: {
+            input: usage?.inputTokens,
+            output: usage?.outputTokens,
+            total: usage?.totalTokens,
+          },
+          cost,
+        });
+      }
+
+      return {
+        role: "assistant",
+        content: JSON.stringify(object),
+      };
+    }
 
     const result = await generateText({
       model: aiModel,
