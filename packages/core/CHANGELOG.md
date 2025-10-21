@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.32.0
+
+### Minor Changes
+
+- 46bed7e: define different models on agent creation level, change output format
+
 ## 0.31.0
 
 ### Minor Changes
