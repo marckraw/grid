@@ -38,9 +38,14 @@ export interface LLMServiceOptions {
   messages: ChatMessage[];
   tools?: ToolSet;
   model?: string;
+  provider?: string; // AI provider (e.g., "openai", "anthropic", "openrouter")
   temperature?: number;
   maxOutputTokens?: number;
-  responseFormat?: any;
+  // Desired response format; when set to "structured" and a schema is provided,
+  // the LLM service should use schema-enforced generation (e.g., generateObject).
+  responseFormat?: "text" | "json" | "structured";
+  // Optional output schema for structured responses. Accept Zod schema or plain JSON schema.
+  schema?: z.ZodTypeAny | Record<string, unknown>;
   traceContext?: LLMTraceContext;
   sendUpdate: (data: ProgressMessage) => Promise<void>;
   [key: string]: any; // Allow additional provider-specific options

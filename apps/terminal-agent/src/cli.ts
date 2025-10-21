@@ -18,6 +18,7 @@ import {
   exploreVoiceConversation,
   simpleVercelAISDKTest,
 } from "./commands/index.js";
+import "./commands/vercel-image-tool-direct-test.js";
 import { conversationWithMemory } from "./commands/conversation-with-memory.js";
 
 const menuOptions: MenuOption[] = [

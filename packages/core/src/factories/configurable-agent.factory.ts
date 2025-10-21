@@ -96,7 +96,7 @@ export const createConfigurableAgent = ({
   };
 
   let sendUpdate: (data: ProgressMessage) => Promise<void> = async (data) => {
-    console.log("sendUpdate", data);
+    console.log(data);
   };
   /**
    * Set the global send function for streaming updates
@@ -162,6 +162,32 @@ export const createConfigurableAgent = ({
         agentType: config.type,
       });
 
+      // Determine model from priority chain (outside try-catch for fallback access)
+      const modelToUse =
+        (processedInput.context as any)?.model || // 1. Runtime override (highest priority)
+        config.behavior?.model || // 2. Behavior schema
+        config.customConfig?.model || // 3. Custom config
+        undefined; // 4. Let LLM service use its default
+
+      const providerToUse =
+        (processedInput.context as any)?.provider ||
+        config.behavior?.provider ||
+        config.customConfig?.provider ||
+        undefined;
+
+      // Log model selection for transparency
+      if (modelToUse) {
+        console.log(
+          `🤖 [${config.id}] Using model: ${modelToUse}${
+            providerToUse ? ` (provider: ${providerToUse})` : ""
+          }`
+        );
+      }
+
+      // Track validation results for error correction on retries
+      let lastValidationResult: { isValid: boolean; errors?: string[] } | null =
+        null;
+
       // Execute with retry logic
       while (attempt < maxRetries) {
         attempt++;
@@ -190,6 +216,26 @@ export const createConfigurableAgent = ({
             ...processedInput.messages,
           ];
 
+          // Add error correction message if we have validation errors from previous attempt
+          if (
+            lastValidationResult &&
+            !lastValidationResult.isValid &&
+            config.prompts.errorCorrection
+          ) {
+            console.log(
+              `🔄 [${config.id}] Adding error correction message (attempt ${attempt}/${maxRetries})`
+            );
+            workingMessages.push({
+              role: "user" as const,
+              content: config.prompts.errorCorrection.replace(
+                "{errors}",
+                JSON.stringify(
+                  lastValidationResult.errors || lastValidationResult
+                )
+              ),
+            });
+          }
+
           // Internal loop for handling tool calls
           let response: AgentResponse = { role: "assistant", content: null };
           const maxToolRounds = 3; // Configurable limit for tool rounds
@@ -203,20 +249,46 @@ export const createConfigurableAgent = ({
             });
 
             try {
-              // Execute LLM call with tools
+              // Log if we have custom LLM options
+              if (config.customConfig?.llmOptions) {
+                console.log(
+                  `🔧 [${config.id}] LLM Options:`,
+                  config.customConfig.llmOptions
+                );
+              }
+
+              // Merge static + per-call LLM options
+              const mergedLlmOptions = {
+                ...(config.customConfig?.llmOptions || {}),
+                ...((processedInput.context as any)?.llmOptions || {}),
+              } as any;
+
+              // Execute LLM call with tools and optional structured output
               const llmResponse = await base.llmService.runLLM({
                 messages: workingMessages,
                 tools: availableTools,
                 sendUpdate,
                 context: processedInput.context,
+                model: modelToUse, // Pass model from priority chain
+                provider: providerToUse, // Pass provider to determine which AI SDK to use
                 traceContext: {
                   sessionId: processedInput.context?.sessionId,
                   metadata: {
                     ...processedInput.context?.metadata,
+                    modelUsed: modelToUse,
+                    providerUsed: providerToUse,
                   },
                 },
-                // Add any additional LLM options from config
-                ...(config.customConfig?.llmOptions || {}),
+                // Add merged LLM options (responseFormat, schema, maxOutputTokens, etc.)
+                ...mergedLlmOptions,
+                // Ensure behavior.responseFormat is respected if not overridden at runtime
+                responseFormat:
+                  mergedLlmOptions.responseFormat ??
+                  config.behavior?.responseFormat,
+                // Allow schema to be supplied via runtime or config.customConfig
+                schema:
+                  mergedLlmOptions.schema ??
+                  (config as any)?.customConfig?.schema,
               });
 
               response = llmResponse;
@@ -322,6 +394,9 @@ export const createConfigurableAgent = ({
             }
 
             if (!validationResult.isValid) {
+              // Store validation result for error correction on next attempt
+              lastValidationResult = validationResult;
+
               const validationError = new Error(
                 `Response validation failed: ${validationResult.errors?.join(
                   ", "
@@ -339,7 +414,12 @@ export const createConfigurableAgent = ({
                   if (errorResult.modifiedInput) {
                     processedInput = errorResult.modifiedInput;
                   }
-                  continue; // Retry
+                  console.log(
+                    `🔄 [${config.id}] Retrying (attempt ${
+                      attempt + 1
+                    }/${maxRetries}) with error feedback...`
+                  );
+                  continue; // Retry with error correction message
                 }
               }
               throw validationError;
@@ -395,6 +475,8 @@ export const createConfigurableAgent = ({
                   sendUpdate,
                   messages: fallbackMessages,
                   context: processedInput.context,
+                  model: modelToUse,
+                  provider: providerToUse,
                   traceContext: {
                     sessionId: processedInput.context?.sessionId,
                     metadata: {

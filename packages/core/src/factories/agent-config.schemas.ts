@@ -16,6 +16,8 @@ export const AgentBehaviorSchema = z.object({
   validateResponse: z.boolean().default(false),
   emitEvents: z.array(z.string()).optional(),
   timeout: z.number().optional(), // milliseconds
+  model: z.string().optional(), // AI model to use (e.g., "gpt-4.1", "claude-3-5-sonnet-20241022")
+  provider: z.string().optional(), // LLM provider preference (e.g., "openai", "anthropic", "openrouter")
 });
 
 // Agent prompts configuration
