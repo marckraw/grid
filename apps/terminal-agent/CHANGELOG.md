@@ -1,5 +1,18 @@
 # terminal-agent
 
+## 0.17.0
+
+### Minor Changes
+
+- 46bed7e: define different models on agent creation level, change output format
+
+### Patch Changes
+
+- Updated dependencies [46bed7e]
+  - @mrck-labs/grid-core@0.32.0
+  - @mrck-labs/grid-agents@0.10.3
+  - @mrck-labs/grid-workflows@17.0.0
+
 ## 0.16.0
 
 ### Minor Changes
