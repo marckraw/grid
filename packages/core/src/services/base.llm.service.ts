@@ -11,6 +11,7 @@ import {
 } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { anthropic } from "@ai-sdk/anthropic";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import {
   langfuseService,
   type LangfuseService,
@@ -70,15 +71,27 @@ export const baseLLMService = (
 
     // Determine which AI SDK provider to use based on provider parameter
     // Default to openai if not specified
-    const useAnthropic = provider === "anthropic";
-    const aiModel = useAnthropic
-      ? anthropic(model) // Remove prefix if present
-      : openai(model);
+    let aiModel;
+    let sdkProvider: string;
+
+    if (provider === "anthropic") {
+      aiModel = anthropic(model);
+      sdkProvider = "anthropic";
+    } else if (provider === "openrouter") {
+      // Use official OpenRouter provider
+      const openrouter = createOpenRouter({
+        apiKey: process.env.OPENROUTER_API_KEY,
+      });
+      aiModel = openrouter.chat(model);
+      sdkProvider = "openrouter";
+    } else {
+      // Default to OpenAI
+      aiModel = openai(model);
+      sdkProvider = "openai";
+    }
 
     console.log(
-      `🤖 [base.llm.service] Using AI SDK: ${
-        useAnthropic ? "anthropic" : "openai"
-      } for model: ${model}`
+      `🤖 [base.llm.service] Using AI SDK: ${sdkProvider} for model: ${model}`
     );
     console.log(
       `🔧 [base.llm.service] Max output tokens: ${
@@ -217,10 +230,18 @@ export const baseLLMService = (
     try {
       // Simple test to check if the API is accessible
       // Use configured default model and provider
-      const useAnthropic = defaultProvider === "anthropic";
-      const testModel = useAnthropic
-        ? anthropic(defaultModel)
-        : openai(defaultModel);
+      let testModel;
+
+      if (defaultProvider === "anthropic") {
+        testModel = anthropic(defaultModel);
+      } else if (defaultProvider === "openrouter") {
+        const openrouter = createOpenRouter({
+          apiKey: process.env.OPENROUTER_API_KEY,
+        });
+        testModel = openrouter.chat(defaultModel);
+      } else {
+        testModel = openai(defaultModel);
+      }
 
       await generateText({
         model: testModel,
