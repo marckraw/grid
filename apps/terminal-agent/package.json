@@ -1,6 +1,6 @@
 {
     "name": "terminal-agent",
-    "version": "0.17.0",
+    "version": "0.17.1",
     "description": "Terminal app showcasing Grid library features",
     "type": "module",
     "private": true,

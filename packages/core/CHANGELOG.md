@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.33.0
+
+### Minor Changes
+
+- 7abea0d: add proper support for openrouter in main runLlm method"
+
 ## 0.32.0
 
 ### Minor Changes
