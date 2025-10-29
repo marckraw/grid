@@ -211,8 +211,24 @@ export const createConfigurableAgent = ({
           }
 
           // Prepare initial messages with system prompt
+          // Add cache control for Anthropic if systemCache is enabled in config
+          const shouldCacheSystemPrompt =
+            config.prompts.systemCache && providerToUse === "anthropic";
+
           let workingMessages = [
-            { role: "system" as const, content: config.prompts.system },
+            {
+              role: "system" as const,
+              content: config.prompts.system,
+              ...(shouldCacheSystemPrompt
+                ? {
+                    providerOptions: {
+                      anthropic: {
+                        cacheControl: { type: "ephemeral" as const },
+                      },
+                    },
+                  }
+                : {}),
+            },
             ...processedInput.messages,
           ];
 
@@ -249,14 +265,6 @@ export const createConfigurableAgent = ({
             });
 
             try {
-              // Log if we have custom LLM options
-              if (config.customConfig?.llmOptions) {
-                console.log(
-                  `🔧 [${config.id}] LLM Options:`,
-                  config.customConfig.llmOptions
-                );
-              }
-
               // Merge static + per-call LLM options
               const mergedLlmOptions = {
                 ...(config.customConfig?.llmOptions || {}),

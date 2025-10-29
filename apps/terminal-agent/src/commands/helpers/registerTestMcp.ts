@@ -1,10 +1,8 @@
 import * as p from "@clack/prompts";
 import { createSpinner } from "../../utils/spinners.js";
-import {
-  experimental_createMCPClient as createMCPClient,
-  type ToolSet,
-} from "ai";
-import { Experimental_StdioMCPTransport } from "ai/mcp-stdio";
+import { experimental_createMCPClient as createMCPClient } from "@ai-sdk/mcp";
+import { Experimental_StdioMCPTransport } from "@ai-sdk/mcp/mcp-stdio";
+import type { ToolSet } from "ai";
 
 export type MCPClientType = "figma" | "linear";
 

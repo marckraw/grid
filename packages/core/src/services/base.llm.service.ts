@@ -110,6 +110,37 @@ export const baseLLMService = (
         maxOutputTokens,
       });
 
+      // Log cache statistics for Anthropic
+      // Cache stats are in response.body.usage for Anthropic
+      const cacheStats =
+        sdkProvider === "anthropic" ? (response as any)?.body?.usage : null;
+
+      if (cacheStats && sdkProvider === "anthropic") {
+        console.log("💰 [Cache] Input tokens:", cacheStats.input_tokens || 0);
+        console.log(
+          "📦 [Cache] Cache creation:",
+          cacheStats.cache_creation_input_tokens || 0
+        );
+        console.log(
+          "✨ [Cache] Cache read:",
+          cacheStats.cache_read_input_tokens || 0
+        );
+
+        if (cacheStats.cache_read_input_tokens > 0) {
+          const savings = Math.round(
+            (cacheStats.cache_read_input_tokens / cacheStats.input_tokens) * 100
+          );
+          console.log(
+            `🎉 [Cache] CACHE HIT! ${cacheStats.cache_read_input_tokens} tokens from cache (${savings}% of input)`
+          );
+        }
+        if (cacheStats.cache_creation_input_tokens > 0) {
+          console.log(
+            `📝 [Cache] Created cache for ${cacheStats.cache_creation_input_tokens} tokens (5 min TTL)`
+          );
+        }
+      }
+
       // End generation with success if tracing
       if (generation) {
         const usage = (response as any)?.usage;
@@ -133,6 +164,18 @@ export const baseLLMService = (
       return {
         role: "assistant",
         content: JSON.stringify(object),
+        metadata: {
+          ...(cacheStats
+            ? {
+                anthropicCache: {
+                  inputTokens: cacheStats.input_tokens || 0,
+                  cacheCreationInputTokens:
+                    cacheStats.cache_creation_input_tokens || 0,
+                  cacheReadInputTokens: cacheStats.cache_read_input_tokens || 0,
+                },
+              }
+            : {}),
+        },
       };
     }
 
@@ -200,6 +243,41 @@ export const baseLLMService = (
       },
     });
 
+    // Log cache statistics for Anthropic
+    // Cache stats are in result.response.body.usage for Anthropic
+    const cacheStatsText =
+      sdkProvider === "anthropic"
+        ? (result as any)?.response?.body?.usage
+        : null;
+
+    if (cacheStatsText && sdkProvider === "anthropic") {
+      console.log("💰 [Cache] Input tokens:", cacheStatsText.input_tokens || 0);
+      console.log(
+        "📦 [Cache] Cache creation:",
+        cacheStatsText.cache_creation_input_tokens || 0
+      );
+      console.log(
+        "✨ [Cache] Cache read:",
+        cacheStatsText.cache_read_input_tokens || 0
+      );
+
+      if (cacheStatsText.cache_read_input_tokens > 0) {
+        const savings = Math.round(
+          (cacheStatsText.cache_read_input_tokens /
+            cacheStatsText.input_tokens) *
+            100
+        );
+        console.log(
+          `🎉 [Cache] CACHE HIT! ${cacheStatsText.cache_read_input_tokens} tokens from cache (${savings}% of input)`
+        );
+      }
+      if (cacheStatsText.cache_creation_input_tokens > 0) {
+        console.log(
+          `📝 [Cache] Created cache for ${cacheStatsText.cache_creation_input_tokens} tokens (5 min TTL)`
+        );
+      }
+    }
+
     // End generation with success if tracing
     if (generation) {
       const usage = result.usage;
@@ -223,6 +301,19 @@ export const baseLLMService = (
     return {
       role: "assistant",
       content: result.text,
+      metadata: {
+        ...(cacheStatsText
+          ? {
+              anthropicCache: {
+                inputTokens: cacheStatsText.input_tokens || 0,
+                cacheCreationInputTokens:
+                  cacheStatsText.cache_creation_input_tokens || 0,
+                cacheReadInputTokens:
+                  cacheStatsText.cache_read_input_tokens || 0,
+              },
+            }
+          : {}),
+      },
     };
   };
 

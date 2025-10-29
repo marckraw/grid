@@ -32,9 +32,6 @@ export const createImageGenerationService = (
 
   const { env } = mergedConfig;
 
-  console.log("These are current configs to use: ");
-  console.log(env);
-
   // Public methods
   const generateImage = async (
     options: LeoardoImageGenerationOptions

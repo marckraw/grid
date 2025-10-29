@@ -40,8 +40,6 @@ export const createImageToolWithExecute = tool({
     const timestamp = new Date().toISOString();
     const imageTags = tags || ["ai-generated", whichModelToUse, "demo"];
 
-    console.log("[createImageTool] execute");
-
     if (whichModelToUse === "openai") {
       try {
         const openaiImageService = createOpenAIImageService({});
@@ -72,9 +70,6 @@ export const createImageToolWithExecute = tool({
           extension: response.extension,
           success: true,
         };
-
-        console.log("return this shit:");
-        console.log(final);
 
         return final;
       } catch (error) {

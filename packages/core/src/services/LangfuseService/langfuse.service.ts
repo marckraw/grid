@@ -447,10 +447,6 @@ export const createLangfuseService = (
       }
       spansForSession.set(normalizedName, span);
 
-      console.debug(`🔍 Created span: ${normalizedName}`, {
-        sessionToken,
-      });
-
       return span;
     } catch (error) {
       console.error("Failed to create span:", error);
@@ -523,11 +519,6 @@ export const createLangfuseService = (
           timestamp: new Date().toISOString(),
           ...options.metadata,
         },
-      });
-
-      console.debug(`🔍 Created generation: ${options.name}`, {
-        sessionToken,
-        model: options.model,
       });
 
       // Track current generation for this session
@@ -705,10 +696,6 @@ export const createLangfuseService = (
           ...properties,
         },
       });
-
-      console.debug(`🔍 Added event: ${normalizeLabel(eventName)}`, {
-        sessionToken,
-      });
     } catch (error) {
       console.error("Failed to add event:", error);
     }
@@ -743,10 +730,6 @@ export const createLangfuseService = (
       }
 
       trace.update(endParams);
-
-      console.info(`🔍 Ended execution trace for session: ${sessionToken}`, {
-        hasError: !!error,
-      });
     } catch (err) {
       console.error("Failed to end execution trace:", err);
     } finally {

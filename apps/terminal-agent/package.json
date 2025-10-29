@@ -17,6 +17,7 @@
     },
     "dependencies": {
         "@ai-sdk/anthropic": "^2.0.1",
+        "@ai-sdk/mcp": "^0.0.4",
         "@ai-sdk/openai": "^2.0.7",
         "@clack/prompts": "^0.11.0",
         "@mrck-labs/grid-agents": "workspace:*",
