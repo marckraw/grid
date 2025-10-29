@@ -110,6 +110,20 @@ export const baseLLMService = (
         maxOutputTokens,
       });
 
+      // Log cache statistics for Anthropic
+      const cacheStats = (response as any)?.providerMetadata?.anthropic;
+      if (cacheStats && sdkProvider === "anthropic") {
+        console.log("💰 [Cache] Input tokens:", cacheStats.inputTokens || 0);
+        console.log(
+          "📦 [Cache] Cache creation:",
+          cacheStats.cacheCreationInputTokens || 0
+        );
+        console.log(
+          "✨ [Cache] Cache read:",
+          cacheStats.cacheReadInputTokens || 0
+        );
+      }
+
       // End generation with success if tracing
       if (generation) {
         const usage = (response as any)?.usage;
@@ -199,6 +213,20 @@ export const baseLLMService = (
         },
       },
     });
+
+    // Log cache statistics for Anthropic
+    const cacheStatsText = (result as any)?.providerMetadata?.anthropic;
+    if (cacheStatsText && sdkProvider === "anthropic") {
+      console.log("💰 [Cache] Input tokens:", cacheStatsText.inputTokens || 0);
+      console.log(
+        "📦 [Cache] Cache creation:",
+        cacheStatsText.cacheCreationInputTokens || 0
+      );
+      console.log(
+        "✨ [Cache] Cache read:",
+        cacheStatsText.cacheReadInputTokens || 0
+      );
+    }
 
     // End generation with success if tracing
     if (generation) {

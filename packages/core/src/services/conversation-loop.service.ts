@@ -37,7 +37,7 @@ export interface GroupedHandlers {
 /**
  * History modes for conversation loop
  */
-export type HistoryMode = 'full' | 'none' | 'last-n';
+export type HistoryMode = "full" | "none" | "last-n";
 
 /**
  * Options for creating a conversation loop
@@ -70,17 +70,17 @@ export interface SendMessageResult {
  * including agent interactions, tool execution, and state management.
  */
 export const createConversationLoop = (options: ConversationLoopOptions) => {
-  const { 
-    agent, 
-    onMessage, 
-    onError, 
-    onComplete, 
-    onProgress, 
+  const {
+    agent,
+    onMessage,
+    onError,
+    onComplete,
+    onProgress,
     handlers,
-    historyMode = 'full',
-    historyLimit = 5
+    historyMode = "full",
+    historyLimit = 5,
   } = options;
-  
+
   // Mutable history mode state
   let currentHistoryMode = historyMode;
   let currentHistoryLimit = historyLimit;
@@ -149,8 +149,6 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
   const sendMessage = async (
     userMessage: string
   ): Promise<SendMessageResult> => {
-    console.log("[ConversationLoop] sendMessage", userMessage);
-
     // Initialize if needed
     await initializeConversation();
 
@@ -188,24 +186,26 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
       // Get messages based on history mode
       const getMessagesForAgent = (): ChatMessage[] => {
         const allMessages = manager.getMessages();
-        
+
         switch (currentHistoryMode) {
-          case 'none':
+          case "none":
             // Only current user message - agent must use memory tools!
-            return [{ role: 'user' as const, content: userMessage }];
-          
-          case 'last-n':
+            return [{ role: "user" as const, content: userMessage }];
+
+          case "last-n":
             // Last N messages (not including the current one that was just added)
             const lastN = allMessages.slice(-(currentHistoryLimit + 1));
-            return lastN.length > 0 ? lastN : [{ role: 'user' as const, content: userMessage }];
-          
-          case 'full':
+            return lastN.length > 0
+              ? lastN
+              : [{ role: "user" as const, content: userMessage }];
+
+          case "full":
           default:
             // Current behavior - all messages
             return allMessages;
         }
       };
-      
+
       // Get agent response with configured message history
       const response = await agent.act({
         messages: getMessagesForAgent(),
@@ -218,8 +218,6 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
           },
         },
       });
-
-      console.log("[ConversationLoop] response", response);
 
       // Send LLM response progress
       await sendProgress("llm_response", "Received response from agent", {
@@ -400,7 +398,7 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
       });
     }
   };
-  
+
   /**
    * Set the history mode for the conversation
    */
@@ -410,13 +408,13 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
       currentHistoryLimit = limit;
     }
   };
-  
+
   /**
    * Get the current history mode configuration
    */
   const getHistoryMode = () => ({
     mode: currentHistoryMode,
-    limit: currentHistoryLimit
+    limit: currentHistoryLimit,
   });
 
   return {
@@ -449,7 +447,7 @@ export const createConversationLoop = (options: ConversationLoopOptions) => {
     },
     isActive: () => isActive,
     getTurnCount: () => turnCount,
-    
+
     // History mode management
     setHistoryMode,
     getHistoryMode,
