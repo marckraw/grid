@@ -211,21 +211,8 @@ export const createConfigurableAgent = ({
           }
 
           // Prepare initial messages with system prompt
-          // Add cache control for Anthropic to cache static system documentation
           let workingMessages = [
-            {
-              role: "system" as const,
-              content: config.prompts.system,
-              ...(providerToUse === "anthropic"
-                ? {
-                    providerOptions: {
-                      anthropic: {
-                        cacheControl: { type: "ephemeral" as const },
-                      },
-                    },
-                  }
-                : {}),
-            },
+            { role: "system" as const, content: config.prompts.system },
             ...processedInput.messages,
           ];
 
