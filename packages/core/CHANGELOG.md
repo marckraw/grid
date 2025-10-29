@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.34.0
+
+### Minor Changes
+
+- 7ef380d: Add support for anthropic caching strategy
+
 ## 0.33.0
 
 ### Minor Changes
