@@ -23,6 +23,7 @@ export const AgentBehaviorSchema = z.object({
 // Agent prompts configuration
 export const AgentPromptsSchema = z.object({
   system: z.string(),
+  systemCache: z.boolean().optional(), // Enable Anthropic prompt caching for system message
   errorCorrection: z.string().optional(),
   fallback: z.string().optional(),
 });

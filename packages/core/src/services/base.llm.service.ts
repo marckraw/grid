@@ -147,6 +147,18 @@ export const baseLLMService = (
       return {
         role: "assistant",
         content: JSON.stringify(object),
+        metadata: {
+          ...(cacheStats
+            ? {
+                anthropicCache: {
+                  inputTokens: cacheStats.inputTokens || 0,
+                  cacheCreationInputTokens:
+                    cacheStats.cacheCreationInputTokens || 0,
+                  cacheReadInputTokens: cacheStats.cacheReadInputTokens || 0,
+                },
+              }
+            : {}),
+        },
       };
     }
 
@@ -251,6 +263,18 @@ export const baseLLMService = (
     return {
       role: "assistant",
       content: result.text,
+      metadata: {
+        ...(cacheStatsText
+          ? {
+              anthropicCache: {
+                inputTokens: cacheStatsText.inputTokens || 0,
+                cacheCreationInputTokens:
+                  cacheStatsText.cacheCreationInputTokens || 0,
+                cacheReadInputTokens: cacheStatsText.cacheReadInputTokens || 0,
+              },
+            }
+          : {}),
+      },
     };
   };
 
