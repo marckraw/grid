@@ -111,17 +111,34 @@ export const baseLLMService = (
       });
 
       // Log cache statistics for Anthropic
-      const cacheStats = (response as any)?.providerMetadata?.anthropic;
+      // Cache stats are in response.body.usage for Anthropic
+      const cacheStats =
+        sdkProvider === "anthropic" ? (response as any)?.body?.usage : null;
+
       if (cacheStats && sdkProvider === "anthropic") {
-        console.log("💰 [Cache] Input tokens:", cacheStats.inputTokens || 0);
+        console.log("💰 [Cache] Input tokens:", cacheStats.input_tokens || 0);
         console.log(
           "📦 [Cache] Cache creation:",
-          cacheStats.cacheCreationInputTokens || 0
+          cacheStats.cache_creation_input_tokens || 0
         );
         console.log(
           "✨ [Cache] Cache read:",
-          cacheStats.cacheReadInputTokens || 0
+          cacheStats.cache_read_input_tokens || 0
         );
+
+        if (cacheStats.cache_read_input_tokens > 0) {
+          const savings = Math.round(
+            (cacheStats.cache_read_input_tokens / cacheStats.input_tokens) * 100
+          );
+          console.log(
+            `🎉 [Cache] CACHE HIT! ${cacheStats.cache_read_input_tokens} tokens from cache (${savings}% of input)`
+          );
+        }
+        if (cacheStats.cache_creation_input_tokens > 0) {
+          console.log(
+            `📝 [Cache] Created cache for ${cacheStats.cache_creation_input_tokens} tokens (5 min TTL)`
+          );
+        }
       }
 
       // End generation with success if tracing
@@ -151,10 +168,10 @@ export const baseLLMService = (
           ...(cacheStats
             ? {
                 anthropicCache: {
-                  inputTokens: cacheStats.inputTokens || 0,
+                  inputTokens: cacheStats.input_tokens || 0,
                   cacheCreationInputTokens:
-                    cacheStats.cacheCreationInputTokens || 0,
-                  cacheReadInputTokens: cacheStats.cacheReadInputTokens || 0,
+                    cacheStats.cache_creation_input_tokens || 0,
+                  cacheReadInputTokens: cacheStats.cache_read_input_tokens || 0,
                 },
               }
             : {}),
@@ -227,17 +244,38 @@ export const baseLLMService = (
     });
 
     // Log cache statistics for Anthropic
-    const cacheStatsText = (result as any)?.providerMetadata?.anthropic;
+    // Cache stats are in result.response.body.usage for Anthropic
+    const cacheStatsText =
+      sdkProvider === "anthropic"
+        ? (result as any)?.response?.body?.usage
+        : null;
+
     if (cacheStatsText && sdkProvider === "anthropic") {
-      console.log("💰 [Cache] Input tokens:", cacheStatsText.inputTokens || 0);
+      console.log("💰 [Cache] Input tokens:", cacheStatsText.input_tokens || 0);
       console.log(
         "📦 [Cache] Cache creation:",
-        cacheStatsText.cacheCreationInputTokens || 0
+        cacheStatsText.cache_creation_input_tokens || 0
       );
       console.log(
         "✨ [Cache] Cache read:",
-        cacheStatsText.cacheReadInputTokens || 0
+        cacheStatsText.cache_read_input_tokens || 0
       );
+
+      if (cacheStatsText.cache_read_input_tokens > 0) {
+        const savings = Math.round(
+          (cacheStatsText.cache_read_input_tokens /
+            cacheStatsText.input_tokens) *
+            100
+        );
+        console.log(
+          `🎉 [Cache] CACHE HIT! ${cacheStatsText.cache_read_input_tokens} tokens from cache (${savings}% of input)`
+        );
+      }
+      if (cacheStatsText.cache_creation_input_tokens > 0) {
+        console.log(
+          `📝 [Cache] Created cache for ${cacheStatsText.cache_creation_input_tokens} tokens (5 min TTL)`
+        );
+      }
     }
 
     // End generation with success if tracing
@@ -267,10 +305,11 @@ export const baseLLMService = (
         ...(cacheStatsText
           ? {
               anthropicCache: {
-                inputTokens: cacheStatsText.inputTokens || 0,
+                inputTokens: cacheStatsText.input_tokens || 0,
                 cacheCreationInputTokens:
-                  cacheStatsText.cacheCreationInputTokens || 0,
-                cacheReadInputTokens: cacheStatsText.cacheReadInputTokens || 0,
+                  cacheStatsText.cache_creation_input_tokens || 0,
+                cacheReadInputTokens:
+                  cacheStatsText.cache_read_input_tokens || 0,
               },
             }
           : {}),
