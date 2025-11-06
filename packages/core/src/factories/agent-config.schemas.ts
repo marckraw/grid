@@ -28,11 +28,21 @@ export const AgentPromptsSchema = z.object({
   fallback: z.string().optional(),
 });
 
+// MCP Server configuration schema
+export const MCPServerConfigSchema = z.object({
+  name: z.string(),
+  url: z.string(),
+  type: z.enum(["http", "sse"]).default("http"),
+  authToken: z.string().optional(),
+  headers: z.record(z.string()).optional(),
+});
+
 // Tool configuration
 export const AgentToolsSchema = z.object({
   builtin: z.record(z.any()).default({}), // Names of built-in tools
   custom: z.record(z.any()).default({}), // Custom tool instances
-  mcp: z.record(z.any()).default({}), // MCP server tool instances
+  mcp: z.record(z.any()).default({}), // MCP server tool instances (populated at runtime)
+  mcpServers: z.array(MCPServerConfigSchema).optional().default([]), // MCP server configurations
   agents: z.array(AgentTypeSchema).optional(), // Other agents as tools
 });
 

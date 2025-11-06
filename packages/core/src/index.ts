@@ -76,6 +76,13 @@ export {
   type LangfuseService,
 } from "./services/LangfuseService/langfuse.service.js";
 
+// Export MCP client service
+export {
+  createMCPClientService,
+  type MCPServerConfig,
+  type MCPClientService,
+} from "./services/mcp-client.service.js";
+
 // Prompts and prompts helpers
 export { currentDatePrompt } from "./prompts/current-date.js";
 

@@ -18,6 +18,7 @@ export const ChatMessageSchema = z.object({
   tool_call_id: z.string().optional(), // For tool responses
   tool_name: z.string().optional(), // Tool name for tool responses
   metadata: z.record(z.string(), z.any()).optional(), // Optional metadata
+  // Keep providerOptions for internal tracking (backward compatibility)
   providerOptions: z
     .object({
       anthropic: z
@@ -26,7 +27,17 @@ export const ChatMessageSchema = z.object({
         })
         .optional(),
     })
-    .optional(), // Anthropic-specific options like cache control
+    .optional(),
+  // Add experimental_providerMetadata for AI SDK v5 compatibility
+  experimental_providerMetadata: z
+    .object({
+      anthropic: z
+        .object({
+          cacheControl: z.object({ type: z.literal("ephemeral") }).optional(),
+        })
+        .optional(),
+    })
+    .optional(),
 });
 
 // Inferred types

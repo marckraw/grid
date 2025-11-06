@@ -73,14 +73,15 @@ export interface CreateConfigurableAgentOptions {
 
 /**
  * Creates an agent based on configuration with optional custom handlers
+ * Now async to support MCP client initialization
  */
-export const createConfigurableAgent = ({
+export const createConfigurableAgent = async ({
   config,
   customHandlers = {},
   llmService,
   toolExecutor,
   voiceService,
-}: CreateConfigurableAgentOptions): Agent => {
+}: CreateConfigurableAgentOptions): Promise<Agent> => {
   // Create base agent with optional LLM service
   const base = createBaseAgent({
     id: config.id,
@@ -88,10 +89,34 @@ export const createConfigurableAgent = ({
     llmService,
   });
 
+  // Initialize MCP clients if configured
+  let mcpClientService: any = null;
+  let mcpTools: Record<string, any> = {};
+
+  if (config.tools?.mcpServers && config.tools.mcpServers.length > 0) {
+    try {
+      const { createMCPClientService } = await import(
+        "../services/mcp-client.service.js"
+      );
+      console.log(
+        `[${config.id}] Initializing ${config.tools.mcpServers.length} MCP server(s)...`
+      );
+      mcpClientService = await createMCPClientService(config.tools.mcpServers);
+      mcpTools = await mcpClientService.getAllTools();
+      console.log(
+        `[${config.id}] ✅ Loaded ${Object.keys(mcpTools).length} MCP tool(s)`
+      );
+    } catch (error) {
+      console.error(`[${config.id}] ❌ Failed to initialize MCP clients:`, error);
+      // Continue without MCP tools - don't block agent creation
+    }
+  }
+
   // Prepare available tools from config
   const availableTools: Record<string, any> = {
     ...(config.tools?.custom || {}),
-    ...(config.tools?.mcp || {}),
+    ...(config.tools?.mcp || {}), // Pre-configured MCP tools (if any)
+    ...mcpTools, // Tools from MCP servers
     // TODO: Adapt builtin and agent tools
   };
 
@@ -221,7 +246,7 @@ export const createConfigurableAgent = ({
               content: config.prompts.system,
               ...(shouldCacheSystemPrompt
                 ? {
-                    providerOptions: {
+                    experimental_providerMetadata: {
                       anthropic: {
                         cacheControl: { type: "ephemeral" as const },
                       },
@@ -229,8 +254,38 @@ export const createConfigurableAgent = ({
                   }
                 : {}),
             },
-            ...processedInput.messages,
+            // Transform all input messages to preserve cache control
+            ...processedInput.messages.map((msg: any) => {
+              // If message has providerOptions.anthropic.cacheControl, transform to AI SDK v5 format
+              if (msg.providerOptions?.anthropic?.cacheControl) {
+                return {
+                  ...msg,
+                  experimental_providerMetadata: {
+                    anthropic: {
+                      cacheControl: msg.providerOptions.anthropic.cacheControl,
+                    },
+                  },
+                };
+              }
+              return msg;
+            }),
           ];
+
+          // Debug: Log cache control settings for Anthropic
+          if (providerToUse === "anthropic") {
+            console.log(
+              `🔧 [${config.id}] System cache: ${
+                shouldCacheSystemPrompt ? "ENABLED" : "DISABLED"
+              }`
+            );
+            const cachedMessages = workingMessages.filter(
+              (m: any) =>
+                m.experimental_providerMetadata?.anthropic?.cacheControl
+            );
+            console.log(
+              `📦 [${config.id}] Messages with cache control: ${cachedMessages.length}`
+            );
+          }
 
           // Add error correction message if we have validation errors from previous attempt
           if (
@@ -456,6 +511,15 @@ export const createConfigurableAgent = ({
             });
           } catch {}
 
+          // Close MCP clients on successful completion
+          if (mcpClientService) {
+            try {
+              await mcpClientService.closeAll();
+            } catch (closeError) {
+              console.error(`[${config.id}] Error closing MCP clients:`, closeError);
+            }
+          }
+
           return response;
         } catch (error) {
           // Error tracking can be added to Langfuse if needed
@@ -535,6 +599,15 @@ export const createConfigurableAgent = ({
                 error as Error
               );
             } catch {}
+
+            // Close MCP clients on error
+            if (mcpClientService) {
+              try {
+                await mcpClientService.closeAll();
+              } catch (closeError) {
+                console.error(`[${config.id}] Error closing MCP clients on error:`, closeError);
+              }
+            }
 
             throw error;
           }

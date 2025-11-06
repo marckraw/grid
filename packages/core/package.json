@@ -44,6 +44,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.9",
+    "@ai-sdk/mcp": "^0.0.7",
     "@ai-sdk/openai": "^2.0.22",
     "@elevenlabs/elevenlabs-js": "^2.7.0",
     "@mendable/firecrawl-js": "^1.29.1",
