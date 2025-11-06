@@ -16,6 +16,7 @@ import type {
   VoiceOptions,
   TranscribeOptions,
 } from "../types/voice.types.js";
+import { createMCPClientService } from "../services/mcp-client.service.js";
 
 interface BaseHandlerOptions {
   sendUpdate: (data: ProgressMessage) => Promise<void>;
@@ -95,9 +96,6 @@ export const createConfigurableAgent = async ({
 
   if (config.tools?.mcpServers && config.tools.mcpServers.length > 0) {
     try {
-      const { createMCPClientService } = await import(
-        "../services/mcp-client.service.js"
-      );
       console.log(
         `[${config.id}] Initializing ${config.tools.mcpServers.length} MCP server(s)...`
       );
