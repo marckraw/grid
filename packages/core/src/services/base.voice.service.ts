@@ -85,7 +85,7 @@ export const baseVoiceService = (
     if (fromFormat === toFormat) {
       return data instanceof Uint8Array ? data.buffer : data;
     }
-    
+
     // Providers should implement actual format conversion
     throw new VoiceError(
       `Audio format conversion from ${fromFormat} to ${toFormat} not implemented`,
@@ -167,22 +167,28 @@ export const baseVoiceService = (
     }
   };
 
-  const prepareAudioInput = async (audio: AudioInput): Promise<ArrayBuffer | Buffer> => {
+  const prepareAudioInput = async (
+    audio: AudioInput
+  ): Promise<ArrayBuffer | Buffer> => {
     validateAudioInput(audio);
 
     switch (audio.dataType) {
       case "buffer":
-        return audio.data as Buffer | ArrayBuffer | Uint8Array;
-      
+        // Handle Uint8Array by converting to ArrayBuffer
+        if (audio.data instanceof Uint8Array) {
+          return audio.data.buffer as ArrayBuffer;
+        }
+        return audio.data as Buffer | ArrayBuffer;
+
       case "base64":
         return decodeBase64(audio.data as string);
-      
+
       case "filepath":
         return await loadAudioFromPath(audio.data as string);
-      
+
       case "url":
         return await loadAudioFromUrl(audio.data as string);
-      
+
       default:
         throw new VoiceError(
           `Unsupported audio data type: ${audio.dataType}`,
@@ -194,12 +200,12 @@ export const baseVoiceService = (
   const rateLimit = async (): Promise<void> => {
     const now = Date.now();
     const timeSinceLastRequest = now - lastRequestTime;
-    
+
     if (timeSinceLastRequest < minRequestInterval) {
       const delay = minRequestInterval - timeSinceLastRequest;
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
-    
+
     lastRequestTime = Date.now();
   };
 
