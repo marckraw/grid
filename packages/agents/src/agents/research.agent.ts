@@ -16,7 +16,7 @@ import {
  * - Data formatting and conversion
  * - JSON handling and validation
  */
-export const researchAgent: Agent = createConfigurableAgent({
+export const researchAgent: Promise<Agent> = createConfigurableAgent({
   llmService: baseLLMService({
     toolExecutionMode: "custom",
   }),
@@ -59,14 +59,15 @@ You excel at:
       version: "1.0.0",
     },
     tools: {
-      builtin: [],
-      custom: [
+      builtin: {},
+      custom: {
         readUrlTool,
         stringUtilsTool,
         jsonFormatterTool,
         dataConverterTool,
-      ],
-      mcp: [],
+      },
+      mcp: {},
+      mcpServers: [],
       agents: [],
     },
     behavior: {
@@ -87,7 +88,7 @@ export function createCustomResearchAgent(options?: {
   temperature?: number;
   additionalTools?: any[];
   systemPromptAddition?: string;
-}): Agent {
+}): Promise<Agent> {
   const baseSystemPrompt = `You are a specialized research assistant with expertise in gathering, analyzing, and organizing information.
 
 Your core capabilities:

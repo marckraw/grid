@@ -20,7 +20,7 @@ import {
  * - Data format conversions
  * - JSON manipulation
  */
-export const mathDataAgent: Agent = createConfigurableAgent({
+export const mathDataAgent: Promise<Agent> = createConfigurableAgent({
   llmService: baseLLMService({
     toolExecutionMode: "custom",
   }),
@@ -66,16 +66,17 @@ You excel at:
       version: "1.0.0",
     },
     tools: {
-      builtin: [],
-      custom: [
+      builtin: {},
+      custom: {
         calculatorTool,
         randomNumberTool,
         hashTool,
         systemInfoTool,
         dataConverterTool,
         jsonFormatterTool,
-      ],
-      mcp: [],
+      },
+      mcp: {},
+      mcpServers: [],
       agents: [],
     },
     behavior: {
