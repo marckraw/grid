@@ -127,7 +127,7 @@ export async function exploreAgentConversation(): Promise<void> {
   }
 
   // Create configurable agent
-  const agent = createConfigurableAgent({
+  const agent = await createConfigurableAgent({
     llmService: baseLLMService({
       toolExecutionMode: "vercel-native",
       langfuse: langfuseService,
@@ -156,6 +156,7 @@ Be concise but friendly in your responses.`,
         custom: { ...tools, ...linearMcpTools },
         // mcp: [...transformerMcpTools, ...transformedLinearMcpTools],
         mcp: {},
+        mcpServers: [],
         agents: [],
       },
       behavior: {

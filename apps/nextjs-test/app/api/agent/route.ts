@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const agent = createConfigurableAgent({
+    const agent = await createConfigurableAgent({
       config: {
         id: "autonomous-agent",
         type: "general",
@@ -30,9 +30,10 @@ export async function POST(request: NextRequest) {
           version: "1.0.0",
         },
         tools: {
-          builtin: [],
-          custom: [],
-          mcp: [],
+          builtin: {},
+          custom: {},
+          mcp: {},
+          mcpServers: [],
           agents: [],
         },
         behavior: {

@@ -84,7 +84,7 @@ You excel at:
 /**
  * Create a custom research agent with additional configuration
  */
-export function createCustomResearchAgent(options?: {
+export async function createCustomResearchAgent(options?: {
   temperature?: number;
   additionalTools?: any[];
   systemPromptAddition?: string;

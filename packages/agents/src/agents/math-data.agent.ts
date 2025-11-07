@@ -93,12 +93,12 @@ You excel at:
 /**
  * Create a custom math & data agent with additional configuration
  */
-export function createCustomMathDataAgent(options?: {
+export async function createCustomMathDataAgent(options?: {
   temperature?: number;
   additionalTools?: any[];
   systemPromptAddition?: string;
   enableVerboseLogging?: boolean;
-}): Agent {
+}): Promise<Agent> {
   const baseSystemPrompt = `You are a specialized computational assistant with expertise in mathematics, data processing, and analytical operations.
 
 Your core capabilities:

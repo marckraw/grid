@@ -2,7 +2,6 @@ import * as p from "@clack/prompts";
 import { createSpinner } from "../../utils/spinners.js";
 import { experimental_createMCPClient as createMCPClient } from "@ai-sdk/mcp";
 import { Experimental_StdioMCPTransport } from "@ai-sdk/mcp/mcp-stdio";
-import type { ToolSet } from "ai";
 
 export type MCPClientType = "figma" | "linear";
 
@@ -12,8 +11,8 @@ export const registerTestMCPTools = async (
   let mcpClient: Awaited<ReturnType<typeof createMCPClient>> | null = null;
   let linearMcpClient: Awaited<ReturnType<typeof createMCPClient>> | null =
     null;
-  let mcpTools: ToolSet = {};
-  let linearMcpTools: ToolSet = {};
+  let mcpTools: Record<string, any> = {};
+  let linearMcpTools: Record<string, any> = {};
 
   const spinner = createSpinner();
 

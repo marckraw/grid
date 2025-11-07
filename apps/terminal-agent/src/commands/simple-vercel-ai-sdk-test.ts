@@ -46,7 +46,7 @@ export async function simpleVercelAISDKTest(): Promise<void> {
     tools: [currentTimeTool, systemInfoTool, calculatorTool],
   });
 
-  const agent = createConfigurableAgent({
+  const agent = await createConfigurableAgent({
     config: {
       type: "general",
       metadata: {
@@ -63,6 +63,7 @@ export async function simpleVercelAISDKTest(): Promise<void> {
         custom: tools,
         mcp: {},
         builtin: {},
+        mcpServers: [],
         agents: undefined,
       },
       id: "",

@@ -54,7 +54,7 @@ export async function conversationWithMemory(): Promise<void> {
   });
 
   // Create configurable agent with memory tools
-  const agent = createConfigurableAgent({
+  const agent = await createConfigurableAgent({
     llmService: baseLLMService({
       langfuse: langfuseService,
     }),
@@ -93,6 +93,7 @@ Be proactive in using memory when it would enhance your responses.`,
         builtin: {},
         custom: memoryTools,
         mcp: {},
+        mcpServers: [],
         agents: [],
       },
       behavior: {

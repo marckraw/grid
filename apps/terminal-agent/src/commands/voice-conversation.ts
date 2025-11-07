@@ -209,7 +209,7 @@ export async function exploreVoiceConversation(): Promise<void> {
   }
 
   // Create configurable agent with voice
-  const agent = createConfigurableAgent({
+  const agent = await createConfigurableAgent({
     llmService: baseLLMService({
       toolExecutionMode: "vercel-native",
       langfuse: langfuseService,
@@ -239,6 +239,7 @@ When speaking, use a conversational tone as if talking to someone in person.`,
         builtin: {},
         custom: { ...tools, ...linearMcpTools },
         mcp: {},
+        mcpServers: [],
         agents: [],
       },
       behavior: {

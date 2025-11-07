@@ -101,7 +101,7 @@ export async function deepSearch(): Promise<void> {
   }
 
   // Create configurable agent
-  const agent = createConfigurableAgent({
+  const agent = await createConfigurableAgent({
     llmService: baseLLMService({
       toolExecutionMode: "custom",
       langfuse: langfuseService,
@@ -123,9 +123,10 @@ export async function deepSearch(): Promise<void> {
         version: "1.0.0",
       },
       tools: {
-        builtin: [],
-        custom: [calculatorTool, currentTimeTool],
-        mcp: [...transformerMcpTools, ...transformedLinearMcpTools],
+        builtin: {},
+        custom: {},
+        mcp: {},
+        mcpServers: [],
         agents: [],
       },
       behavior: {

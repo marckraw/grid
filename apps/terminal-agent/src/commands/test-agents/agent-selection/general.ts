@@ -26,7 +26,7 @@ export const testGeneralAgent = async () => {
     },
   });
 
-  const agent = createConfigurableAgent({
+  const agent = await createConfigurableAgent({
     llmService: baseLLMService({
       toolExecutionMode: "custom",
       langfuse: langfuseService,
@@ -54,6 +54,7 @@ export const testGeneralAgent = async () => {
         builtin: {},
         custom: {},
         mcp: {},
+        mcpServers: [],
         agents: [],
       },
       behavior: {
