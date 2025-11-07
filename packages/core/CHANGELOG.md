@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.35.0
+
+### Minor Changes
+
+- a752229: add mcp servers support
+
 ## 0.34.0
 
 ### Minor Changes
