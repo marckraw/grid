@@ -22,7 +22,7 @@ app.post('/api/agent', async (req, res) => {
       return res.status(400).json({ error: 'Prompt is required' })
     }
 
-    const agent = createConfigurableAgent({
+    const agent = await createConfigurableAgent({
       config: {
         id: 'express-test-agent',
         type: 'general',
@@ -40,9 +40,10 @@ app.post('/api/agent', async (req, res) => {
           version: '1.0.0'
         },
         tools: {
-          builtin: [],
-          custom: [],
-          mcp: [],
+          builtin: {},
+          custom: {},
+          mcp: {},
+          mcpServers: [],
           agents: []
         },
         behavior: {
