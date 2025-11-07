@@ -47,6 +47,14 @@
     "overrides": {
       "@changesets/cli>globby": "11.1.0",
       "zshy>globby": "11.1.0"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "@biomejs/biome",
+      "core-js",
+      "core-js-pure",
+      "esbuild",
+      "rollup",
+      "sharp"
+    ]
   }
 }

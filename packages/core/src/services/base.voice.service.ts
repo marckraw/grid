@@ -83,7 +83,10 @@ export const baseVoiceService = (
   ): Promise<Buffer | ArrayBuffer> => {
     // Basic implementation - providers can override with actual conversion
     if (fromFormat === toFormat) {
-      return data instanceof Uint8Array ? data.buffer : data;
+      if (data instanceof Uint8Array) {
+        return Buffer.from(data);
+      }
+      return data;
     }
 
     // Providers should implement actual format conversion
