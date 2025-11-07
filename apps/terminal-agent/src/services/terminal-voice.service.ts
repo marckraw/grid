@@ -99,7 +99,20 @@ export class TerminalVoiceService {
     this.tempFiles.push(tempFile);
 
     // Write audio data to temp file
-    await writeFile(tempFile, Buffer.from(audio.data));
+    let buffer: Buffer;
+    const dataAny = audio.data as unknown;
+    if (Buffer.isBuffer(dataAny)) {
+      buffer = dataAny as Buffer;
+    } else if (dataAny instanceof Uint8Array) {
+      buffer = Buffer.from(dataAny as Uint8Array);
+    } else if (dataAny instanceof ArrayBuffer) {
+      buffer = Buffer.from(new Uint8Array(dataAny as ArrayBuffer));
+    } else if (typeof dataAny === "string") {
+      buffer = Buffer.from(dataAny as string);
+    } else {
+      throw new Error("Unsupported audio data type for playback");
+    }
+    await writeFile(tempFile, buffer);
 
     // Determine playback command based on platform
     let command: string;

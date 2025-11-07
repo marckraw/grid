@@ -19,10 +19,10 @@ type ProgressHandler = (progress: ProgressMessage) => void;
 const progressHandlers = new Map<string, ProgressHandler>();
 
 // Helper to get or create conversation
-function getConversation(
+async function getConversation(
   sessionId: string,
   onProgress?: ProgressHandler
-): ConversationLoop {
+): Promise<ConversationLoop> {
   if (!conversations.has(sessionId)) {
     // Create tool executor and register tools
     const toolExecutor = createToolExecutor();
@@ -38,7 +38,7 @@ function getConversation(
       : undefined;
 
     // Create configurable agent
-    const agent = createConfigurableAgent({
+    const agent = await createConfigurableAgent({
       llmService: baseLLMService({ toolExecutionMode: "custom" }),
       voiceService,
       config: {
@@ -61,9 +61,10 @@ Be concise but friendly in your responses.`,
           version: "1.0.0",
         },
         tools: {
-          builtin: [],
-          custom: [calculatorTool, currentTimeTool],
-          mcp: [],
+          builtin: {},
+          custom: {},
+          mcp: {},
+          mcpServers: [],
           agents: [],
         },
         behavior: {
@@ -127,7 +128,7 @@ export async function POST(request: NextRequest) {
       };
 
       // Get conversation with progress handler
-      const conversation = getConversation(sessionId, progressHandler);
+      const conversation = await getConversation(sessionId, progressHandler);
 
       try {
         console.log("[SSE] Sending message:", message);

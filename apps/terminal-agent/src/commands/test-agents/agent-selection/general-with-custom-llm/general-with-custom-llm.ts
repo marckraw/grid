@@ -30,7 +30,7 @@ export const testGeneralAgentWithCustomLLM = async () => {
   });
 
   // Create agent with custom LLM service
-  const agent = createConfigurableAgent({
+  const agent = await createConfigurableAgent({
     llmService: customLLMService, // Using our custom implementation!
     config: {
       id: "agent-with-custom-llm",
@@ -53,6 +53,7 @@ export const testGeneralAgentWithCustomLLM = async () => {
         builtin: {},
         custom: {},
         mcp: {},
+        mcpServers: [],
         agents: [],
       },
       behavior: {

@@ -20,7 +20,7 @@ import {
  * - Data format conversions
  * - JSON manipulation
  */
-export const mathDataAgent: Agent = createConfigurableAgent({
+export const mathDataAgent: Promise<Agent> = createConfigurableAgent({
   llmService: baseLLMService({
     toolExecutionMode: "custom",
   }),
@@ -66,16 +66,17 @@ You excel at:
       version: "1.0.0",
     },
     tools: {
-      builtin: [],
-      custom: [
+      builtin: {},
+      custom: {
         calculatorTool,
         randomNumberTool,
         hashTool,
         systemInfoTool,
         dataConverterTool,
         jsonFormatterTool,
-      ],
-      mcp: [],
+      },
+      mcp: {},
+      mcpServers: [],
       agents: [],
     },
     behavior: {
@@ -92,12 +93,12 @@ You excel at:
 /**
  * Create a custom math & data agent with additional configuration
  */
-export function createCustomMathDataAgent(options?: {
+export async function createCustomMathDataAgent(options?: {
   temperature?: number;
   additionalTools?: any[];
   systemPromptAddition?: string;
   enableVerboseLogging?: boolean;
-}): Agent {
+}): Promise<Agent> {
   const baseSystemPrompt = `You are a specialized computational assistant with expertise in mathematics, data processing, and analytical operations.
 
 Your core capabilities:
@@ -124,7 +125,7 @@ You excel at:
 - Cryptographic operations and data security
 - Scientific computing and simulations`;
 
-  return createConfigurableAgent({
+  return await createConfigurableAgent({
     llmService: baseLLMService({
       toolExecutionMode: "custom",
     }),
@@ -147,8 +148,8 @@ You excel at:
         version: "1.0.0",
       },
       tools: {
-        builtin: [],
-        custom: [
+        builtin: {},
+        custom: {
           calculatorTool,
           randomNumberTool,
           hashTool,
@@ -156,8 +157,9 @@ You excel at:
           dataConverterTool,
           jsonFormatterTool,
           ...(options?.additionalTools || []),
-        ],
-        mcp: [],
+        },
+        mcp: {},
+        mcpServers: [],
         agents: [],
       },
       behavior: {

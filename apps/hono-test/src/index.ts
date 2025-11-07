@@ -22,7 +22,7 @@ app.post('/api/agent', async (c) => {
       return c.json({ error: 'Prompt is required' }, 400)
     }
 
-    const agent = createConfigurableAgent({
+    const agent = await createConfigurableAgent({
       config: {
         id: 'hono-test-agent',
         type: 'general',
@@ -40,9 +40,10 @@ app.post('/api/agent', async (c) => {
           version: '1.0.0'
         },
         tools: {
-          builtin: [],
-          custom: [],
-          mcp: [],
+          builtin: {},
+          custom: {},
+          mcp: {},
+          mcpServers: [],
           agents: []
         },
         behavior: {

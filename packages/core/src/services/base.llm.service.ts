@@ -104,7 +104,7 @@ export const baseLLMService = (
     if (responseFormat === "structured" && schema) {
       const { object, response } = await generateObject({
         model: aiModel,
-        messages: messages as ModelMessage[],
+        messages: messages as any, // Cast to any to preserve experimental_providerMetadata for cache control
         schema: schema as any,
         temperature,
         maxOutputTokens,
@@ -181,7 +181,7 @@ export const baseLLMService = (
 
     const result = await generateText({
       model: aiModel,
-      messages: messages as ModelMessage[],
+      messages: messages as any, // Cast to any to preserve experimental_providerMetadata for cache control
       temperature,
       maxOutputTokens,
       tools,

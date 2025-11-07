@@ -24,7 +24,7 @@ export async function exploreWorkflowExamples(): Promise<void> {
   });
 
   // Create agents for different steps
-  const analysisAgent = createConfigurableAgent({
+  const analysisAgent = await createConfigurableAgent({
     llmService: baseLLMService({ langfuse: langfuseService }),
     config: {
       id: "analysis-agent",
@@ -45,9 +45,10 @@ export async function exploreWorkflowExamples(): Promise<void> {
         icon: "🔍",
       },
       tools: {
-        builtin: [],
-        custom: [],
-        mcp: [],
+        builtin: {},
+        custom: {},
+        mcp: {},
+        mcpServers: [],
       },
       behavior: {
         maxRetries: 3,
@@ -57,7 +58,7 @@ export async function exploreWorkflowExamples(): Promise<void> {
     },
   });
 
-  const technicalAgent = createConfigurableAgent({
+  const technicalAgent = await createConfigurableAgent({
     llmService: baseLLMService({ langfuse: langfuseService }),
     config: {
       id: "technical-agent",
@@ -77,9 +78,10 @@ export async function exploreWorkflowExamples(): Promise<void> {
         icon: "🔧",
       },
       tools: {
-        builtin: [],
-        custom: [],
-        mcp: [],
+        builtin: {},
+        custom: {},
+        mcp: {},
+        mcpServers: [],
       },
       behavior: {
         maxRetries: 3,
