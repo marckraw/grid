@@ -42,7 +42,7 @@
     "typescript": "^5.9.3",
     "zshy": "^0.3.5"
   },
-  "packageManager": "pnpm@8.15.1",
+  "packageManager": "pnpm@10.20.0",
   "pnpm": {
     "overrides": {
       "@changesets/cli>globby": "11.1.0",
