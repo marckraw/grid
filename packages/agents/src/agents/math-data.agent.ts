@@ -125,7 +125,7 @@ You excel at:
 - Cryptographic operations and data security
 - Scientific computing and simulations`;
 
-  return createConfigurableAgent({
+  return await createConfigurableAgent({
     llmService: baseLLMService({
       toolExecutionMode: "custom",
     }),
@@ -148,8 +148,8 @@ You excel at:
         version: "1.0.0",
       },
       tools: {
-        builtin: [],
-        custom: [
+        builtin: {},
+        custom: {
           calculatorTool,
           randomNumberTool,
           hashTool,
@@ -157,8 +157,9 @@ You excel at:
           dataConverterTool,
           jsonFormatterTool,
           ...(options?.additionalTools || []),
-        ],
-        mcp: [],
+        },
+        mcp: {},
+        mcpServers: [],
         agents: [],
       },
       behavior: {

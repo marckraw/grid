@@ -12,7 +12,8 @@ import { mathDataAgent } from "./agents/math-data.agent";
 import type { Agent } from "@mrck-labs/grid-core";
 
 // Export all agents as a collection for convenience
-export const allAgents: Record<string, Agent> = {
+// Note: These are promises that resolve to agents (due to async createConfigurableAgent)
+export const allAgents: Record<string, Promise<Agent>> = {
   research: researchAgent,
   mathData: mathDataAgent,
 };

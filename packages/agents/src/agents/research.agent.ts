@@ -135,15 +135,16 @@ You excel at:
         version: "1.0.0",
       },
       tools: {
-        builtin: [],
-        custom: [
+        builtin: {},
+        custom: {
           readUrlTool,
           stringUtilsTool,
           jsonFormatterTool,
           dataConverterTool,
           ...(options?.additionalTools || []),
-        ],
-        mcp: [],
+        },
+        mcp: {},
+        mcpServers: [],
         agents: [],
       },
       behavior: {
