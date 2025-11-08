@@ -75,6 +75,19 @@ export interface LLMService {
   // Main method to run LLM with messages and optional tools
   runLLM(options: LLMServiceOptions): Promise<ChatMessage>;
 
+  // Streaming methods (optional)
+  runStreamedLLM?(options: LLMServiceOptions): Promise<{
+    textStream: AsyncIterable<string>;
+    generation: any;
+  }>;
+  
+  runStreamedLLMWithTools?(
+    options: LLMServiceOptions & { tools?: any[] }
+  ): Promise<{
+    textStream: AsyncIterable<string>;
+    generation: any;
+  }>;
+
   // Optional method to check if service is available
   isAvailable?(): Promise<boolean>;
 }
