@@ -6,6 +6,7 @@ import type {
 import {
   generateText,
   generateObject,
+  streamText,
   stepCountIs,
   type ModelMessage,
 } from "ai";
@@ -317,6 +318,151 @@ export const baseLLMService = (
     };
   };
 
+  const runStreamedLLM = async (options: LLMServiceOptions): Promise<{
+    textStream: AsyncIterable<string>;
+    generation: any;
+  }> => {
+    const {
+      model = defaultModel,
+      provider,
+      messages,
+      temperature = 0.7,
+      maxOutputTokens,
+      traceContext,
+    } = options;
+
+    const generation = langfuse.createGenerationForSession(
+      options.context.sessionToken,
+      {
+        input: options.messages,
+        model,
+        name: "llm-streaming",
+        metadata: {
+          ...options.context.metadata,
+          streaming: true,
+        },
+      }
+    );
+
+    // Select AI model based on provider
+    let aiModel;
+    if (provider === "anthropic") {
+      aiModel = anthropic(model);
+    } else if (provider === "openrouter") {
+      const openrouter = createOpenRouter({
+        apiKey: process.env.OPENROUTER_API_KEY,
+      });
+      aiModel = openrouter.chat(model);
+    } else {
+      aiModel = openai(model);
+    }
+
+    const result = await streamText({
+      model: aiModel,
+      messages: messages as any,
+      temperature,
+      maxOutputTokens,
+    });
+
+    return { textStream: result.textStream, generation };
+  };
+
+  const runStreamedLLMWithTools = async (
+    options: LLMServiceOptions & { tools?: any[] }
+  ): Promise<{
+    textStream: AsyncIterable<string>;
+    generation: any;
+  }> => {
+    const {
+      model = defaultModel,
+      provider,
+      messages,
+      tools = [],
+      temperature = 0.1,
+      maxOutputTokens,
+      traceContext,
+      sendUpdate,
+    } = options;
+
+    const generation = langfuse.createGenerationForSession(
+      options.context.sessionToken,
+      {
+        input: options.messages,
+        model,
+        name: "llm-streaming-tools",
+        metadata: {
+          ...options.context.metadata,
+          streaming: true,
+          toolCount: tools.length,
+        },
+      }
+    );
+
+    // Select AI model based on provider
+    let aiModel;
+    if (provider === "anthropic") {
+      aiModel = anthropic(model);
+    } else if (provider === "openrouter") {
+      const openrouter = createOpenRouter({
+        apiKey: process.env.OPENROUTER_API_KEY,
+      });
+      aiModel = openrouter.chat(model);
+    } else {
+      aiModel = openai(model);
+    }
+
+    const result = await streamText({
+      model: aiModel,
+      messages: messages as any,
+      temperature,
+      maxOutputTokens,
+      tools: tools && tools.length > 0 ? (tools as any) : undefined,
+      onStepFinish: (step) => {
+        // Tool telemetry
+        step.content.forEach((content) => {
+          if (content.type === "tool-call") {
+            const sc: any = content;
+            const toolCallId =
+              sc.toolCallId ?? sc.id ?? sc.callId ?? `${Date.now()}-${Math.random()}`;
+            const toolName = sc.toolName ?? sc.name ?? "unknown";
+            const args = sc.args ?? sc.input ?? sc.parameters;
+            langfuse.startToolSpanForSession(
+              options.context.sessionToken,
+              toolCallId,
+              toolName,
+              args
+            );
+            if (sendUpdate) {
+              sendUpdate({
+                type: "tool_execution",
+                content: JSON.stringify(content),
+              });
+            }
+          }
+
+          if (content.type === "tool-result") {
+            const sc: any = content;
+            const toolCallId = sc.toolCallId ?? sc.id ?? sc.callId;
+            const result = sc.result ?? sc.output ?? sc.data;
+            langfuse.endToolSpanForSession(
+              options.context.sessionToken,
+              toolCallId,
+              result
+            );
+            if (sendUpdate) {
+              sendUpdate({
+                type: "tool_response",
+                content: JSON.stringify(content),
+              });
+            }
+          }
+        });
+      },
+    });
+
+    return { textStream: result.textStream, generation };
+  };
+
   const isAvailable = async (): Promise<boolean> => {
     try {
       // Simple test to check if the API is accessible
@@ -352,6 +498,8 @@ export const baseLLMService = (
 
   return {
     runLLM,
+    runStreamedLLM,
+    runStreamedLLMWithTools,
     isAvailable,
   };
 };
