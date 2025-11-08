@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.37.0
+
+### Minor Changes
+
+- 43a1c38: update llm service with streaming responses
+
 ## 0.35.0
 
 ### Minor Changes
