@@ -6,7 +6,6 @@ settings:
 
 overrides:
   '@changesets/cli>globby': 11.1.0
-  zshy>globby: 11.1.0
 
 importers:
 
@@ -31,8 +30,8 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
       zshy:
-        specifier: ^0.3.5
-        version: 0.3.5(typescript@5.9.3)
+        specifier: ^0.6.0
+        version: 0.6.0(typescript@5.9.3)
 
   apps/docs:
     dependencies:
@@ -6812,8 +6811,8 @@ packages:
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
-  zshy@0.3.5:
-    resolution: {integrity: sha512-snxs1iCIgLHY+eavk06UD54bTioXbXHzZ0XnsrDNjrztG7qrhagL6VyJ/jdBODZ0sCn+ZdqgXLwYLxZLydYdTA==}
+  zshy@0.6.0:
+    resolution: {integrity: sha512-Z44cazaJFGvl+Db0yxKMfJoKq6CKXh7MLWqkLZH6Yo3ZmjO3HD+mF2+L5qZS8/Gk2nTKttf2YZungk8QPapeaw==}
     hasBin: true
     peerDependencies:
       typescript: '>5.5.0'
@@ -14732,10 +14731,10 @@ snapshots:
 
   zod@3.25.76: {}
 
-  zshy@0.3.5(typescript@5.9.3):
+  zshy@0.6.0(typescript@5.9.3):
     dependencies:
       arg: 5.0.2
-      globby: 11.1.0
+      fast-glob: 3.3.3
       table: 6.9.0
       typescript: 5.9.3
 
