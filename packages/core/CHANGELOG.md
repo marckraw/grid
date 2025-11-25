@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.38.0
+
+### Minor Changes
+
+- 745a3bb: add amazon bedrock support
+
 ## 0.37.0
 
 ### Minor Changes
