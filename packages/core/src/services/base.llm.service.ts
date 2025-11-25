@@ -2,6 +2,7 @@ import type {
   ChatMessage,
   LLMService,
   LLMServiceOptions,
+  ProviderOptionsMap,
 } from "../types/index.js";
 import {
   generateText,
@@ -12,6 +13,7 @@ import {
 } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { anthropic } from "@ai-sdk/anthropic";
+import { bedrock } from "@ai-sdk/amazon-bedrock";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import {
   langfuseService,
@@ -39,7 +41,7 @@ export const baseLLMService = (
   const runLLM = async (options: LLMServiceOptions): Promise<ChatMessage> => {
     const {
       model = defaultModel,
-      provider, // AI provider to use (openai, anthropic, etc.)
+      provider, // AI provider to use (openai, anthropic, bedrock, openrouter, etc.)
       messages,
       tools = undefined,
       temperature = 0.1,
@@ -48,6 +50,7 @@ export const baseLLMService = (
       schema,
       traceContext,
       sendUpdate,
+      providerOptions, // Provider-specific options (bedrock guardrails, etc.)
     } = options;
 
     const generation = langfuse.createGenerationForSession(
@@ -78,6 +81,11 @@ export const baseLLMService = (
     if (provider === "anthropic") {
       aiModel = anthropic(model);
       sdkProvider = "anthropic";
+    } else if (provider === "bedrock") {
+      // Amazon Bedrock - uses AWS credentials from environment/SDK
+      // Supports Claude, Llama, Titan, and other models hosted on Bedrock
+      aiModel = bedrock(model);
+      sdkProvider = "bedrock";
     } else if (provider === "openrouter") {
       // Use official OpenRouter provider
       const openrouter = createOpenRouter({
@@ -109,6 +117,8 @@ export const baseLLMService = (
         schema: schema as any,
         temperature,
         maxOutputTokens,
+        // Forward provider-specific options (bedrock guardrails, anthropic cache, etc.)
+        ...(providerOptions ? { providerOptions } : {}),
       });
 
       // Log cache statistics for Anthropic
@@ -186,6 +196,8 @@ export const baseLLMService = (
       temperature,
       maxOutputTokens,
       tools,
+      // Forward provider-specific options (bedrock guardrails, anthropic cache, etc.)
+      ...(providerOptions ? { providerOptions } : {}),
       stopWhen:
         toolExecutionMode === "custom" ? stepCountIs(1) : stepCountIs(12),
       onStepFinish: (step) => {
@@ -329,6 +341,7 @@ export const baseLLMService = (
       temperature = 0.7,
       maxOutputTokens,
       traceContext,
+      providerOptions,
     } = options;
 
     const generation = langfuse.createGenerationForSession(
@@ -348,6 +361,8 @@ export const baseLLMService = (
     let aiModel;
     if (provider === "anthropic") {
       aiModel = anthropic(model);
+    } else if (provider === "bedrock") {
+      aiModel = bedrock(model);
     } else if (provider === "openrouter") {
       const openrouter = createOpenRouter({
         apiKey: process.env.OPENROUTER_API_KEY,
@@ -362,6 +377,8 @@ export const baseLLMService = (
       messages: messages as any,
       temperature,
       maxOutputTokens,
+      // Forward provider-specific options
+      ...(providerOptions ? { providerOptions } : {}),
     });
 
     return { textStream: result.textStream, generation };
@@ -382,6 +399,7 @@ export const baseLLMService = (
       maxOutputTokens,
       traceContext,
       sendUpdate,
+      providerOptions,
     } = options;
 
     const generation = langfuse.createGenerationForSession(
@@ -402,6 +420,8 @@ export const baseLLMService = (
     let aiModel;
     if (provider === "anthropic") {
       aiModel = anthropic(model);
+    } else if (provider === "bedrock") {
+      aiModel = bedrock(model);
     } else if (provider === "openrouter") {
       const openrouter = createOpenRouter({
         apiKey: process.env.OPENROUTER_API_KEY,
@@ -417,6 +437,8 @@ export const baseLLMService = (
       temperature,
       maxOutputTokens,
       tools: tools && tools.length > 0 ? (tools as any) : undefined,
+      // Forward provider-specific options
+      ...(providerOptions ? { providerOptions } : {}),
       onStepFinish: (step) => {
         // Tool telemetry
         step.content.forEach((content) => {
@@ -471,6 +493,8 @@ export const baseLLMService = (
 
       if (defaultProvider === "anthropic") {
         testModel = anthropic(defaultModel);
+      } else if (defaultProvider === "bedrock") {
+        testModel = bedrock(defaultModel);
       } else if (defaultProvider === "openrouter") {
         const openrouter = createOpenRouter({
           apiKey: process.env.OPENROUTER_API_KEY,

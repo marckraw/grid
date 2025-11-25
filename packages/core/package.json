@@ -43,6 +43,7 @@
     "vitest": "^1.1.0"
   },
   "dependencies": {
+    "@ai-sdk/amazon-bedrock": "^2.2.8",
     "@ai-sdk/anthropic": "^2.0.9",
     "@ai-sdk/mcp": "^0.0.7",
     "@ai-sdk/openai": "^2.0.22",

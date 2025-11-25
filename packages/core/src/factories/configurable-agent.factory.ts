@@ -94,46 +94,6 @@ export const createConfigurableAgent = async ({
   let mcpClientService: any = null;
   let mcpTools: Record<string, any> = {};
 
-  // Helper function to refresh MCP tools (reconnect if needed)
-  const refreshMCPTools = async () => {
-    if (!config.tools?.mcpServers || config.tools.mcpServers.length === 0) {
-      return {};
-    }
-
-    try {
-      console.log(
-        `[${config.id}] Refreshing MCP tools from ${config.tools.mcpServers.length} server(s)...`
-      );
-
-      // Close existing connections if any
-      if (mcpClientService) {
-        try {
-          await mcpClientService.closeAll();
-        } catch (closeError) {
-          console.warn(
-            `[${config.id}] Warning closing old MCP clients:`,
-            closeError
-          );
-        }
-      }
-
-      // Create fresh MCP client connections
-      mcpClientService = await createMCPClientService(config.tools.mcpServers);
-      const freshTools = await mcpClientService.getAllTools();
-      console.log(
-        `[${config.id}] ✅ Refreshed ${
-          Object.keys(freshTools).length
-        } MCP tool(s)`
-      );
-      return freshTools;
-    } catch (error) {
-      console.error(`[${config.id}] ❌ Failed to refresh MCP clients:`, error);
-      // Return empty tools on failure - don't block execution
-      return {};
-    }
-  };
-
-  // Initial MCP connection
   if (config.tools?.mcpServers && config.tools.mcpServers.length > 0) {
     try {
       console.log(
@@ -191,18 +151,6 @@ export const createConfigurableAgent = async ({
         type: "unknown",
         content: "Agent starting to act.",
       });
-
-      // Refresh MCP tools before each request to ensure fresh connections
-      try {
-        const freshMCPTools = await refreshMCPTools();
-        // Update available tools with fresh MCP tools
-        Object.assign(availableTools, freshMCPTools);
-      } catch (refreshError) {
-        console.warn(
-          `[${config.id}] Failed to refresh MCP tools, using cached:`,
-          refreshError
-        );
-      }
 
       let processedInput = input;
       let attempt = 0;
