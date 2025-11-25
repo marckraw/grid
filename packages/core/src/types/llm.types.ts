@@ -53,12 +53,48 @@ export interface LLMTraceContext {
   tags?: string[];
 }
 
+// Provider-specific options for AI SDK providers
+export interface BedrockProviderOptions {
+  // Guardrails configuration
+  guardrailConfig?: {
+    guardrailIdentifier: string;
+    guardrailVersion: string;
+    trace?: "enabled" | "disabled";
+  };
+  // Additional model request fields
+  additionalModelRequestFields?: Record<string, unknown>;
+}
+
+export interface AnthropicProviderOptions {
+  cacheControl?: { type: "ephemeral" };
+  // Extended thinking/reasoning
+  thinking?: {
+    type: "enabled";
+    budgetTokens: number;
+  };
+}
+
+export interface OpenAIProviderOptions {
+  // OpenAI-specific options
+  logprobs?: boolean;
+  topLogprobs?: number;
+}
+
+// Combined provider options type
+export interface ProviderOptionsMap {
+  bedrock?: BedrockProviderOptions;
+  anthropic?: AnthropicProviderOptions;
+  openai?: OpenAIProviderOptions;
+  openrouter?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
 // LLM Service Interface for injectable LLM providers
 export interface LLMServiceOptions {
   messages: ChatMessage[];
   tools?: ToolSet;
   model?: string;
-  provider?: string; // AI provider (e.g., "openai", "anthropic", "openrouter")
+  provider?: string; // AI provider (e.g., "openai", "anthropic", "openrouter", "bedrock")
   temperature?: number;
   maxOutputTokens?: number;
   // Desired response format; when set to "structured" and a schema is provided,
@@ -68,6 +104,8 @@ export interface LLMServiceOptions {
   schema?: z.ZodTypeAny | Record<string, unknown>;
   traceContext?: LLMTraceContext;
   sendUpdate: (data: ProgressMessage) => Promise<void>;
+  // Provider-specific options (bedrock guardrails, anthropic cache, etc.)
+  providerOptions?: ProviderOptionsMap;
   [key: string]: any; // Allow additional provider-specific options
 }
 
@@ -80,7 +118,7 @@ export interface LLMService {
     textStream: AsyncIterable<string>;
     generation: any;
   }>;
-  
+
   runStreamedLLMWithTools?(
     options: LLMServiceOptions & { tools?: any[] }
   ): Promise<{

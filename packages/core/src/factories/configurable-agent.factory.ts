@@ -105,7 +105,10 @@ export const createConfigurableAgent = async ({
         `[${config.id}] ✅ Loaded ${Object.keys(mcpTools).length} MCP tool(s)`
       );
     } catch (error) {
-      console.error(`[${config.id}] ❌ Failed to initialize MCP clients:`, error);
+      console.error(
+        `[${config.id}] ❌ Failed to initialize MCP clients:`,
+        error
+      );
       // Continue without MCP tools - don't block agent creation
     }
   }
@@ -509,14 +512,9 @@ export const createConfigurableAgent = async ({
             });
           } catch {}
 
-          // Close MCP clients on successful completion
-          if (mcpClientService) {
-            try {
-              await mcpClientService.closeAll();
-            } catch (closeError) {
-              console.error(`[${config.id}] Error closing MCP clients:`, closeError);
-            }
-          }
+          // DON'T close MCP clients here - they need to stay open for subsequent calls
+          // MCP clients will be closed when the agent is destroyed or process exits
+          // Closing them here causes "closed client" errors on tool execution
 
           return response;
         } catch (error) {
@@ -598,14 +596,8 @@ export const createConfigurableAgent = async ({
               );
             } catch {}
 
-            // Close MCP clients on error
-            if (mcpClientService) {
-              try {
-                await mcpClientService.closeAll();
-              } catch (closeError) {
-                console.error(`[${config.id}] Error closing MCP clients on error:`, closeError);
-              }
-            }
+            // DON'T close MCP clients on error either - they might be needed for retry or next call
+            // MCP clients will be closed when the agent is destroyed or process exits
 
             throw error;
           }
@@ -669,5 +661,18 @@ export const createConfigurableAgent = async ({
     hasVoice: () => !!voiceService,
     canSpeak: () => !!voiceService?.synthesize,
     canListen: () => !!voiceService?.transcribe,
+
+    // Cleanup method to close MCP connections when agent is done
+    cleanup: async () => {
+      if (mcpClientService) {
+        try {
+          console.log(`[${config.id}] Closing MCP clients...`);
+          await mcpClientService.closeAll();
+          console.log(`[${config.id}] ✅ MCP clients closed`);
+        } catch (error) {
+          console.error(`[${config.id}] Error closing MCP clients:`, error);
+        }
+      }
+    },
   };
 };
