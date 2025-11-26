@@ -5,6 +5,7 @@ import {
   type Agent,
   type AgentResponse,
   type AgentActInput,
+  type StreamChunk,
 } from "../types/agent.types.js";
 import { type LLMService } from "../types/llm.types.js";
 import { type ToolExecutor } from "../services/tool-executor.service.js";
@@ -619,6 +620,278 @@ export const createConfigurableAgent = async ({
 
       // Should never reach here
       throw new Error("Unexpected end of retry loop");
+    },
+
+    /**
+     * Streaming version of act - yields chunks as they arrive from the LLM
+     * Tool calls are automatically handled during streaming via onStepFinish
+     */
+    actStream: async function* (
+      input: AgentActInput
+    ): AsyncGenerator<StreamChunk, AgentResponse, unknown> {
+      // Check if LLM service supports streaming
+      if (!base.llmService.runStreamedLLMWithTools) {
+        console.warn(
+          `[${config.id}] LLM service does not support streaming, falling back to non-streaming`
+        );
+        // Use the non-streaming runLLM as fallback
+        const fallbackMessages = [
+          { role: "system" as const, content: config.prompts.system },
+          ...input.messages,
+        ];
+        const response = await base.llmService.runLLM({
+          messages: fallbackMessages,
+          tools: availableTools,
+          sendUpdate,
+          context: input.context,
+        });
+        yield {
+          type: "text_delta",
+          content: typeof response.content === "string" ? response.content : "",
+        };
+        yield { type: "stream_end", content: "" };
+        return response;
+      }
+
+      await sendUpdate({
+        type: "stream_start",
+        content: "Starting streaming response",
+      });
+
+      let processedInput = input;
+
+      // === Langfuse tracing setup ===
+      if (!processedInput.context) processedInput.context = {} as any;
+      const ctx = processedInput.context as any;
+      const sessionToken = ctx.sessionToken as string;
+
+      const existingTrace = langfuseService.getCurrentTrace(sessionToken);
+      if (!existingTrace) {
+        langfuseService.createExecutionTrace(
+          sessionToken,
+          config.type,
+          processedInput,
+          typeof ctx.conversationId === "number"
+            ? (ctx.conversationId as number)
+            : undefined,
+          {
+            agentId: config.id,
+            agentVersion: config.version,
+            streaming: true,
+          }
+        );
+      }
+
+      langfuseService.createSpanForSession(sessionToken, "agent-act-stream", {
+        agentId: config.id,
+        agentType: config.type,
+        streaming: true,
+      });
+      langfuseService.addEventToSession(sessionToken, "agent-stream-start", {
+        agentId: config.id,
+        agentType: config.type,
+      });
+
+      // Determine model from priority chain
+      const modelToUse =
+        (processedInput.context as any)?.model ||
+        config.behavior?.model ||
+        config.customConfig?.model ||
+        undefined;
+
+      const providerToUse =
+        (processedInput.context as any)?.provider ||
+        config.behavior?.provider ||
+        config.customConfig?.provider ||
+        undefined;
+
+      if (modelToUse) {
+        console.log(
+          `🤖 [${config.id}] Streaming with model: ${modelToUse}${
+            providerToUse ? ` (provider: ${providerToUse})` : ""
+          }`
+        );
+      }
+
+      try {
+        // Hook: transformInput
+        if (customHandlers.transformInput) {
+          processedInput = await customHandlers.transformInput({
+            input: processedInput,
+            sendUpdate,
+          });
+        }
+
+        // Hook: beforeAct
+        if (customHandlers.beforeAct) {
+          processedInput = await customHandlers.beforeAct({
+            input: processedInput,
+            config,
+            sendUpdate,
+          });
+        }
+
+        // Prepare messages with system prompt and cache control
+        const shouldCacheSystemPrompt =
+          config.prompts.systemCache && providerToUse === "anthropic";
+
+        const workingMessages = [
+          {
+            role: "system" as const,
+            content: config.prompts.system,
+            ...(shouldCacheSystemPrompt
+              ? {
+                  experimental_providerMetadata: {
+                    anthropic: {
+                      cacheControl: { type: "ephemeral" as const },
+                    },
+                  },
+                }
+              : {}),
+          },
+          ...processedInput.messages.map((msg: any) => {
+            if (msg.providerOptions?.anthropic?.cacheControl) {
+              return {
+                ...msg,
+                experimental_providerMetadata: {
+                  anthropic: {
+                    cacheControl: msg.providerOptions.anthropic.cacheControl,
+                  },
+                },
+              };
+            }
+            return msg;
+          }),
+        ];
+
+        // Merge LLM options
+        const mergedLlmOptions = {
+          ...(config.customConfig?.llmOptions || {}),
+          ...((processedInput.context as any)?.llmOptions || {}),
+        } as any;
+
+        // Collect full text for final response
+        let fullText = "";
+
+        // Call streaming LLM with tools
+        // Tool events are sent via sendUpdate callback in onStepFinish
+        const { textStream, generation } =
+          await base.llmService.runStreamedLLMWithTools({
+            messages: workingMessages,
+            tools: availableTools,
+            sendUpdate,
+            context: processedInput.context,
+            model: modelToUse,
+            provider: providerToUse,
+            traceContext: {
+              sessionId: processedInput.context?.sessionId,
+              metadata: {
+                ...processedInput.context?.metadata,
+                modelUsed: modelToUse,
+                providerUsed: providerToUse,
+                streaming: true,
+              },
+            },
+            ...mergedLlmOptions,
+          });
+
+        // Stream text chunks
+        for await (const chunk of textStream) {
+          fullText += chunk;
+
+          // Yield chunk to caller
+          yield {
+            type: "text_delta",
+            content: chunk,
+          };
+
+          // Also send via sendUpdate for IPC
+          await sendUpdate({
+            type: "text_delta",
+            content: chunk,
+          });
+        }
+
+        // Build final response
+        const response: AgentResponse = {
+          role: "assistant",
+          content: fullText,
+        };
+
+        // Hook: afterResponse
+        let finalResponse = response;
+        if (customHandlers.afterResponse) {
+          finalResponse = await customHandlers.afterResponse({
+            response,
+            input: processedInput,
+            sendUpdate,
+          });
+        }
+
+        // Hook: transformOutput
+        if (customHandlers.transformOutput) {
+          finalResponse = await customHandlers.transformOutput({
+            output: finalResponse,
+            sendUpdate,
+          });
+        }
+
+        // Signal stream end
+        yield { type: "stream_end", content: "" };
+
+        await sendUpdate({
+          type: "stream_end",
+          content: fullText,
+        });
+
+        // Close trace on success
+        try {
+          langfuseService.addEventToSession(
+            sessionToken,
+            "agent-stream-end",
+            {}
+          );
+          langfuseService.endSpanForSession(sessionToken, "agent-act-stream");
+          langfuseService.endExecutionTrace(sessionToken, {
+            contentPreview: fullText.slice(0, 500),
+            streaming: true,
+          });
+        } catch {}
+
+        return finalResponse;
+      } catch (error) {
+        // Send error via stream
+        yield {
+          type: "stream_end",
+          content: "",
+          metadata: { error: (error as Error).message },
+        };
+
+        await sendUpdate({
+          type: "error",
+          content: (error as Error).message,
+        });
+
+        // End trace on error
+        try {
+          langfuseService.addEventToSession(sessionToken, "agent-stream-error", {
+            message: (error as Error)?.message,
+          });
+          langfuseService.endSpanForSession(
+            sessionToken,
+            "agent-act-stream",
+            undefined,
+            error as Error
+          );
+          langfuseService.endExecutionTrace(
+            sessionToken,
+            undefined,
+            error as Error
+          );
+        } catch {}
+
+        throw error;
+      }
     },
 
     // Voice capabilities (if voice service is provided)
