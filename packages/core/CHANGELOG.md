@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.39.0
+
+### Minor Changes
+
+- e3b4cc6: add act streamed function
+
 ## 0.38.0
 
 ### Minor Changes
