@@ -392,6 +392,7 @@ export const baseLLMService = (
     options: LLMServiceOptions & { tools?: any[] }
   ): Promise<{
     textStream: AsyncIterable<string>;
+    fullStream: AsyncIterable<any>;
     generation: any;
   }> => {
     const {
@@ -446,7 +447,7 @@ export const baseLLMService = (
       // Forward provider-specific options
       ...(providerOptions ? { providerOptions: providerOptions as any } : {}),
       onStepFinish: (step) => {
-        // Tool telemetry
+        // Tool telemetry - fires when each step completes
         step.content.forEach((content) => {
           if (content.type === "tool-call") {
             const sc: any = content;
@@ -463,35 +464,29 @@ export const baseLLMService = (
               toolName,
               args
             );
-            if (sendUpdate) {
-              sendUpdate({
-                type: "tool_execution",
-                content: JSON.stringify(content),
-              });
-            }
           }
 
           if (content.type === "tool-result") {
             const sc: any = content;
             const toolCallId = sc.toolCallId ?? sc.id ?? sc.callId;
-            const result = sc.result ?? sc.output ?? sc.data;
+            const resultData = sc.result ?? sc.output ?? sc.data;
             langfuse.endToolSpanForSession(
               options.context.sessionToken,
               toolCallId,
-              result
+              resultData
             );
-            if (sendUpdate) {
-              sendUpdate({
-                type: "tool_response",
-                content: JSON.stringify(content),
-              });
-            }
           }
         });
       },
     });
 
-    return { textStream: result.textStream, generation };
+    // Return both textStream and fullStream
+    // fullStream contains all events including tool-call and tool-result
+    return {
+      textStream: result.textStream,
+      fullStream: result.fullStream,
+      generation,
+    };
   };
 
   const isAvailable = async (): Promise<boolean> => {

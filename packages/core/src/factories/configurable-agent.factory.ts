@@ -774,8 +774,8 @@ export const createConfigurableAgent = async ({
         let fullText = "";
 
         // Call streaming LLM with tools
-        // Tool events are sent via sendUpdate callback in onStepFinish
-        const { textStream, generation } =
+        // Use fullStream to capture all events including tool calls
+        const { fullStream, generation } =
           await base.llmService.runStreamedLLMWithTools({
             messages: workingMessages,
             tools: availableTools,
@@ -795,21 +795,64 @@ export const createConfigurableAgent = async ({
             ...mergedLlmOptions,
           });
 
-        // Stream text chunks
-        for await (const chunk of textStream) {
-          fullText += chunk;
+        // Process the full stream which includes text, tool calls, and tool results
+        for await (const part of fullStream) {
+          // Handle text deltas
+          if (part.type === "text-delta") {
+            fullText += part.textDelta;
 
-          // Yield chunk to caller
-          yield {
-            type: "text_delta",
-            content: chunk,
-          };
+            // Yield chunk to caller
+            yield {
+              type: "text_delta",
+              content: part.textDelta,
+            };
 
-          // Also send via sendUpdate for IPC
-          await sendUpdate({
-            type: "text_delta",
-            content: chunk,
-          });
+            // Also send via sendUpdate for IPC
+            await sendUpdate({
+              type: "text_delta",
+              content: part.textDelta,
+            });
+          }
+
+          // Handle tool calls - emit when tool is being called
+          if (part.type === "tool-call") {
+            const toolCallData = {
+              toolCallId: part.toolCallId,
+              toolName: part.toolName,
+              args: part.args,
+            };
+
+            yield {
+              type: "tool_execution",
+              content: JSON.stringify(toolCallData),
+              metadata: toolCallData,
+            };
+
+            await sendUpdate({
+              type: "tool_execution",
+              content: JSON.stringify(toolCallData),
+            });
+          }
+
+          // Handle tool results - emit when tool returns
+          if (part.type === "tool-result") {
+            const toolResultData = {
+              toolCallId: part.toolCallId,
+              toolName: part.toolName,
+              result: part.result,
+            };
+
+            yield {
+              type: "tool_response",
+              content: JSON.stringify(toolResultData),
+              metadata: toolResultData,
+            };
+
+            await sendUpdate({
+              type: "tool_response",
+              content: JSON.stringify(toolResultData),
+            });
+          }
         }
 
         // Build final response
