@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.39.2
+
+### Patch Changes
+
+- 3d09b54: fix tool caling again
+
 ## 0.39.1
 
 ### Patch Changes

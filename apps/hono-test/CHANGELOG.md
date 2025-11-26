@@ -1,5 +1,12 @@
 # hono-test
 
+## 0.6.11
+
+### Patch Changes
+
+- Updated dependencies [3d09b54]
+  - @mrck-labs/grid-core@0.39.2
+
 ## 0.6.10
 
 ### Patch Changes
