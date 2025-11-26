@@ -115,6 +115,15 @@ export const AgentResponseSchema = ChatMessageSchema;
 export type AgentResponse = z.infer<typeof AgentResponseSchema>;
 export type AgentMetadata = z.infer<typeof AgentMetadataSchema>;
 
+/**
+ * Streaming response chunk from actStream
+ */
+export interface StreamChunk {
+  type: "text_delta" | "tool_execution" | "tool_response" | "stream_end";
+  content: string;
+  metadata?: Record<string, any>;
+}
+
 // Core agent interface that all agents must implement
 export interface Agent {
   // Required properties
@@ -124,6 +133,9 @@ export interface Agent {
 
   // Required methods
   act: (input: AgentInput) => Promise<AgentResponse>;
+
+  // Streaming method (optional) - yields chunks as they arrive
+  actStream?: (input: AgentInput) => AsyncGenerator<StreamChunk, AgentResponse, unknown>;
 
   setSendUpdate?: (
     sendUpdate: (data: ProgressMessage) => Promise<void>

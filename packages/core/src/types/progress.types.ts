@@ -27,6 +27,10 @@ export const ProgressMessageTypeEnum = z.enum([
   "warning",
   "error",
   "success",
+  // Streaming-related progress types
+  "text_delta",
+  "stream_start",
+  "stream_end",
 ]);
 
 /**
