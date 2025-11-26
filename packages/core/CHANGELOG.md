@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.39.1
+
+### Patch Changes
+
+- e6dccdd: fix tool calling while streaming
+
 ## 0.39.0
 
 ### Minor Changes
