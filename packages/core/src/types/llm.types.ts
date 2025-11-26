@@ -78,6 +78,10 @@ export interface OpenAIProviderOptions {
   // OpenAI-specific options
   logprobs?: boolean;
   topLogprobs?: number;
+  // Reasoning summary for O-series and GPT-5 models
+  reasoningSummary?: "auto" | "detailed";
+  // Reasoning effort level
+  reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high";
 }
 
 // Combined provider options type
@@ -106,6 +110,10 @@ export interface LLMServiceOptions {
   sendUpdate: (data: ProgressMessage) => Promise<void>;
   // Provider-specific options (bedrock guardrails, anthropic cache, etc.)
   providerOptions?: ProviderOptionsMap;
+  // Reasoning options - enables model thinking/reasoning output
+  enableReasoning?: boolean; // Enable reasoning for models that support it
+  reasoningBudget?: number; // Token budget for Anthropic extended thinking (default: 10000)
+  reasoningSummary?: "auto" | "detailed"; // OpenAI reasoning summary level (default: 'auto')
   [key: string]: any; // Allow additional provider-specific options
 }
 

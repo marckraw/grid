@@ -38,6 +38,39 @@ export const baseLLMService = (
     langfuse = langfuseService,
   } = config;
 
+  // Helper to build reasoning-enabled provider options
+  const buildReasoningProviderOptions = (
+    provider: string | undefined,
+    enableReasoning: boolean | undefined,
+    reasoningBudget: number = 10000,
+    reasoningSummary: "auto" | "detailed" = "auto",
+    existingOptions?: ProviderOptionsMap
+  ): ProviderOptionsMap | undefined => {
+    if (!enableReasoning) return existingOptions;
+
+    const reasoningOptions: ProviderOptionsMap = {};
+
+    if (provider === "anthropic") {
+      // Anthropic extended thinking - requires thinking budget
+      reasoningOptions.anthropic = {
+        ...(existingOptions?.anthropic || {}),
+        thinking: { type: "enabled", budgetTokens: reasoningBudget },
+      };
+    } else if (provider === "openai" || !provider) {
+      // OpenAI reasoning summary
+      reasoningOptions.openai = {
+        ...(existingOptions?.openai || {}),
+        reasoningSummary: reasoningSummary,
+      };
+    }
+
+    // Merge with existing options
+    return {
+      ...existingOptions,
+      ...reasoningOptions,
+    };
+  };
+
   const runLLM = async (options: LLMServiceOptions): Promise<ChatMessage> => {
     const {
       model = defaultModel,
@@ -51,7 +84,19 @@ export const baseLLMService = (
       traceContext,
       sendUpdate,
       providerOptions, // Provider-specific options (bedrock guardrails, etc.)
+      enableReasoning,
+      reasoningBudget,
+      reasoningSummary,
     } = options;
+
+    // Build final provider options with reasoning if enabled
+    const finalProviderOptions = buildReasoningProviderOptions(
+      provider,
+      enableReasoning,
+      reasoningBudget,
+      reasoningSummary,
+      providerOptions
+    );
 
     const generation = langfuse.createGenerationForSession(
       options.context.sessionToken,
@@ -119,8 +164,10 @@ export const baseLLMService = (
         schema: schema as any,
         temperature,
         maxOutputTokens,
-        // Forward provider-specific options (bedrock guardrails, anthropic cache, etc.)
-        ...(providerOptions ? { providerOptions: providerOptions as any } : {}),
+        // Forward provider-specific options (bedrock guardrails, anthropic cache, reasoning, etc.)
+        ...(finalProviderOptions
+          ? { providerOptions: finalProviderOptions as any }
+          : {}),
       });
 
       // Log cache statistics for Anthropic
@@ -198,8 +245,10 @@ export const baseLLMService = (
       temperature,
       maxOutputTokens,
       tools,
-      // Forward provider-specific options (bedrock guardrails, anthropic cache, etc.)
-      ...(providerOptions ? { providerOptions: providerOptions as any } : {}),
+      // Forward provider-specific options (bedrock guardrails, anthropic cache, reasoning, etc.)
+      ...(finalProviderOptions
+        ? { providerOptions: finalProviderOptions as any }
+        : {}),
       stopWhen:
         toolExecutionMode === "custom" ? stepCountIs(1) : stepCountIs(12),
       onStepFinish: (step) => {
@@ -405,7 +454,19 @@ export const baseLLMService = (
       traceContext,
       sendUpdate,
       providerOptions,
+      enableReasoning,
+      reasoningBudget,
+      reasoningSummary,
     } = options;
+
+    // Build final provider options with reasoning if enabled
+    const finalProviderOptions = buildReasoningProviderOptions(
+      provider,
+      enableReasoning,
+      reasoningBudget,
+      reasoningSummary,
+      providerOptions
+    );
 
     const generation = langfuse.createGenerationForSession(
       options.context.sessionToken,
@@ -417,6 +478,7 @@ export const baseLLMService = (
           ...options.context.metadata,
           streaming: true,
           toolCount: tools.length,
+          enableReasoning,
         },
       }
     );
@@ -436,55 +498,94 @@ export const baseLLMService = (
       aiModel = openai(model);
     }
 
+    // Check if we have tools (handle both array and object forms)
+    const hasTools =
+      tools &&
+      (Array.isArray(tools) ? tools.length > 0 : Object.keys(tools).length > 0);
+
+    // Pass tools directly - aligned with generateText (non-streaming) which works
     const result = streamText({
       model: aiModel,
       messages: messages as any,
       temperature,
       maxOutputTokens,
-      tools: tools && tools.length > 0 ? (tools as any) : undefined,
+      tools: hasTools ? (tools as any) : undefined, // Only pass if we have tools
+      // Forward provider-specific options with reasoning enabled
+      ...(finalProviderOptions
+        ? { providerOptions: finalProviderOptions as any }
+        : {}),
       // Enable multi-step tool execution (same as non-streaming)
       stopWhen: stepCountIs(12),
-      // Forward provider-specific options
-      ...(providerOptions ? { providerOptions: providerOptions as any } : {}),
+      // onStepFinish - use step.content like generateText does (this works!)
       onStepFinish: (step) => {
-        // Tool telemetry - fires when each step completes
-        step.content.forEach((content) => {
-          if (content.type === "tool-call") {
-            const sc: any = content;
-            const toolCallId =
-              sc.toolCallId ??
-              sc.id ??
-              sc.callId ??
-              `${Date.now()}-${Math.random()}`;
-            const toolName = sc.toolName ?? sc.name ?? "unknown";
-            const args = sc.args ?? sc.input ?? sc.parameters;
-            langfuse.startToolSpanForSession(
-              options.context.sessionToken,
-              toolCallId,
-              toolName,
-              args
-            );
+        step.content.forEach((stepContent) => {
+          if (stepContent.type === "tool-call") {
+            try {
+              const sc: any = stepContent as any;
+              const toolCallId =
+                sc.toolCallId ??
+                sc.id ??
+                sc.callId ??
+                `${Date.now()}-${Math.random()}`;
+              const toolName = sc.toolName ?? sc.name ?? "unknown";
+              const args = sc.args ?? sc.input ?? sc.parameters;
+              langfuse.startToolSpanForSession(
+                options.context.sessionToken,
+                toolCallId,
+                toolName,
+                args
+              );
+            } catch {}
+            if (sendUpdate) {
+              sendUpdate({
+                type: "tool_execution",
+                content: JSON.stringify(stepContent),
+              });
+            }
           }
 
-          if (content.type === "tool-result") {
-            const sc: any = content;
-            const toolCallId = sc.toolCallId ?? sc.id ?? sc.callId;
-            const resultData = sc.result ?? sc.output ?? sc.data;
-            langfuse.endToolSpanForSession(
-              options.context.sessionToken,
-              toolCallId,
-              resultData
-            );
+          if (stepContent.type === "tool-result") {
+            try {
+              const sc: any = stepContent as any;
+              const toolCallId = sc.toolCallId ?? sc.id ?? sc.callId;
+              const result = sc.result ?? sc.output ?? sc.data;
+              langfuse.endToolSpanForSession(
+                options.context.sessionToken,
+                toolCallId,
+                result
+              );
+            } catch {}
+            if (sendUpdate) {
+              sendUpdate({
+                type: "tool_response",
+                content: JSON.stringify(stepContent),
+              });
+            }
           }
         });
       },
     });
 
+    // Create a debug wrapper for fullStream that logs each part
+    const debugFullStream = async function* () {
+      console.log("\n🔍 [fullStream DEBUG] Starting to iterate fullStream...");
+      let partCount = 0;
+      for await (const part of result.fullStream) {
+        partCount++;
+        console.log(
+          `🔍 [fullStream DEBUG] Part #${partCount}:`,
+          JSON.stringify(part, null, 2).substring(0, 500)
+        );
+        yield part;
+      }
+      console.log(`🔍 [fullStream DEBUG] Done! Total parts: ${partCount}\n`);
+    };
+
     // Return both textStream and fullStream
     // fullStream contains all events including tool-call and tool-result
     return {
       textStream: result.textStream,
-      fullStream: result.fullStream,
+      fullStream: debugFullStream(), // Use debug wrapper
       generation,
     };
   };
