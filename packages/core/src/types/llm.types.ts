@@ -123,6 +123,7 @@ export interface LLMService {
     options: LLMServiceOptions & { tools?: any[] }
   ): Promise<{
     textStream: AsyncIterable<string>;
+    fullStream: AsyncIterable<any>;
     generation: any;
   }>;
 
