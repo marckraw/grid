@@ -435,12 +435,14 @@ export const baseLLMService = (
       aiModel = openai(model);
     }
 
-    const result = await streamText({
+    const result = streamText({
       model: aiModel,
       messages: messages as any,
       temperature,
       maxOutputTokens,
       tools: tools && tools.length > 0 ? (tools as any) : undefined,
+      // Enable multi-step tool execution (same as non-streaming)
+      stopWhen: stepCountIs(12),
       // Forward provider-specific options
       ...(providerOptions ? { providerOptions: providerOptions as any } : {}),
       onStepFinish: (step) => {
