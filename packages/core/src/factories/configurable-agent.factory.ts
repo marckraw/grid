@@ -774,12 +774,12 @@ export const createConfigurableAgent = async ({
         let fullText = "";
 
         // Call streaming LLM with tools
-        // Use fullStream to capture all events including tool calls
-        const { fullStream, generation } =
+        // textStream gives us text, onStepFinish in the LLM service sends tool events
+        const { textStream, fullStream, generation } =
           await base.llmService.runStreamedLLMWithTools({
             messages: workingMessages,
             tools: availableTools,
-            sendUpdate,
+            sendUpdate, // Tool events sent via onStepFinish callback
             context: processedInput.context,
             model: modelToUse,
             provider: providerToUse,
@@ -795,37 +795,61 @@ export const createConfigurableAgent = async ({
             ...mergedLlmOptions,
           });
 
-        // Process the full stream which includes text, tool calls, and tool results
+        // Iterate fullStream to get all events including reasoning
+        let fullReasoning = "";
+
         for await (const part of fullStream) {
-          // Handle text deltas
-          if (part.type === "text-delta") {
-            fullText += part.textDelta;
+          const partType = (part as any).type;
 
-            // Yield chunk to caller
-            yield {
-              type: "text_delta",
-              content: part.textDelta,
-            };
+          // Handle text-delta parts
+          if (partType === "text-delta") {
+            const textContent =
+              (part as any).textDelta ??
+              (part as any).text ??
+              (part as any).delta ??
+              "";
+            if (textContent) {
+              fullText += textContent;
 
-            // Also send via sendUpdate for IPC
-            await sendUpdate({
-              type: "text_delta",
-              content: part.textDelta,
-            });
+              // Yield chunk to caller
+              yield {
+                type: "text_delta",
+                content: textContent,
+              };
+
+              // Also send via sendUpdate for IPC
+              await sendUpdate({
+                type: "text_delta",
+                content: textContent,
+              });
+            }
           }
 
-          // Handle tool calls - emit when tool is being called
-          if (part.type === "tool-call") {
+          // Handle reasoning-delta parts (for models with extended thinking like Claude)
+          if (partType === "reasoning-delta" || partType === "reasoning") {
+            const reasoningContent =
+              (part as any).reasoningDelta ??
+              (part as any).reasoning ??
+              (part as any).delta ??
+              (part as any).text ??
+              "";
+            if (reasoningContent) {
+              fullReasoning += reasoningContent;
+
+              // Send reasoning via sendUpdate for IPC (UI can display this)
+              await sendUpdate({
+                type: "reasoning_delta",
+                content: reasoningContent,
+              });
+            }
+          }
+
+          // Handle tool-call parts - send immediately for UI
+          if (partType === "tool-call") {
             const toolCallData = {
-              toolCallId: part.toolCallId,
-              toolName: part.toolName,
-              args: part.args,
-            };
-
-            yield {
-              type: "tool_execution",
-              content: JSON.stringify(toolCallData),
-              metadata: toolCallData,
+              toolCallId: (part as any).toolCallId,
+              toolName: (part as any).toolName,
+              args: (part as any).args,
             };
 
             await sendUpdate({
@@ -834,18 +858,12 @@ export const createConfigurableAgent = async ({
             });
           }
 
-          // Handle tool results - emit when tool returns
-          if (part.type === "tool-result") {
+          // Handle tool-result parts - send immediately for UI
+          if (partType === "tool-result") {
             const toolResultData = {
-              toolCallId: part.toolCallId,
-              toolName: part.toolName,
-              result: part.result,
-            };
-
-            yield {
-              type: "tool_response",
-              content: JSON.stringify(toolResultData),
-              metadata: toolResultData,
+              toolCallId: (part as any).toolCallId,
+              toolName: (part as any).toolName,
+              result: (part as any).result,
             };
 
             await sendUpdate({
@@ -855,10 +873,17 @@ export const createConfigurableAgent = async ({
           }
         }
 
-        // Build final response
+        // Build final response (include reasoning if present)
         const response: AgentResponse = {
           role: "assistant",
           content: fullText,
+          ...(fullReasoning
+            ? {
+                metadata: {
+                  reasoning: fullReasoning,
+                },
+              }
+            : {}),
         };
 
         // Hook: afterResponse

@@ -119,7 +119,7 @@ export type AgentMetadata = z.infer<typeof AgentMetadataSchema>;
  * Streaming response chunk from actStream
  */
 export interface StreamChunk {
-  type: "text_delta" | "tool_execution" | "tool_response" | "stream_end";
+  type: "text_delta" | "reasoning_delta" | "tool_execution" | "tool_response" | "stream_end";
   content: string;
   metadata?: Record<string, any>;
 }
