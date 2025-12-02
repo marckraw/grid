@@ -1,5 +1,11 @@
 # @mrck-labs/grid-core
 
+## 0.39.3
+
+### Patch Changes
+
+- cd6c4e4: another and last fix for the stream and tools
+
 ## 0.39.2
 
 ### Patch Changes
